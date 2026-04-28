@@ -93,3 +93,9 @@ text {
   width: 200px;
   border-color: #4CAF50;
 }
+
+.main {
+  background-color: #ffffffa3;
+  padding: 20px;
+  border-radius: 20px;
+}

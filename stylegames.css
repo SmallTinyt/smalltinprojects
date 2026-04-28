@@ -1,0 +1,92 @@
+body {
+    margin: 0;
+    padding: 0;
+    background-color: #1a1a1a; /* 預設背景色 */
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+    font-family: 'Microsoft JhengHei', sans-serif;
+}
+
+/* 全螢幕背景圖片層的設定 */
+.full-bg {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-size: cover;
+    background-position: center;
+    opacity: 0; /* 預設完全透明 */
+    transition: opacity 0.6s ease; /* 漸變效果 */
+    z-index: -1; /* 放在最後面 */
+}
+
+/* 填入你的圖片路徑 */
+.mc-bg-full { background-image: url('minecraftbg.png'); }
+.rb-bg-full { background-image: url('robloxbg.png'); }
+
+/* 🌟 魔法連動：當 body 裡面有「被碰到」的 mc-card 時，讓背景顯示 🌟 */
+body:has(.mc-card:hover) .mc-bg-full {
+    opacity: 1;
+}
+
+body:has(.rb-card:hover) .rb-bg-full {
+    opacity: 1;
+}
+
+/* 容器與卡片設定 */
+.container {
+    display: flex;
+    gap: 50px; /* 兩個圓角矩形中間的間距 */
+    z-index: 10;
+}
+
+.card {
+    width: 350px;
+    height: 500px;
+    background-color: rgba(255, 255, 255, 0.1); /* 半透明底色 */
+    backdrop-filter: blur(10px); /* 毛玻璃效果 */
+    
+    /* 這裡就是你要的「圓角矩形」 */
+    border-radius: 40px; 
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    transition: transform 0.3s ease, background-color 0.3s ease;
+    cursor: default;
+}
+
+/* 滑鼠移上去卡片時，卡片本身也可以有一點點變化 */
+.card:hover {
+    transform: translateY(-10px); /* 輕微往上浮起 */
+    background-color: rgba(255, 255, 255, 0.2);
+    border-color: #4CAF50;
+}
+
+.card h2 {
+    font-size: 40px;
+    margin-bottom: 30px;
+}
+
+/* 按鈕樣式 */
+.btn {
+    padding: 12px 25px;
+    background-color: #4CAF50;
+    color: white;
+    border-radius: 20px;
+    cursor: pointer;
+    user-select: none;
+    transition: 0.3s;
+}
+
+.btn:hover {
+    background-color: #45a049;
+    transform: scale(1.1);
+}

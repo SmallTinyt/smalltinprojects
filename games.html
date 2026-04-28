@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" href="stylegames.css">
+        <title>Games</title>
+    </head>
+    <body>
+        <div class="full-bg mc-bg-full"></div>
+        <div class="full-bg rb-bg-full"></div>
+        <div class="container">
+        <div class="card mc-card">
+            <h2>Minecraft</h2>
+            <div class="btn" onclick="downloadMC()">點我下載 Minecraft 所需檔案</div>
+        </div>
+
+        <div class="card rb-card">
+            <h2>Roblox</h2>
+            <div class="btn" onclick="downloadRoblox()">點我下載 Roblox 所需檔案</div>
+        </div>
+    </div>
+        <script>
+            // Minecraft 的檔案清單 (請換成你實際的檔名)
+            function downloadMC() {
+                const files = [
+                    'jdk-21.0.9_windows-x64_bin.exe',
+                    'PrismLauncher-Windows-MSVC-Setup-8.4.exe',
+                    'minecraft.txt'
+                ];
+                downloadAll(files);
+            }
+
+            // Roblox 的檔案清單 (請換成你實際的檔名)
+            function downloadRoblox() {
+                const files = [
+                    'RobloxPlayerInstaller.exe',
+                    'roblox.txt'
+                ];
+                downloadAll(files);
+            }
+
+            // 通用的下載核心程式
+            function downloadAll(files) {
+                files.forEach((file, index) => {
+                    // 稍微延遲下載時間 (100ms)，避免瀏覽器覺得是病毒而全部擋掉
+                    setTimeout(() => {
+                        const a = document.createElement('a');
+                        a.href = file;
+                        a.download = file; // 告訴瀏覽器這是要下載的
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    }, index * 100); 
+                });
+            }
+        </script>
+    </body>
+</html>
