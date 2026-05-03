@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="zh">
+    <head>
+        <meta charset="UTF-8">
+        <title>Diary</title>
+        <style>
+            body {
+                font-family: "Microsoft JhengHei", sans-serif;
+                background: linear-gradient(to bottom, #ffffff, #000000aa);
+                min-height: 100vh;
+            }
+            h1 {
+                font-size: 45px;
+            }
+            text {
+                font-size: 35px;
+            }            
+            /* Hover 效果 */
+            .hover-text {
+                cursor: pointer;
+                position: relative;
+                border-bottom: 1px dotted #999;
+            }
+            
+            .hover-text::before {
+                content: attr(data-hover);
+                position: absolute;
+                bottom: 125%;
+                left: 50%;
+                transform: translateX(-50%);
+                background-color: #333;
+                color: white;
+                padding: 8px 12px;
+                border-radius: 5px;
+                font-size: 14px;
+                white-space: nowrap;
+                opacity: 0;
+                pointer-events: none;
+                transition: opacity 0.3s;
+                z-index: 1;
+            }
+            
+            .hover-text:hover::before {
+                opacity: 1;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>4/29 (三)</h1>
+        <text>今天去隔宿露營，我們搭了一個半小時的車到新竹。我本來以為是很開心的活動，但是一開始的儀態訓練就快要把我的耳膜震壞了。</text><br>
+        <text>再來，我們進行了分站教育。總共有五站，分別是羅馬炮、堆積木、高空繩索、跳舞和槍戰。</text><br>
+        <text>玩羅馬炮的時候，我們每個人先去裝水球，然後1號把水球放到羅馬炮上，36號拿著盆子接球，接著是2號射擊，以此類推······</text><br>
+        <text>我們跟10班、15班比賽，結果他們都接了4顆水球，而我們只接了3顆，所以我們這一站只拿到9分。</text><br>
+        <text>接著我們回到集合場的右邊準備堆積木，講解完規則後，第一小隊先去前面拿圓形鐵盤，那個鐵盤長得像一隻</text><span class="hover-text" data-hover=">10隻" style="font-size: 35px;">很多隻腳</span><text>的蜘蛛。每個人要控制一根繩子，讓圓盤上的吊環勾住積木，再把積木放到積木底座上。</text><br>
+        <text>很快地，三個小隊都玩完了，我們班疊了最多積木，拿到了10分。</text>
+        <text></text>
+    </body>
+</html>
