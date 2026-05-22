@@ -99,3 +99,9 @@ text {
   padding: 20px;
   border-radius: 20px;
 }
+a:link {
+  color: #555;
+}
+a:visited {
+  color: #aaa;
+}
