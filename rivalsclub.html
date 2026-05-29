@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rivals Mini - Web Remake</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        canvas {
+            background: linear-gradient(to bottom, #1a2a6c, #b21f1f, #fdbb2d);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            cursor: crosshair;
+        }
+
+        /* UI 介面 */
+        #ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            box-sizing: border-box;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .hud-top {
+            display: flex;
+            justify-content: space-between;
+            font-size: 24px;
+            font-weight: bold;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+        }
+
+        .hud-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .weapon-info {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 15px 25px;
+            border-radius: 10px;
+            border-left: 5px solid #ff4757;
+            text-align: right;
+        }
+
+        #weapon-name {
+            font-size: 28px;
+            color: #ff4757;
+            font-weight: bold;
+            margin: 0;
+        }
+
+        #ammo-display {
+            font-size: 20px;
+            margin: 5px 0 0 0;
+        }
+
+        #score-board {
+            color: #2ed573;
+        }
+
+        /* 準心 */
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 10px;
+            height: 10px;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            transition: transform 0.1s ease;
+        }
+        #crosshair::before, #crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, 0.8);
+        }
+        #crosshair::before { top: 4px; left: -10px; width: 30px; height: 2px; }
+        #crosshair::after { top: -10px; left: 4px; width: 2px; height: 30px; }
+
+        /* 狙擊開鏡效果 */
+        #scope-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.95) 60%);
+            display: none;
+            pointer-events: none;
+        }
+        #scope-line-v {
+            position: absolute;
+            left: 50%;
+            top: 0;
+            width: 1px;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+        }
+        #scope-line-h {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            height: 1px;
+            width: 100%;
+            background: rgba(0,0,0,0.7);
+        }
+
+        /* 說明提示 */
+        #instructions {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+    
+    <!-- 狙擊鏡效果 -->
+    <div id="scope-overlay">
+        <div id="scope-line-v"></div>
+        <div id="scope-line-h"></div>
+    </div>
+
+    <!-- 準心 -->
+    <div id="crosshair"></div>
+
+    <!-- UI 層 -->
+    <div id="ui-layer">
+        <div class="hud-top">
+            <div id="score-board">得分: <span id="score">0</span></div>
+            <div id="timer">時間: <span id="time-left">60</span>s</div>
+        </div>
+        
+        <div class="hud-bottom">
+            <div id="instructions">
+                【數字鍵 1】: AK-47 (連發) | 【數字鍵 2】: AWM 狙擊槍 (高傷/右鍵開鏡) <br>
+                【滑鼠左鍵】: 射擊 | 【R 鍵】: 換彈夾
+            </div>
+            <div class="weapon-info">
+                <p id="weapon-name">AK-47</p>
+                <p id="ammo-display"><span id="current-ammo">30</span> / <span id="max-ammo">30</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scopeOverlay = document.getElementById('scope-overlay');
+    const crosshair = document.getElementById('crosshair');
+
+    // 自適應螢幕大小
+    function resizeCanvas() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+    }
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
+
+    // 遊戲數據
+    let score = 0;
+    let timeLeft = 60;
+    let gameOver = false;
+
+    // 武器設定
+    const WEAPONS = {
+        AK47: {
+            name: "AK-47 突擊步槍",
+            maxAmmo: 30,
+            ammo: 30,
+            fireRate: 120, // 射擊間隔 (ms)
+            damage: 35,
+            isAutomatic: true,
+            recoil: 15,
+            color: "#d2a679"
+        },
+        AWM: {
+            name: "AWM 狙擊槍",
+            maxAmmo: 5,
+            ammo: 5,
+            fireRate: 1200,
+            damage: 100,
+            isAutomatic: false,
+            recoil: 40,
+            color: "#4a5d4e"
+        }
+    };
+
+    let currentWeaponKey = 'AK47';
+    let weapon = WEAPONS[currentWeaponKey];
+    let isReloading = false;
+    let isScoped = false;
+    let lastShotTime = 0;
+    let isMouseDown = false;
+
+    // 敵人/目標群
+    let enemies = [];
+    class Enemy {
+        constructor() {
+            this.x = Math.random() * (canvas.width - 100) + 50;
+            this.y = Math.random() * (canvas.height - 300) + 150;
+            this.baseRadius = Math.random() * 20 + 20;
+            this.radius = this.baseRadius;
+            this.hp = 100;
+            this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
+            this.vx = (Math.random() - 0.5) * 4;
+            this.vy = (Math.random() - 0.5) * 2;
+            this.pulseTimer = Math.random() * 10;
+        }
+
+        update() {
+            this.x += this.vx;
+            this.y += this.vy;
+
+            // 邊界碰撞
+            if (this.x - this.radius < 0 || this.x + this.radius > canvas.width) this.vx *= -1;
+            if (this.y - this.radius < 100 || this.y + this.radius > canvas.height - 100) this.vy *= -1;
+
+            // 呼吸效果效果
+            this.pulseTimer += 0.05;
+            this.radius = this.baseRadius + Math.sin(this.pulseTimer) * 2;
+        }
+
+        draw() {
+            // 繪製 Roblox 風格的方塊/圓形敵人
+            ctx.save();
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = this.color;
+            
+            // 外圈護盾
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+            ctx.fillStyle = this.color;
+            ctx.fill();
+
+            // 內圈核心
+            ctx.beginPath();
+            ctx.arc(this.x, this.y, this.radius * 0.6, 0, Math.PI * 2);
+            ctx.fillStyle = '#fff';
+            ctx.fill();
+
+            // 血條
+            ctx.fillStyle = 'rgba(0,0,0,0.5)';
+            ctx.fillRect(this.x - 25, this.y - this.radius - 15, 50, 6);
+            ctx.fillStyle = '#10ac84';
+            ctx.fillRect(this.x - 25, this.y - this.radius - 15, (this.hp / 100) * 50, 6);
+
+            ctx.restore();
+        }
+    }
+
+    // 初始化敵人
+    for (let i = 0; i < 5; i++) {
+        enemies.push(new Enemy());
+    }
+
+    // 特效群 (擊中效果、槍口閃爍)
+    let particles = [];
+    function createParticles(x, y, color) {
+        for (let i = 0; i < 10; i++) {
+            particles.push({
+                x: x,
+                y: y,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                radius: Math.random() * 3 + 1,
+                alpha: 1,
+                color: color
+            });
+        }
+    }
+
+    // 玩家視角與武器晃動
+    let mouseX = canvas.width / 2;
+    let mouseY = canvas.height / 2;
+    let gunRecoilY = 0;
+
+    window.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+    });
+
+    // 射擊邏輯
+    function shoot() {
+        if (isReloading) return;
+        const now = Date.now();
+        if (now - lastShotTime < weapon.fireRate) return;
+        if (weapon.ammo <= 0) {
+            reload();
+            return;
+        }
+
+        weapon.ammo--;
+        lastShotTime = now;
+        gunRecoilY = weapon.recoil; // 後座力引發畫面震動
+        updateUI();
+
+        // 判定是否擊中
+        let hitAnything = false;
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
+            let dist = Math.hypot(mouseX - e.x, mouseY - e.y);
+            if (dist < e.radius) {
+                e.hp -= weapon.damage;
+                createParticles(mouseX, mouseY, e.color);
+                hitAnything = true;
+
+                if (e.hp <= 0) {
+                    score += 100;
+                    enemies.splice(i, 1);
+                    // 補回新敵人
+                    setTimeout(() => { if(!gameOver) enemies.push(new Enemy()); }, 1000);
+                }
+                break; // 每次只擊中一個
+            }
+        }
+
+        if (!hitAnything) {
+            createParticles(mouseX, mouseY, '#fff'); // 擊中背景火花
+        }
+    }
+
+    // 換彈匣
+    function reload() {
+        if (isReloading || weapon.ammo === weapon.maxAmmo) return;
+        isReloading = true;
+        document.getElementById('weapon-name').innerText = "RELOADING...";
+        
+        setTimeout(() => {
+            weapon.ammo = weapon.maxAmmo;
+            isReloading = false;
+            updateUI();
+        }, currentWeaponKey === 'AWM' ? 2000 : 1200); // AWM 換彈較慢
+    }
+
+    // 切換武器
+    function switchWeapon(key) {
+        if (currentWeaponKey === key) return;
+        currentWeaponKey = key;
+        weapon = WEAPONS[key];
+        isReloading = false;
+        // 如果切換回 AK-47 則強制取消開鏡
+        if (key !== 'AWM') {
+            isScoped = false;
+            scopeOverlay.style.display = 'none';
+            crosshair.style.display = 'block';
+        }
+        updateUI();
+    }
+
+    // 更新 UI
+    function updateUI() {
+        document.getElementById('score').innerText = score;
+        document.getElementById('weapon-name').innerText = weapon.name;
+        document.getElementById('current-ammo').innerText = weapon.ammo;
+        document.getElementById('max-ammo').innerText = weapon.maxAmmo;
+    }
+
+    // 監聽輸入
+    window.addEventListener('mousedown', (e) => {
+        if (gameOver) return;
+        if (e.button === 0) { // 左鍵
+            isMouseDown = true;
+            shoot();
+        } else if (e.button === 2 && currentWeaponKey === 'AWM') { // 右鍵開鏡
+            isScoped = !isScoped;
+            scopeOverlay.style.display = isScoped ? 'block' : 'none';
+            crosshair.style.display = isScoped ? 'none' : 'block';
+        }
+    });
+
+    window.addEventListener('mouseup', (e) => {
+        if (e.button === 0) isMouseDown = false;
+    });
+
+    // 阻擋右鍵選單
+    window.addEventListener('contextmenu', e => e.preventDefault());
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === '1') switchWeapon('AK47');
+        if (e.key === '2') switchWeapon('AWM');
+        if (e.key === 'r' || e.key === 'R') reload();
+    });
+
+    // 連發邏輯
+    setInterval(() => {
+        if (isMouseDown && weapon.isAutomatic && !gameOver) {
+            shoot();
+        }
+    }, 30);
+
+    // 倒數計時
+    const timerInterval = setInterval(() => {
+        if (timeLeft > 0) {
+            timeLeft--;
+            document.getElementById('time-left').innerText = timeLeft;
+        } else {
+            gameOver = true;
+            clearInterval(timerInterval);
+        }
+    }, 1000);
+
+    // 主遊戲循環
+    function gameLoop() {
+        // 清除畫布並繪製動態背景
+        ctx.fillStyle = 'rgba(20, 24, 35, 0.3)'; // 帶有一點殘影效果
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // 後座力回復
+        if (gunRecoilY > 0) gunRecoilY -= 2;
+
+        // 繪製地平線與簡單 3D 空間感
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height * 0.7);
+        ctx.lineTo(canvas.width, canvas.height * 0.7);
+        ctx.stroke();
+
+        // 更新與繪製敵人
+        enemies.forEach(e => {
+            e.update();
+            e.draw();
+        });
+
+        // 處理特效粒子
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            p.x += p.vx;
+            p.y += p.vy;
+            p.alpha -= 0.04;
+            if (p.alpha <= 0) {
+                particles.splice(i, 1);
+            } else {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // 繪製第一人稱手上拿的槍枝（簡易方塊風格，符合 Roblox 感受）
+        if (!isScoped) {
+            ctx.save();
+            // 根據滑鼠位置讓槍枝產生動態延遲跟隨（偽 3D 效果）
+            let gunX = canvas.width * 0.7 + (mouseX - canvas.width/2) * 0.1;
+            let gunY = canvas.height * 0.85 + (mouseY - canvas.height/2) * 0.1 - gunRecoilY;
+            
+            ctx.translate(gunX, gunY);
+            ctx.rotate(-0.1 - (gunRecoilY * 0.01));
+
+            // 槍身
+            ctx.fillStyle = weapon.color;
+            ctx.fillRect(-20, -30, 50, 120); 
+            // 槍管
+            ctx.fillStyle = '#222';
+            ctx.fillRect(-10, -120, 25, 100); 
+
+            // AK-47 的木質彈匣 or AWM 的狙擊彈夾
+            ctx.fillStyle = currentWeaponKey === 'AK47' ? '#8a5a36' : '#2d3748';
+            ctx.beginPath();
+            ctx.arc(20, 20, 30, Math.PI*1.5, Math.PI*2);
+            ctx.lineWidth = 15;
+            ctx.strokeStyle = ctx.fillStyle;
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        // 遊戲結束畫面
+        if (gameOver) {
+            ctx.fillStyle = 'rgba(0,0,0,0.8)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ff4757';
+            ctx.font = 'bold 60px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('RIVALS 戰局結束', canvas.width / 2, canvas.height / 2 - 20);
+            ctx.fillStyle = '#fff';
+            ctx.font = '30px Arial';
+            ctx.fillText(`最終得分: ${score}`, canvas.width / 2, canvas.height / 2 + 40);
+            ctx.font = '20px Arial';
+            ctx.fillText('重新整理網頁即可再度挑戰', canvas.width / 2, canvas.height / 2 + 100);
+            return;
+        }
+
+        requestAnimationFrame(gameLoop);
+    }
+
+    // 啟動遊戲
+    updateUI();
+    gameLoop();
+</script>
+
+</body>
+</html>
