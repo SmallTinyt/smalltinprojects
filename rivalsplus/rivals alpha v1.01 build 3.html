@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rivals alpha v1.02 build 5</title>
+    <title>Rivals alpha v1.01 build 3</title>
     <style>
         :root {
             --primary: #ff4757;
@@ -456,83 +456,6 @@
             transform: translateY(-2px);
         }
 
-        /* 遊戲結束與排行榜遮罩 */
-        #game-over-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            z-index: 200;
-            opacity: 0;
-            pointer-events: none;
-            transition: opacity 0.4s ease;
-        }
-
-        #game-over-overlay.active {
-            opacity: 1;
-            pointer-events: auto;
-        }
-
-        .game-over-box {
-            background: rgba(11, 15, 25, 0.95);
-            border: 2px solid var(--primary);
-            box-shadow: 0 0 40px rgba(255, 71, 87, 0.5);
-            padding: 40px;
-            border-radius: 16px;
-            text-align: center;
-            max-width: 450px;
-            width: 90%;
-        }
-
-        .game-over-score {
-            font-size: 24px;
-            color: #fff;
-            margin-bottom: 20px;
-        }
-
-        .leaderboard {
-            background: rgba(0, 0, 0, 0.5);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 25px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .leaderboard-title {
-            font-size: 16px;
-            color: var(--accent);
-            margin-bottom: 15px;
-            font-weight: bold;
-        }
-
-        #leaderboard-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-            text-align: left;
-        }
-
-        #leaderboard-list li {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 10px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            font-size: 15px;
-            color: #e2e8f0;
-        }
-
-        #leaderboard-list li:last-child {
-            border-bottom: none;
-        }
-
         .toast-notification {
             position: absolute;
             font-weight: bold;
@@ -570,23 +493,6 @@
             </div>
         </div>
 
-        <!-- 遊戲結束與排行榜選單 -->
-        <div id="game-over-overlay">
-            <div class="game-over-box">
-                <div class="pause-title">RIVALS 戰局結束</div>
-                <div class="game-over-score">最終獲得資金: <span id="final-score" style="color: var(--secondary); font-weight: bold;">0</span></div>
-                
-                <div class="leaderboard">
-                    <div class="leaderboard-title">🏆 歷史最高排行榜 🏆</div>
-                    <ul id="leaderboard-list">
-                        <!-- JS 動態生成 -->
-                    </ul>
-                </div>
-
-                <button class="pause-menu-btn pause-btn-primary" onclick="restartGame()">🔄 重新開始新戰局</button>
-            </div>
-        </div>
-
         <div id="ui-layer">
             <div class="hud-top">
                 <div id="score-board">
@@ -598,7 +504,7 @@
                 </button>
                 <div class="top-right-panel">
                     <div id="timer">時間: <span id="time-left">120</span>s</div>
-                    <div class="version-tag">alpha v1.02 build 5</div>
+                    <div class="version-tag">alpha v1.01 build 3</div>
                 </div>
             </div>
             
@@ -635,7 +541,7 @@
         <div class="upgrade-card">
             <div class="upgrade-info">
                 <span class="upgrade-name">⚡ 射擊速度 (射速)</span>
-                <span class="upgrade-stats" id="firerate-stats">目前: 600 發/分鐘</span>
+                <span class="upgrade-stats" id="firerate-stats">目前: 400 發/分鐘</span>
             </div>
             <button class="upgrade-btn" id="btn-upgrade-firerate" onclick="buyUpgrade('firerate')">升級: $200</button>
         </div>
@@ -725,7 +631,7 @@
             name: "AK-47 突擊步槍",
             baseMaxAmmo: 30,
             ammo: 30,
-            baseFireRate: 100, 
+            baseFireRate: 150, 
             baseDamage: 20,    
             isAutomatic: true,
             recoil: 14,
@@ -1476,51 +1382,25 @@
             timeLeft--;
             document.getElementById('time-left').innerText = timeLeft;
         } else {
-            if (!gameOver) {
-                gameOver = true;
-                clearInterval(timerInterval);
-                showGameOverScreen();
-            }
+            gameOver = true;
+            clearInterval(timerInterval);
         }
     }, 1000);
 
-    function showGameOverScreen() {
-        // 1. 設定最終分數
-        document.getElementById('final-score').innerText = '$' + cash;
-        
-        // 2. 讀取、更新並儲存排行榜
-        let board = JSON.parse(localStorage.getItem('rivals_leaderboard') || '[]');
-        board.push({ score: cash, date: new Date().toLocaleDateString() });
-        // 從高到低排序
-        board.sort((a, b) => b.score - a.score);
-        // 只保留前五名
-        board = board.slice(0, 5); 
-        localStorage.setItem('rivals_leaderboard', JSON.stringify(board));
-
-        // 3. 渲染排行榜 UI
-        const list = document.getElementById('leaderboard-list');
-        list.innerHTML = '';
-        board.forEach((entry, index) => {
-            const li = document.createElement('li');
-            li.innerHTML = `<span>#${index + 1}</span> <span style="color:var(--secondary); font-weight:bold;">$${entry.score}</span> <span style="color:#94a3b8; font-size: 12px;">${entry.date}</span>`;
-            list.appendChild(li);
-        });
-
-        // 4. 顯示結算畫面並重置輸入
-        document.getElementById('game-over-overlay').classList.add('active');
-        isMouseDown = false;
-        if (isScoped) {
-            isScoped = false;
-            scopeOverlay.style.display = 'none';
-            crosshair.style.display = 'block';
-        }
-    }
-
     function gameLoop() {
         if (gameOver) {
-            // 遊戲結束時僅繪製深色背景，UI 已經由 DOM 的遊戲結束面板接手
             ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#ff4757';
+            ctx.font = 'bold 56px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('RIVALS 戰局結束', canvas.width / 2, canvas.height / 2 - 40);
+            ctx.fillStyle = '#fff';
+            ctx.font = '32px Arial';
+            ctx.fillText(`最終獲得資金: ${cash}`, canvas.width / 2, canvas.height / 2 + 20);
+            ctx.fillStyle = '#94a3b8';
+            ctx.font = '18px Arial';
+            ctx.fillText('重新整理網頁即可再度啟動新一輪戰局！', canvas.width / 2, canvas.height / 2 + 80);
             return;
         }
 
