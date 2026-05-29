@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rivals - 升級商店版</title>
+    <title>Rivals alpha v1.01 build 3</title>
     <style>
         :root {
             --primary: #ff4757;
@@ -11,7 +11,7 @@
             --secondary: #2ed573;
             --accent: #ffa500;
             --bg-dark: #0f172a;
-            --panel-bg: rgba(15, 23, 42, 0.9);
+            --panel-bg: rgba(15, 23, 42, 0.93);
         }
 
         body {
@@ -43,7 +43,7 @@
 
         canvas {
             display: block;
-            background: linear-gradient(to bottom, #0f172a, #111827, #1e1b4b);
+            background: linear-gradient(to bottom, #090d16, #0f172a, #1e1b4b);
             cursor: crosshair;
         }
 
@@ -52,17 +52,16 @@
             width: 360px;
             background: var(--panel-bg);
             border-left: 3px solid rgba(255, 255, 255, 0.1);
-            box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+            box-shadow: -10px 0 30px rgba(0,0,0,0.6);
             display: flex;
             flex-direction: column;
             padding: 20px;
             box-sizing: border-box;
             z-index: 10;
-            backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
             overflow-y: auto;
         }
 
-        /* 商店標題與美化 */
         .shop-header {
             font-size: 24px;
             font-weight: 800;
@@ -89,9 +88,8 @@
             box-shadow: inset 0 0 10px rgba(46, 213, 115, 0.2);
         }
 
-        /* 升級選項卡片 */
         .upgrade-section-title {
-            font-size: 14px;
+            font-size: 13px;
             color: #94a3b8;
             margin: 15px 0 10px 0;
             text-transform: uppercase;
@@ -100,8 +98,8 @@
         }
 
         .upgrade-card {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.07);
             border-radius: 10px;
             padding: 12px;
             margin-bottom: 12px;
@@ -122,12 +120,13 @@
 
         .upgrade-name {
             font-weight: bold;
-            font-size: 15px;
+            font-size: 14px;
         }
 
         .upgrade-stats {
-            font-size: 12px;
-            color: #94a3b8;
+            font-size: 11px;
+            color: #38bdf8;
+            font-weight: bold;
         }
 
         .upgrade-btn {
@@ -140,7 +139,7 @@
             font-weight: bold;
             cursor: pointer;
             transition: all 0.15s ease;
-            font-size: 14px;
+            font-size: 13px;
         }
 
         .upgrade-btn:hover:not(:disabled) {
@@ -197,7 +196,6 @@
             font-size: 13px;
         }
 
-        /* UI 頂層覆蓋 */
         #ui-layer {
             position: absolute;
             top: 0;
@@ -215,9 +213,60 @@
         .hud-top {
             display: flex;
             justify-content: space-between;
+            align-items: center;
             font-size: 24px;
             font-weight: bold;
             text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
+        }
+
+        .top-right-panel {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+        }
+
+        #timer {
+            font-size: 22px;
+            color: #fff;
+        }
+
+        .version-tag {
+            background: rgba(0, 0, 0, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-family: 'Courier New', Courier, monospace;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+            text-shadow: none;
+            font-weight: normal;
+        }
+
+        .pause-btn-hud {
+            pointer-events: auto;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            backdrop-filter: blur(5px);
+        }
+
+        .pause-btn-hud:hover {
+            background: var(--primary);
+            border-color: var(--primary);
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(255, 71, 87, 0.4);
         }
 
         .hud-bottom {
@@ -227,12 +276,13 @@
         }
 
         .weapon-info {
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.85);
             padding: 15px 25px;
             border-radius: 10px;
             border-left: 5px solid var(--primary);
             text-align: right;
             backdrop-filter: blur(5px);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.4);
         }
 
         #weapon-name {
@@ -245,6 +295,7 @@
         #ammo-display {
             font-size: 18px;
             margin: 5px 0 0 0;
+            font-family: monospace;
         }
 
         #score-board {
@@ -260,7 +311,7 @@
             font-weight: normal;
         }
 
-        /* 準心 */
+        /* 準心與狙擊鏡鏡頭效果 */
         #crosshair {
             position: absolute;
             top: 50%;
@@ -274,19 +325,18 @@
         #crosshair::before, #crosshair::after {
             content: '';
             position: absolute;
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(255, 255, 255, 0.85);
         }
         #crosshair::before { top: 4px; left: -10px; width: 30px; height: 2px; }
         #crosshair::after { top: -10px; left: 4px; width: 2px; height: 30px; }
 
-        /* 狙擊開鏡 */
         #scope-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle, transparent 20%, rgba(0,0,0,0.98) 55%);
+            background: radial-gradient(circle, transparent 18%, rgba(0,0,0,0.99) 50%);
             display: none;
             pointer-events: none;
         }
@@ -294,17 +344,17 @@
             position: absolute;
             left: 50%;
             top: 0;
-            width: 1px;
+            width: 1.5px;
             height: 100%;
-            background: rgba(255, 0, 0, 0.5);
+            background: rgba(255, 0, 0, 0.6);
         }
         #scope-line-h {
             position: absolute;
             top: 50%;
             left: 0;
-            height: 1px;
+            height: 1.5px;
             width: 100%;
-            background: rgba(255, 0, 0, 0.5);
+            background: rgba(255, 0, 0, 0.6);
         }
 
         #instructions {
@@ -312,7 +362,7 @@
             bottom: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.85);
             padding: 10px 20px;
             border-radius: 20px;
             font-size: 13px;
@@ -322,14 +372,97 @@
             border: 1px solid rgba(255,255,255,0.1);
         }
 
-        /* 漂浮文字 */
+        /* 暫停彈窗與漂浮文字 */
+        #pause-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(8px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
+        #pause-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .pause-box {
+            background: rgba(11, 15, 25, 0.95);
+            border: 2px solid var(--primary);
+            box-shadow: 0 0 35px rgba(255, 71, 87, 0.4);
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            max-width: 400px;
+            width: 80%;
+        }
+
+        .pause-title {
+            font-size: 36px;
+            font-weight: 800;
+            color: #fff;
+            margin: 0 0 10px 0;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(255, 71, 87, 0.5);
+        }
+
+        .pause-subtitle {
+            font-size: 14px;
+            color: #94a3b8;
+            margin-bottom: 30px;
+        }
+
+        .pause-menu-btn {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .pause-btn-primary {
+            background: var(--secondary);
+            color: #fff;
+        }
+
+        .pause-btn-primary:hover {
+            background: #26af5f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 213, 115, 0.3);
+        }
+
+        .pause-btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .pause-btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            transform: translateY(-2px);
+        }
+
         .toast-notification {
             position: absolute;
             font-weight: bold;
             font-size: 24px;
             pointer-events: none;
             animation: floatUpAndFade 0.8s forwards ease-out;
-            text-shadow: 2px 2px 4px rgba(0,0,0,0.8);
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.9);
         }
 
         @keyframes floatUpAndFade {
@@ -341,32 +474,43 @@
 <body>
 
 <div id="main-container">
-    <!-- 左側遊戲區域 -->
     <div id="game-area">
         <canvas id="gameCanvas"></canvas>
         
-        <!-- 狙擊鏡 -->
         <div id="scope-overlay">
             <div id="scope-line-v"></div>
             <div id="scope-line-h"></div>
         </div>
 
-        <!-- 準心 -->
         <div id="crosshair"></div>
 
-        <!-- 遊戲內 HUD -->
+        <div id="pause-overlay">
+            <div class="pause-box">
+                <div class="pause-title">戰局暫停</div>
+                <div class="pause-subtitle">RIVALS - PAUSE MENU</div>
+                <button class="pause-menu-btn pause-btn-primary" onclick="togglePause()">▶ 繼續戰鬥</button>
+                <button class="pause-menu-btn pause-btn-secondary" onclick="restartGame()">🔄 重新開始</button>
+            </div>
+        </div>
+
         <div id="ui-layer">
             <div class="hud-top">
                 <div id="score-board">
                     <div>資金: <span id="score">0</span></div>
                     <div id="penalty-warning">⚠️ 擊中橘色人質將扣除 200 資金！</div>
                 </div>
-                <div id="timer">時間: <span id="time-left">120</span>s</div>
+                <button class="pause-btn-hud" onclick="togglePause()">
+                    <span>⏸</span> 暫停 (P)
+                </button>
+                <div class="top-right-panel">
+                    <div id="timer">時間: <span id="time-left">120</span>s</div>
+                    <div class="version-tag">alpha v1.01 build 3</div>
+                </div>
             </div>
             
             <div class="hud-bottom">
                 <div id="instructions">
-                    【滑鼠左鍵】: 射擊 | 【R 鍵】: 換彈匣 | 【右鍵 (AWM)】: 瞄準鏡<br>
+                    【滑鼠左鍵】: 射擊 | 【R 鍵】: 換彈夾 | 【右鍵 (AWM)】: 瞄準鏡 | 【P / ESC】: 暫停<br>
                     <span style="color:var(--accent); font-weight:bold;">別擊中亮橘色衣服的人質！滑鼠移入右側商店會暫停開槍。</span>
                 </div>
                 <div class="weapon-info">
@@ -377,7 +521,6 @@
         </div>
     </div>
 
-    <!-- 右側升級商店 -->
     <div id="shop-sidebar">
         <div class="shop-header">軍火庫升級商店</div>
         
@@ -387,7 +530,6 @@
 
         <div class="upgrade-section-title">基礎屬性升級</div>
 
-        <!-- 傷害升級 -->
         <div class="upgrade-card">
             <div class="upgrade-info">
                 <span class="upgrade-name">🔥 武器威力 (傷害)</span>
@@ -396,16 +538,14 @@
             <button class="upgrade-btn" id="btn-upgrade-dmg" onclick="buyUpgrade('dmg')">升級: $150</button>
         </div>
 
-        <!-- 射速升級 -->
         <div class="upgrade-card">
             <div class="upgrade-info">
                 <span class="upgrade-name">⚡ 射擊速度 (射速)</span>
-                <span class="upgrade-stats" id="firerate-stats">目前: Lv.1</span>
+                <span class="upgrade-stats" id="firerate-stats">目前: 400 發/分鐘</span>
             </div>
             <button class="upgrade-btn" id="btn-upgrade-firerate" onclick="buyUpgrade('firerate')">升級: $200</button>
         </div>
 
-        <!-- 彈匣容量升級 -->
         <div class="upgrade-card">
             <div class="upgrade-info">
                 <span class="upgrade-name">🔋 彈匣上限 (最高 60)</span>
@@ -416,7 +556,6 @@
 
         <div class="upgrade-section-title">購買新槍械</div>
 
-        <!-- AK-47 (預設解鎖) -->
         <div class="weapon-card active" id="wpn-AK47" onclick="selectWeapon('AK47')">
             <div class="weapon-details">
                 <div class="weapon-title">AK-47 突擊步槍</div>
@@ -425,7 +564,6 @@
             <span class="weapon-cost" style="color: var(--secondary)">裝備中</span>
         </div>
 
-        <!-- MP5 -->
         <div class="weapon-card" id="wpn-MP5" onclick="selectWeapon('MP5')">
             <div class="weapon-details">
                 <div class="weapon-title">MP5 輕型衝鋒槍</div>
@@ -434,7 +572,6 @@
             <span class="weapon-cost" id="cost-MP5">$500</span>
         </div>
 
-        <!-- M4A1 -->
         <div class="weapon-card" id="wpn-M4A1" onclick="selectWeapon('M4A1')">
             <div class="weapon-details">
                 <div class="weapon-title">M4A1 戰術步槍</div>
@@ -443,7 +580,6 @@
             <span class="weapon-cost" id="cost-M4A1">$1000</span>
         </div>
 
-        <!-- AWM -->
         <div class="weapon-card" id="wpn-AWM" onclick="selectWeapon('AWM')">
             <div class="weapon-details">
                 <div class="weapon-title">AWM 皇家狙擊槍</div>
@@ -461,44 +597,46 @@
     const crosshair = document.getElementById('crosshair');
     const gameArea = document.getElementById('game-area');
     const shopSidebar = document.getElementById('shop-sidebar');
+    const pauseOverlayDiv = document.getElementById('pause-overlay');
 
-    // 自適應螢幕大小
+    // 獲取安全初始尺寸，防止 initial layout 未渲染導致的 0 寬度問題
     function resizeCanvas() {
-        canvas.width = gameArea.clientWidth;
-        canvas.height = gameArea.clientHeight;
+        canvas.width = Math.max(600, gameArea.clientWidth || (window.innerWidth - 360));
+        canvas.height = Math.max(400, gameArea.clientHeight || window.innerHeight);
     }
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
 
     // 遊戲核心數據
-    let cash = 0; // 資金/分數
-    let timeLeft = 120; // 120 秒
+    let cash = 0; 
+    let timeLeft = 120; 
     let gameOver = false;
-    let isHoveringShop = false; // 判斷游標是否在商店區，防止誤觸開槍
+    let isPaused = false; 
+    let isHoveringShop = false; 
 
-    // 商店偵測防止射擊
+    let cameraShakeIntensity = 0;
+
     shopSidebar.addEventListener('mouseenter', () => { isHoveringShop = true; });
     shopSidebar.addEventListener('mouseleave', () => { isHoveringShop = false; });
 
-    // 升級屬性等級
     const upgrades = {
-        dmgLevel: 1,      // 傷害
-        firerateLevel: 1, // 射速
-        ammoLevel: 1      // 彈匣容量 (初始 AK47 = 30)
+        dmgLevel: 1,      
+        firerateLevel: 1, 
+        ammoLevel: 1      
     };
 
-    // 武器庫數據
     const WEAPONS = {
         AK47: {
             id: 'AK47',
             name: "AK-47 突擊步槍",
             baseMaxAmmo: 30,
             ammo: 30,
-            baseFireRate: 150, // 射擊間隔ms (Lv.1)
-            baseDamage: 20,    // 5 槍死初始設定 (敵人 HP = 100)
+            baseFireRate: 150, 
+            baseDamage: 20,    
             isAutomatic: true,
             recoil: 14,
-            color: "#b58b5c",
+            color: "#85582a",  
+            metalColor: "#27272a", 
             unlocked: true
         },
         MP5: {
@@ -506,11 +644,12 @@
             name: "MP5 輕型衝鋒槍",
             baseMaxAmmo: 35,
             ammo: 35,
-            baseFireRate: 90,  // 非常快
-            baseDamage: 12,    // 初始傷害低
+            baseFireRate: 90,  
+            baseDamage: 12,    
             isAutomatic: true,
             recoil: 8,
-            color: "#475569",
+            color: "#3f3f46",
+            metalColor: "#18181b",
             unlocked: false,
             unlockCost: 500
         },
@@ -519,11 +658,12 @@
             name: "M4A1 戰術步槍",
             baseMaxAmmo: 30,
             ammo: 30,
-            baseFireRate: 120,
+            baseFireRate: 120, 
             baseDamage: 25,
             isAutomatic: true,
             recoil: 10,
-            color: "#1e3a8a",
+            color: "#1e293b",
+            metalColor: "#0f172a",
             unlocked: false,
             unlockCost: 1000
         },
@@ -532,11 +672,12 @@
             name: "AWM 皇家狙擊槍",
             baseMaxAmmo: 5,
             ammo: 5,
-            baseFireRate: 1100,
-            baseDamage: 100, // 初始即可秒殺
+            baseFireRate: 1100, 
+            baseDamage: 100, 
             isAutomatic: false,
-            recoil: 35,
-            color: "#065f46",
+            recoil: 38,
+            color: "#14532d", 
+            metalColor: "#022c22",
             unlocked: false,
             unlockCost: 1500
         }
@@ -549,16 +690,14 @@
     let lastShotTime = 0;
     let isMouseDown = false;
 
-    // 計算升級後的動態數值
+    let visualMuzzleFlashTime = 0;
+    let visualMuzzleFlashX = 0;
+    let visualMuzzleFlashY = 0;
+
     function getActiveStats() {
-        // 傷害公式: 基礎傷害 + (等級-1) * 10
         const currentDamage = weapon.id === 'AWM' ? 100 : weapon.baseDamage + (upgrades.dmgLevel - 1) * 8;
-        
-        // 射速公式: 間隔時間減少 (最高減少至 50ms)
         const fireRateMultiplier = 1 - (upgrades.firerateLevel - 1) * 0.12;
         const currentFireRate = Math.max(50, Math.round(weapon.baseFireRate * fireRateMultiplier));
-        
-        // 子彈上限公式: 基礎 + (等級-1) * 5，最高至 60 發
         const calculatedMaxAmmo = weapon.id === 'AWM' ? 5 : weapon.baseMaxAmmo + (upgrades.ammoLevel - 1) * 5;
         const currentMaxAmmo = Math.min(60, calculatedMaxAmmo);
 
@@ -569,7 +708,6 @@
         };
     }
 
-    // 輔助：圓角矩形繪製
     function drawRoundRect(ctx, x, y, width, height, radius, fill, stroke) {
         if (typeof radius === 'number') {
             radius = {tl: radius, tr: radius, br: radius, bl: radius};
@@ -595,22 +733,30 @@
         }
     }
 
-    // Roblox 戰士敵人
     class Enemy {
         constructor() {
             this.respawn();
         }
 
         respawn() {
-            this.x = Math.random() * (canvas.width - 200) + 100;
-            this.y = Math.random() * (canvas.height - 350) + 150;
-            this.scale = Math.random() * 0.4 + 0.7; 
+            // 安全限制：避免畫布寬高未就緒時除以負數或 NaN
+            const safeW = Math.max(800, canvas.width);
+            const safeH = Math.max(600, canvas.height);
+            
+            this.x = Math.random() * (safeW - 240) + 120;
+            this.y = Math.random() * (safeH - 350) + 150;
+            this.scale = Math.random() * 0.35 + 0.75; 
             this.width = 60 * this.scale;
             this.height = 100 * this.scale;
             this.hp = 100;
             
+            this.faceType = ['smile', 'angry', 'shades', 'surprised'][Math.floor(Math.random() * 4)];
+            this.headwear = ['none', 'helmet', 'hair_punk', 'hair_blonde', 'cap', 'gas_mask'][Math.floor(Math.random() * 6)];
+            this.clothingPattern = ['solid', 'striped', 'armor'][Math.floor(Math.random() * 3)];
+            this.hairColor = ['#eab308', '#f43f5e', '#a855f7', '#3b82f6'][Math.floor(Math.random() * 4)];
+
             let hue = Math.random() * 360;
-            while (hue > 15 && hue < 45) { // 避開人質橘色
+            while (hue > 15 && hue < 45) { 
                 hue = Math.random() * 360;
             }
             this.color = `hsl(${hue}, 85%, 55%)`;
@@ -618,23 +764,42 @@
             this.vx = (Math.random() - 0.5) * 5;
             this.vy = (Math.random() - 0.5) * 2.5;
             this.walkTimer = Math.random() * 100;
+            this.hurtTime = 0;
         }
 
         update() {
             this.x += this.vx;
             this.y += this.vy;
 
-            // 碰撞牆壁
-            if (this.x - this.width/2 < 30 || this.x + this.width/2 > canvas.width - 30) this.vx *= -1;
-            if (this.y - this.height < 100 || this.y > canvas.height - 180) this.vy *= -1;
+            // 高階邊界限制物理 (Clamp & Bounce) 防止方塊人飛出可視螢幕鎖死
+            const minX = 40 + this.width / 2;
+            const maxX = canvas.width - 40 - this.width / 2;
+            if (this.x < minX) {
+                this.x = minX;
+                this.vx = Math.abs(this.vx);
+            } else if (this.x > maxX) {
+                this.x = maxX;
+                this.vx = -Math.abs(this.vx);
+            }
+
+            const minY = 120 + this.height;
+            const maxY = canvas.height - 180;
+            if (this.y < minY) {
+                this.y = minY;
+                this.vy = Math.abs(this.vy);
+            } else if (this.y > maxY) {
+                this.y = maxY;
+                this.vy = -Math.abs(this.vy);
+            }
 
             this.walkTimer += 0.2;
+            if (this.hurtTime > 0) this.hurtTime -= 0.1;
         }
 
         draw() {
             ctx.save();
             const x = this.x;
-            const y = this.y;
+            const y = this.y + Math.sin(this.hurtTime * Math.PI) * 12; 
             const s = this.scale;
             const swing = Math.sin(this.walkTimer) * 12;
 
@@ -646,11 +811,22 @@
 
             // 雙腿
             ctx.fillStyle = "#1e293b";
-            drawRoundRect(ctx, x - 18 * s, y - 25 * s + (swing > 0 ? -2 : 2) * s, 12 * s, 25 * s, 2 * s, "#1e293b");
-            drawRoundRect(ctx, x + 6 * s, y - 25 * s + (swing > 0 ? 2 : -2) * s, 12 * s, 25 * s, 2 * s, "#1e293b");
+            drawRoundRect(ctx, x - 18 * s, y - 25 * s + (swing > 0 ? -2 : 2) * s, 12 * s, 25 * s, 2 * s, "#111827");
+            drawRoundRect(ctx, x + 6 * s, y - 25 * s + (swing > 0 ? 2 : -2) * s, 12 * s, 25 * s, 2 * s, "#111827");
 
-            // 身體
+            // 身體 (Torso)
             drawRoundRect(ctx, x - 22 * s, y - 65 * s, 44 * s, 42 * s, 4 * s, this.color);
+
+            if (this.clothingPattern === 'striped') {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+                ctx.fillRect(x - 22 * s, y - 55 * s, 44 * s, 6 * s);
+                ctx.fillRect(x - 22 * s, y - 41 * s, 44 * s, 6 * s);
+            } else if (this.clothingPattern === 'armor') {
+                ctx.fillStyle = 'rgba(15, 23, 42, 0.5)';
+                drawRoundRect(ctx, x - 16 * s, y - 60 * s, 32 * s, 32 * s, 3 * s, 'rgba(15, 23, 42, 0.6)');
+                ctx.fillStyle = '#ff4757';
+                ctx.fillRect(x - 6 * s, y - 55 * s, 12 * s, 4 * s); 
+            }
 
             // 雙手
             ctx.save();
@@ -665,22 +841,72 @@
             drawRoundRect(ctx, -4 * s, 0, 10 * s, 32 * s, 2 * s, this.color);
             ctx.restore();
 
-            // 頭部
+            // 頭部與配件
             drawRoundRect(ctx, x - 13 * s, y - 92 * s, 26 * s, 24 * s, 4 * s, this.faceColor);
             
-            // 頭戴式耳機裝飾
-            ctx.fillStyle = "#111827";
-            ctx.fillRect(x - 15 * s, y - 94 * s, 30 * s, 6 * s);
-            ctx.fillRect(x - 15 * s, y - 88 * s, 5 * s, 12 * s);
-            ctx.fillRect(x + 10 * s, y - 88 * s, 5 * s, 12 * s);
+            if (this.headwear === 'helmet') {
+                ctx.fillStyle = "#334155";
+                drawRoundRect(ctx, x - 15 * s, y - 95 * s, 30 * s, 12 * s, {tl: 6, tr: 6, bl: 0, br: 0}, "#334155");
+                ctx.fillStyle = "#475569";
+                ctx.fillRect(x - 15 * s, y - 88 * s, 4 * s, 6 * s);
+                ctx.fillRect(x + 11 * s, y - 88 * s, 4 * s, 6 * s);
+            } else if (this.headwear === 'hair_punk') {
+                ctx.fillStyle = this.hairColor;
+                ctx.beginPath();
+                ctx.moveTo(x, y - 105 * s);
+                ctx.lineTo(x - 8 * s, y - 92 * s);
+                ctx.lineTo(x + 8 * s, y - 92 * s);
+                ctx.closePath();
+                ctx.fill();
+            } else if (this.headwear === 'hair_blonde') {
+                ctx.fillStyle = "#fbbf24";
+                ctx.fillRect(x - 15 * s, y - 94 * s, 30 * s, 8 * s);
+                ctx.fillRect(x - 15 * s, y - 88 * s, 5 * s, 16 * s);
+                ctx.fillRect(x + 10 * s, y - 88 * s, 5 * s, 16 * s);
+            } else if (this.headwear === 'cap') {
+                ctx.fillStyle = "#dc2626";
+                ctx.fillRect(x - 14 * s, y - 96 * s, 28 * s, 8 * s);
+                ctx.fillRect(x - 10 * s, y - 96 * s, 28 * s, 4 * s); 
+            } else if (this.headwear === 'gas_mask') {
+                ctx.fillStyle = "#1e293b";
+                drawRoundRect(ctx, x - 10 * s, y - 85 * s, 20 * s, 18 * s, 4 * s, "#1e293b");
+                ctx.fillStyle = "#0284c7";
+                ctx.fillRect(x - 7 * s, y - 81 * s, 5 * s, 5 * s);
+                ctx.fillRect(x + 2 * s, y - 81 * s, 5 * s, 5 * s);
+            }
 
-            // 面部表情
-            ctx.fillStyle = "#111";
-            ctx.fillRect(x - 7 * s, y - 82 * s, 3 * s, 4 * s);
-            ctx.fillRect(x + 4 * s, y - 82 * s, 3 * s, 4 * s);
-            ctx.fillRect(x - 4 * s, y - 74 * s, 8 * s, 2 * s);
+            if (this.headwear !== 'gas_mask') {
+                ctx.fillStyle = "#111";
+                if (this.faceType === 'angry') {
+                    ctx.strokeStyle = "#111";
+                    ctx.lineWidth = 2 * s;
+                    ctx.beginPath();
+                    ctx.moveTo(x - 10 * s, y - 86 * s); ctx.lineTo(x - 4 * s, y - 82 * s);
+                    ctx.moveTo(x + 10 * s, y - 86 * s); ctx.lineTo(x + 4 * s, y - 82 * s);
+                    ctx.stroke();
+                    ctx.fillRect(x - 8 * s, y - 81 * s, 3 * s, 3 * s);
+                    ctx.fillRect(x + 5 * s, y - 81 * s, 3 * s, 3 * s);
+                    ctx.fillRect(x - 5 * s, y - 73 * s, 10 * s, 2 * s);
+                } else if (this.faceType === 'shades') {
+                    ctx.fillRect(x - 11 * s, y - 85 * s, 10 * s, 6 * s);
+                    ctx.fillRect(x + 1 * s, y - 85 * s, 10 * s, 6 * s);
+                    ctx.fillRect(x - 1 * s, y - 83 * s, 3 * s, 2 * s);
+                    ctx.fillRect(x - 3 * s, y - 73 * s, 6 * s, 2 * s);
+                } else if (this.faceType === 'surprised') {
+                    ctx.fillRect(x - 7 * s, y - 82 * s, 3 * s, 4 * s);
+                    ctx.fillRect(x + 4 * s, y - 82 * s, 3 * s, 4 * s);
+                    ctx.beginPath();
+                    ctx.arc(x, y - 73 * s, 4 * s, 0, Math.PI * 2);
+                    ctx.fill();
+                } else { 
+                    ctx.fillRect(x - 7 * s, y - 82 * s, 3 * s, 3 * s);
+                    ctx.fillRect(x + 4 * s, y - 82 * s, 3 * s, 3 * s);
+                    ctx.beginPath();
+                    ctx.arc(x, y - 76 * s, 5 * s, 0, Math.PI);
+                    ctx.stroke();
+                }
+            }
 
-            // 血條
             ctx.fillStyle = 'rgba(0,0,0,0.6)';
             ctx.fillRect(x - 25, y - 110 * s, 50, 6);
             ctx.fillStyle = '#ff4757';
@@ -696,19 +922,21 @@
         }
     }
 
-    // 橘色衣服人質
     class Hostage {
         constructor() {
             this.respawn();
         }
 
         respawn() {
-            this.x = Math.random() * (canvas.width * 0.4) + (canvas.width * 0.3);
-            this.y = Math.random() * (canvas.height * 0.3) + (canvas.height * 0.45);
+            const safeW = Math.max(800, canvas.width);
+            const safeH = Math.max(600, canvas.height);
+
+            this.x = Math.random() * (safeW * 0.4) + (safeW * 0.3);
+            this.y = Math.random() * (safeH * 0.3) + (safeH * 0.45);
             this.scale = 0.95;
             this.width = 60 * this.scale;
             this.height = 100 * this.scale;
-            this.color = "#ff793f"; // 亮橘色
+            this.color = "#ff793f"; 
             this.faceColor = "#ffe0bd";
             this.vx = (Math.random() - 0.5) * 4;
             this.vy = (Math.random() - 0.5) * 1.5;
@@ -719,8 +947,26 @@
             this.x += this.vx;
             this.y += this.vy;
 
-            if (this.x - this.width/2 < canvas.width * 0.15 || this.x + this.width/2 > canvas.width * 0.85) this.vx *= -1;
-            if (this.y - this.height < canvas.height * 0.3 || this.y > canvas.height * 0.8) this.vy *= -1;
+            // 安全防線：防止人質脫離視野
+            const minX = canvas.width * 0.15 + this.width / 2;
+            const maxX = canvas.width * 0.85 - this.width / 2;
+            if (this.x < minX) {
+                this.x = minX;
+                this.vx = Math.abs(this.vx);
+            } else if (this.x > maxX) {
+                this.x = maxX;
+                this.vx = -Math.abs(this.vx);
+            }
+
+            const minY = canvas.height * 0.25 + this.height;
+            const maxY = canvas.height * 0.85;
+            if (this.y < minY) {
+                this.y = minY;
+                this.vy = Math.abs(this.vy);
+            } else if (this.y > maxY) {
+                this.y = maxY;
+                this.vy = -Math.abs(this.vy);
+            }
 
             this.walkTimer += 0.25;
         }
@@ -732,25 +978,20 @@
             const s = this.scale;
             const swing = Math.sin(this.walkTimer) * 14;
 
-            // 影子
             ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
             ctx.beginPath();
             ctx.ellipse(x, y, 25 * s, 8 * s, 0, 0, Math.PI * 2);
             ctx.fill();
 
-            // 雙腿 (灰條紋褲)
             ctx.fillStyle = "#2f3640";
             drawRoundRect(ctx, x - 18 * s, y - 25 * s + (swing > 0 ? -3 : 3) * s, 12 * s, 25 * s, 2 * s, "#2f3640");
             drawRoundRect(ctx, x + 6 * s, y - 25 * s + (swing > 0 ? 3 : -3) * s, 12 * s, 25 * s, 2 * s, "#2f3640");
 
-            // 身體
             drawRoundRect(ctx, x - 22 * s, y - 65 * s, 44 * s, 42 * s, 4 * s, this.color);
-            // 橫向黑條紋
             ctx.fillStyle = "#2f3640";
             ctx.fillRect(x - 22 * s, y - 57 * s, 44 * s, 6 * s);
             ctx.fillRect(x - 22 * s, y - 43 * s, 44 * s, 6 * s);
 
-            // 投降姿勢雙手 (舉高)
             ctx.save();
             ctx.translate(x - 28 * s, y - 60 * s);
             ctx.rotate(Math.PI + (swing * 0.08));
@@ -763,17 +1004,14 @@
             drawRoundRect(ctx, -4 * s, 0, 9 * s, 28 * s, 2 * s, this.color);
             ctx.restore();
 
-            // 頭部
             drawRoundRect(ctx, x - 13 * s, y - 92 * s, 26 * s, 24 * s, 4 * s, this.faceColor);
 
-            // 驚恐表情
-            ctx.fillStyle = "#111";
-            ctx.fillRect(x - 8 * s, y - 84 * s, 4 * s, 4 * s);
-            ctx.fillRect(x + 4 * s, y - 84 * s, 4 * s, 4 * s);
+            ctx.fillStyle = "#2d3748";
+            ctx.fillRect(x - 13 * s, y - 86 * s, 26 * s, 6 * s);
+
             ctx.fillStyle = "#c23616";
             drawRoundRect(ctx, x - 5 * s, y - 76 * s, 10 * s, 7 * s, 2 * s, "#c23616");
 
-            // 提示文字
             ctx.fillStyle = "#ffa500";
             ctx.font = `bold ${14 * s}px Arial`;
             ctx.textAlign = "center";
@@ -789,25 +1027,60 @@
         }
     }
 
-    // 初始化角色
     let enemies = [];
     for (let i = 0; i < 5; i++) {
         enemies.push(new Enemy());
     }
     let hostage = new Hostage();
 
-    // 粒子系統
+    // 粒子與煙火火花特效
     let particles = [];
     function createParticles(x, y, color) {
         for (let i = 0; i < 12; i++) {
             particles.push({
+                type: 'spark',
                 x: x,
                 y: y,
                 vx: (Math.random() - 0.5) * 8,
                 vy: (Math.random() - 0.5) * 8,
                 radius: Math.random() * 3 + 1.5,
                 alpha: 1,
+                decay: 0.04,
                 color: color
+            });
+        }
+    }
+
+    function createShellCasing(x, y) {
+        particles.push({
+            type: 'shell',
+            x: x,
+            y: y,
+            vx: Math.random() * 3 + 2, 
+            vy: -(Math.random() * 4 + 4), 
+            angle: Math.random() * Math.PI,
+            vAngle: (Math.random() - 0.5) * 0.3,
+            width: 10,
+            height: 4,
+            alpha: 1,
+            gravity: 0.4,
+            decay: 0.015,
+            color: '#eab308' 
+        });
+    }
+
+    function createMuzzleSmoke(x, y) {
+        for (let i = 0; i < 3; i++) {
+            particles.push({
+                type: 'smoke',
+                x: x + (Math.random() - 0.5) * 10,
+                y: y + (Math.random() - 0.5) * 10,
+                vx: (Math.random() - 0.3) * 1.5, 
+                vy: -(Math.random() * 1.5 + 1),
+                radius: Math.random() * 6 + 4,
+                alpha: 0.6,
+                decay: 0.02,
+                color: 'rgba(226, 232, 240, 0.5)'
             });
         }
     }
@@ -815,18 +1088,19 @@
     function createHeartParticles(x, y) {
         for (let i = 0; i < 8; i++) {
             particles.push({
+                type: 'spark',
                 x: x,
                 y: y,
                 vx: (Math.random() - 0.5) * 6,
                 vy: (Math.random() - 0.5) * 6,
                 radius: Math.random() * 5 + 3,
                 alpha: 1,
+                decay: 0.03,
                 color: '#ff4757'
             });
         }
     }
 
-    // 漂浮文字通知
     function showToast(text, x, y, color = '#ff4757') {
         const toast = document.createElement('div');
         toast.className = 'toast-notification';
@@ -840,17 +1114,49 @@
 
     let mouseX = canvas.width / 2;
     let mouseY = canvas.height / 2;
+    let prevMouseX = canvas.width / 2;
+    let prevMouseY = canvas.height / 2;
     let gunRecoilY = 0;
+    let weaponSwayX = 0;
+    let weaponSwayY = 0;
 
     gameArea.addEventListener('mousemove', (e) => {
         const rect = canvas.getBoundingClientRect();
         mouseX = e.clientX - rect.left;
         mouseY = e.clientY - rect.top;
+
+        const dx = mouseX - prevMouseX;
+        const dy = mouseY - prevMouseY;
+        weaponSwayX += dx * 0.15;
+        weaponSwayY += dy * 0.15;
+
+        prevMouseX = mouseX;
+        prevMouseY = mouseY;
     });
 
-    // 射擊邏輯
+    function togglePause() {
+        if (gameOver) return;
+        isPaused = !isPaused;
+        
+        if (isPaused) {
+            pauseOverlayDiv.classList.add('active');
+            isMouseDown = false; 
+            if (isScoped) {
+                isScoped = false;
+                scopeOverlay.style.display = 'none';
+                crosshair.style.display = 'block';
+            }
+        } else {
+            pauseOverlayDiv.classList.remove('active');
+        }
+    }
+
+    function restartGame() {
+        location.reload();
+    }
+
     function shoot() {
-        if (isReloading || isHoveringShop) return;
+        if (isReloading || isHoveringShop || isPaused) return;
         const now = Date.now();
         const stats = getActiveStats();
 
@@ -863,11 +1169,22 @@
         weapon.ammo--;
         lastShotTime = now;
         gunRecoilY = weapon.recoil;
+        cameraShakeIntensity = weapon.id === 'AWM' ? 12 : 5;
+
+        let gunX = canvas.width * 0.72 + (mouseX - canvas.width/2) * 0.08 + weaponSwayX;
+        let gunY = canvas.height * 0.88 + (mouseY - canvas.height/2) * 0.08 - gunRecoilY + weaponSwayY;
+        
+        visualMuzzleFlashTime = 3; 
+        visualMuzzleFlashX = gunX - Math.sin(-0.05) * 145; 
+        visualMuzzleFlashY = gunY - Math.cos(-0.05) * 145;
+
+        createShellCasing(gunX + 15, gunY - 30);
+        createMuzzleSmoke(visualMuzzleFlashX, visualMuzzleFlashY);
+
         updateUI();
 
         let hitAnything = false;
 
-        // 1. 判定人質
         if (hostage.checkHit(mouseX, mouseY)) {
             cash = Math.max(0, cash - 200);
             createHeartParticles(mouseX, mouseY);
@@ -876,12 +1193,12 @@
             hostage.respawn();
         }
 
-        // 2. 判定敵人
         if (!hitAnything) {
             for (let i = enemies.length - 1; i >= 0; i--) {
                 let e = enemies[i];
                 if (e.checkHit(mouseX, mouseY)) {
                     e.hp -= stats.damage;
+                    e.hurtTime = 1.0; 
                     createParticles(mouseX, mouseY, e.color);
                     hitAnything = true;
 
@@ -897,35 +1214,44 @@
         }
 
         if (!hitAnything) {
-            createParticles(mouseX, mouseY, '#ffffff'); // 擊中牆面小火花
+            createParticles(mouseX, mouseY, '#ffffff'); 
         }
     }
 
-    // 換彈
     function reload() {
         const stats = getActiveStats();
-        if (isReloading || weapon.ammo === stats.maxAmmo) return;
+        if (isReloading || weapon.ammo === stats.maxAmmo || isPaused) return;
         isReloading = true;
         document.getElementById('weapon-name').innerText = "RELOADING...";
         
         setTimeout(() => {
-            const s = getActiveStats();
-            weapon.ammo = s.maxAmmo;
-            isReloading = false;
-            updateUI();
+            if (isPaused) {
+                const checkPauseAndFinish = setInterval(() => {
+                    if (!isPaused) {
+                        const s = getActiveStats();
+                        weapon.ammo = s.maxAmmo;
+                        isReloading = false;
+                        updateUI();
+                        clearInterval(checkPauseAndFinish);
+                    }
+                }, 100);
+            } else {
+                const s = getActiveStats();
+                weapon.ammo = s.maxAmmo;
+                isReloading = false;
+                updateUI();
+            }
         }, weapon.id === 'AWM' ? 1800 : 1100);
     }
 
-    // 切換裝備武器
     function selectWeapon(key) {
+        if (isPaused) return; 
         const targetWeapon = WEAPONS[key];
         
-        // 檢查是否需購買
         if (!targetWeapon.unlocked) {
             if (cash >= targetWeapon.unlockCost) {
                 cash -= targetWeapon.unlockCost;
                 targetWeapon.unlocked = true;
-                // 更新按鈕UI
                 const costSpan = document.getElementById(`cost-${key}`);
                 if (costSpan) {
                     costSpan.innerText = "已擁有";
@@ -942,25 +1268,21 @@
         weapon = WEAPONS[key];
         isReloading = false;
         
-        // AWM 特殊鏡頭切換
         if (key !== 'AWM') {
             isScoped = false;
             scopeOverlay.style.display = 'none';
             crosshair.style.display = 'block';
         }
 
-        // 重新同步卡片外觀
         document.querySelectorAll('.weapon-card').forEach(card => card.classList.remove('active'));
         document.getElementById(`wpn-${key}`).classList.add('active');
 
-        // 自動重填子彈
         weapon.ammo = getActiveStats().maxAmmo;
-
         updateUI();
     }
 
-    // 升級按鈕邏輯
     function buyUpgrade(type) {
+        if (isPaused) return; 
         if (type === 'dmg') {
             const cost = upgrades.dmgLevel * 150;
             if (cash >= cost) {
@@ -994,33 +1316,27 @@
         updateUI();
     }
 
-    // 更新所有的 UI 元素
     function updateUI() {
         const stats = getActiveStats();
 
-        // 資金
         document.getElementById('score').innerText = cash;
         document.getElementById('shop-cash').innerText = cash;
 
-        // 子彈
         document.getElementById('current-ammo').innerText = weapon.ammo;
         document.getElementById('max-ammo').innerText = stats.maxAmmo;
         if (!isReloading) {
             document.getElementById('weapon-name').innerText = weapon.name;
         }
 
-        // 商店升級按鈕
-        // 1. 傷害
         const nextDmgCost = upgrades.dmgLevel * 150;
         document.getElementById('dmg-stats').innerText = `目前: ${stats.damage} HP`;
         document.getElementById('btn-upgrade-dmg').innerText = `升級: $${nextDmgCost}`;
 
-        // 2. 射速
+        const currentRPM = Math.round(60000 / stats.fireRate);
         const nextFireCost = upgrades.firerateLevel * 200;
-        document.getElementById('firerate-stats').innerText = `間隔: ${stats.fireRate}ms`;
+        document.getElementById('firerate-stats').innerText = `目前: ${currentRPM} 發/分鐘`;
         document.getElementById('btn-upgrade-firerate').innerText = `升級: $${nextFireCost}`;
 
-        // 3. 子彈上限
         const nextAmmoCost = upgrades.ammoLevel * 100;
         const reachedMaxAmmo = stats.maxAmmo >= 60;
         document.getElementById('ammo-stats').innerText = reachedMaxAmmo ? `目前: 60 發 (MAX)` : `目前: ${stats.maxAmmo} 發`;
@@ -1028,13 +1344,13 @@
         document.getElementById('btn-upgrade-ammo').disabled = reachedMaxAmmo;
     }
 
-    // 滑鼠事件監聽
+    // 輸入監聽模組
     gameArea.addEventListener('mousedown', (e) => {
-        if (gameOver || isHoveringShop) return;
-        if (e.button === 0) { // 左鍵射擊
+        if (gameOver || isHoveringShop || isPaused) return;
+        if (e.button === 0) { 
             isMouseDown = true;
             shoot();
-        } else if (e.button === 2 && currentWeaponKey === 'AWM') { // 右鍵開鏡
+        } else if (e.button === 2 && currentWeaponKey === 'AWM') { 
             isScoped = !isScoped;
             scopeOverlay.style.display = isScoped ? 'block' : 'none';
             crosshair.style.display = isScoped ? 'none' : 'block';
@@ -1047,20 +1363,21 @@
 
     gameArea.addEventListener('contextmenu', e => e.preventDefault());
 
-    // 按鍵監聽
     window.addEventListener('keydown', (e) => {
         if (e.key === 'r' || e.key === 'R') reload();
+        if (e.key === 'p' || e.key === 'P' || e.key === 'Escape') {
+            togglePause();
+        }
     });
 
-    // 步槍/衝鋒槍自動連發
     setInterval(() => {
-        if (isMouseDown && weapon.isAutomatic && !gameOver && !isHoveringShop) {
+        if (isMouseDown && weapon.isAutomatic && !gameOver && !isHoveringShop && !isPaused) {
             shoot();
         }
     }, 30);
 
-    // 遊戲時間倒數
     const timerInterval = setInterval(() => {
+        if (gameOver || isPaused) return; 
         if (timeLeft > 0) {
             timeLeft--;
             document.getElementById('time-left').innerText = timeLeft;
@@ -1070,97 +1387,7 @@
         }
     }, 1000);
 
-    // 主循環渲染
     function gameLoop() {
-        ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        if (gunRecoilY > 0) gunRecoilY -= 2;
-
-        // 渲染透視感地平線
-        ctx.strokeStyle = 'rgba(255,255,255,0.05)';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < canvas.width; i += 100) {
-            ctx.beginPath();
-            ctx.moveTo(i, canvas.height * 0.65);
-            ctx.lineTo(i, canvas.height);
-            ctx.stroke();
-        }
-        ctx.strokeStyle = 'rgba(255,255,255,0.15)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height * 0.65);
-        ctx.lineTo(canvas.width, canvas.height * 0.65);
-        ctx.stroke();
-
-        // 繪製人質
-        hostage.update();
-        hostage.draw();
-
-        // 繪製敵人
-        enemies.forEach(e => {
-            e.update();
-            e.draw();
-        });
-
-        // 繪製粒子特效
-        for (let i = particles.length - 1; i >= 0; i--) {
-            let p = particles[i];
-            p.x += p.vx;
-            p.y += p.vy;
-            p.alpha -= 0.04;
-            if (p.alpha <= 0) {
-                particles.splice(i, 1);
-            } else {
-                ctx.save();
-                ctx.globalAlpha = p.alpha;
-                ctx.fillStyle = p.color;
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            }
-        }
-
-        // 繪製玩家手上武器 (未開鏡狀態)
-        if (!isScoped) {
-            ctx.save();
-            let gunX = canvas.width * 0.72 + (mouseX - canvas.width/2) * 0.08;
-            let gunY = canvas.height * 0.88 + (mouseY - canvas.height/2) * 0.08 - gunRecoilY;
-            
-            ctx.translate(gunX, gunY);
-            ctx.rotate(-0.05 - (gunRecoilY * 0.008));
-
-            // 武器本體陰影
-            ctx.fillStyle = 'rgba(0,0,0,0.3)';
-            ctx.fillRect(-23, -25, 56, 130);
-
-            // 槍身
-            ctx.fillStyle = weapon.color;
-            ctx.fillRect(-20, -30, 50, 120); 
-
-            // 槍管
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(-8, -130, 20, 110); 
-            ctx.fillStyle = '#0f172a';
-            ctx.fillRect(-5, -145, 14, 15);
-
-            // 彈匣款式區分
-            ctx.fillStyle = currentWeaponKey === 'AK47' || currentWeaponKey === 'M4A1' ? '#8a5a36' : '#27272a';
-            ctx.beginPath();
-            ctx.arc(22, 25, 32, Math.PI * 1.5, Math.PI * 2.0);
-            ctx.lineWidth = 14;
-            ctx.strokeStyle = ctx.fillStyle;
-            ctx.stroke();
-
-            // 握把
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(-15, 60, 20, 40);
-
-            ctx.restore();
-        }
-
-        // 戰績結束畫面
         if (gameOver) {
             ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
@@ -1177,10 +1404,200 @@
             return;
         }
 
+        if (!isPaused) {
+            if (gunRecoilY > 0) gunRecoilY -= 2;
+            
+            weaponSwayX *= 0.88;
+            weaponSwayY *= 0.88;
+
+            hostage.update();
+            enemies.forEach(e => e.update());
+
+            if (cameraShakeIntensity > 0) {
+                cameraShakeIntensity *= 0.85;
+                if (cameraShakeIntensity < 0.2) cameraShakeIntensity = 0;
+            }
+        }
+
+        ctx.save();
+        if (cameraShakeIntensity > 0) {
+            const shakeX = (Math.random() - 0.5) * cameraShakeIntensity;
+            const shakeY = (Math.random() - 0.5) * cameraShakeIntensity;
+            ctx.translate(shakeX, shakeY);
+        }
+
+        if (isPaused) {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        } else {
+            ctx.fillStyle = 'rgba(9, 13, 22, 0.4)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // 3D 空間網格
+        ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width; i += 100) {
+            ctx.beginPath();
+            ctx.moveTo(i, canvas.height * 0.65);
+            ctx.lineTo(i, canvas.height);
+            ctx.stroke();
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height * 0.65);
+        ctx.lineTo(canvas.width, canvas.height * 0.65);
+        ctx.stroke();
+
+        hostage.draw();
+        enemies.forEach(e => e.draw());
+
+        for (let i = particles.length - 1; i >= 0; i--) {
+            let p = particles[i];
+            if (!isPaused) {
+                if (p.type === 'shell') { 
+                    p.vy += p.gravity;
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.angle += p.vAngle;
+                    p.alpha -= p.decay;
+                } else { 
+                    p.x += p.vx;
+                    p.y += p.vy;
+                    p.alpha -= p.decay;
+                }
+            }
+
+            if (p.alpha <= 0) {
+                particles.splice(i, 1);
+            } else {
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+
+                if (p.type === 'shell') { 
+                    ctx.translate(p.x, p.y);
+                    ctx.rotate(p.angle);
+                    ctx.fillRect(-p.width/2, -p.height/2, p.width, p.height);
+                    ctx.fillStyle = '#b45309'; 
+                    ctx.fillRect(p.width/2 - 2, -p.height/2, 2, p.height);
+                } else if (p.type === 'smoke') { 
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                } else { 
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+            }
+        }
+
+        if (!isScoped) {
+            ctx.save();
+            let gunX = canvas.width * 0.72 + (mouseX - canvas.width/2) * 0.08 + weaponSwayX;
+            let gunY = canvas.height * 0.88 + (mouseY - canvas.height/2) * 0.08 - gunRecoilY + weaponSwayY;
+            
+            ctx.translate(gunX, gunY);
+            ctx.rotate(-0.05 - (gunRecoilY * 0.008));
+
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(-23, -25, 54, 135);
+
+            ctx.fillStyle = weapon.metalColor;
+            ctx.fillRect(-22, -35, 48, 120); 
+            ctx.fillStyle = weapon.color;
+            ctx.fillRect(-20, -30, 44, 110); 
+
+            ctx.fillStyle = "#18181b";
+            ctx.fillRect(-22, -43, 40, 8);
+            for (let i = -18; i < 15; i += 6) {
+                ctx.fillRect(i, -45, 3, 3); 
+            }
+
+            if (weapon.id === 'AWM') {
+                ctx.fillStyle = weapon.metalColor;
+                ctx.fillRect(-15, -60, 6, 17); 
+                ctx.fillRect(10, -60, 6, 17);  
+                ctx.fillStyle = "#27272a";
+                ctx.fillRect(-22, -72, 42, 14); 
+                ctx.fillStyle = "#0284c7";      
+                ctx.fillRect(-22, -70, 3, 10);
+            } else if (weapon.id === 'M4A1') {
+                ctx.fillStyle = "#18181b";
+                ctx.fillRect(-8, -60, 20, 17);
+                ctx.strokeStyle = "rgba(255, 71, 87, 0.8)";
+                ctx.lineWidth = 1;
+                ctx.strokeRect(-5, -57, 14, 12); 
+            }
+
+            ctx.fillStyle = weapon.metalColor;
+            ctx.fillRect(-8, -135, 18, 110); 
+            ctx.fillStyle = "#111827";
+            ctx.fillRect(-5, -150, 12, 15);  
+
+            ctx.fillStyle = "#18181b";
+            if (weapon.id === 'AK47') {
+                ctx.beginPath();
+                ctx.arc(26, 28, 38, Math.PI * 1.5, Math.PI * 1.95);
+                ctx.lineWidth = 14;
+                ctx.strokeStyle = "#52525b";
+                ctx.stroke();
+            } else if (weapon.id === 'MP5') {
+                ctx.fillStyle = "#3f3f46";
+                ctx.fillRect(14, 20, 10, 50);
+            } else if (weapon.id === 'M4A1') {
+                ctx.fillStyle = "#27272a";
+                ctx.fillRect(14, 20, 12, 45);
+            }
+
+            ctx.fillStyle = weapon.color;
+            ctx.fillRect(-20, 85, 34, 45); 
+            ctx.fillStyle = weapon.metalColor;
+            ctx.fillRect(-18, 130, 26, 12); 
+
+            ctx.strokeStyle = "#18181b";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(-6, 20, 12, 18); 
+            ctx.fillStyle = "#18181b";
+            ctx.fillRect(-2, 26, 3, 8);     
+
+            ctx.fillStyle = "#18181b";
+            ctx.fillRect(-15, 55, 18, 35);
+
+            ctx.restore();
+        }
+
+        if (visualMuzzleFlashTime > 0 && !isScoped) {
+            visualMuzzleFlashTime--;
+            ctx.save();
+            ctx.translate(visualMuzzleFlashX, visualMuzzleFlashY);
+            ctx.rotate(Math.random() * Math.PI);
+            ctx.fillStyle = 'rgba(251, 191, 36, 0.95)'; 
+            ctx.beginPath();
+            ctx.arc(0, 0, 15, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.8)'; 
+            ctx.beginPath();
+            for (let j = 0; j < 6; j++) {
+                const angle = (j * Math.PI) / 3;
+                const len = Math.random() * 25 + 15;
+                ctx.lineTo(Math.cos(angle) * len, Math.sin(angle) * len);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+        }
+
+        ctx.restore(); 
+
         requestAnimationFrame(gameLoop);
     }
 
-    // 開始遊戲
+    // 啟動遊戲
     updateUI();
     gameLoop();
 </script>
