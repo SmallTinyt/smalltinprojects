@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>中獎概率倍兒高模擬器</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <style>
+        /* 動畫樣式 */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in-down {
+            animation: fadeInDown 0.3s ease-out forwards;
+        }
+        @keyframes bounceIn {
+            0% { opacity: 0; transform: scale(0.8); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        .animate-bounce-in {
+            animation: bounceIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+
+        /* 平面 3D 轉盤特製樣式 */
+        .wheel-perspective {
+            perspective: 1000px; /* 設定 3D 透視深度 */
+        }
+        .wheel-3d-tilt {
+            transform-style: preserve-3d;
+            transform: rotateX(35deg); /* 將整個轉盤向後傾斜，產生平面 3D 感 */
+        }
+        .wheel-body {
+            /* 利用多層陰影製造轉盤的「厚度」和立體陰影 */
+            box-shadow: 
+                0 12px 0 #334155, /* 轉盤側邊厚度 */
+                0 20px 40px rgba(0,0,0,0.8), /* 底部大陰影 */
+                inset 0 4px 15px rgba(0,0,0,0.6); /* 內部邊緣陰影 */
+        }
+        .pointer-3d {
+            /* 手指浮在半空的立體感 */
+            transform: translateZ(80px) translateY(-10px); 
+            filter: drop-shadow(0 20px 15px rgba(0,0,0,0.7));
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-900 text-slate-100 font-sans p-4 md:p-8 overflow-x-hidden">
+    <!-- 頂部資訊列 -->
+    <div class="max-w-6xl mx-auto flex justify-between items-center bg-slate-800 p-4 rounded-xl shadow-lg border border-slate-700 mb-6">
+        <div class="flex items-center gap-3">
+            <i data-lucide="trophy" class="text-yellow-400 w-8 h-8"></i>
+            <div>
+                <div class="text-sm text-slate-400">當前餘額 (目標: $1,000,000)</div>
+                <div id="balance-display" class="text-2xl md:text-3xl font-bold text-yellow-400 tracking-wider">
+                    $0
+                </div>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 bg-slate-900 px-4 py-2 rounded-lg border border-slate-700">
+            <i data-lucide="clock" class="text-cyan-400 w-5 h-5"></i>
+            <span id="time-display" class="text-xl font-mono text-cyan-400">00:00</span>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- 左側/主要抽獎區 -->
+        <div class="lg:col-span-2 space-y-6 flex flex-col items-center">
+            <!-- 抽獎主面板 -->
+            <div class="w-full bg-gradient-to-br from-slate-800 to-slate-900 p-8 rounded-2xl shadow-2xl border border-slate-700 text-center relative flex flex-col items-center overflow-hidden">
+                <!-- 標題與諷刺語 -->
+                <h1 class="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-red-500 mb-2">
+                    中獎概率倍兒高！獎品也倍兒好！
+                </h1>
+                <p class="text-slate-400 mb-4">※ 初始真實中獎率: 15% (童叟無欺)</p>
+
+                <!-- Buff 狀態指示器 -->
+                <div id="buff-indicator-container" class="transition-all duration-300 h-16 flex items-center justify-center mb-4 opacity-0 scale-95">
+                    <div id="buff-indicator" class="bg-yellow-500/20 border border-yellow-500 text-yellow-300 px-6 py-2 rounded-full flex items-center gap-2 animate-pulse font-bold text-lg">
+                        <!-- 動態插入內容 -->
+                    </div>
+                </div>
+
+                <!-- 大轉盤區域 (平面 3D 結構) -->
+                <div class="relative w-64 h-64 md:w-80 md:h-80 mb-12 flex items-center justify-center wheel-perspective">
+                    
+                    <!-- 3D 傾斜容器 -->
+                    <div class="w-full h-full wheel-3d-tilt relative flex justify-center items-center">
+                        
+                        <!-- 轉盤本體 (固定不動) -->
+                        <div id="wheel" 
+                            class="absolute w-full h-full rounded-full border-[8px] border-slate-600 overflow-hidden wheel-body">
+                            
+                            <!-- 現金區 (約 10% 視覺) -->
+                            <div class="absolute top-0 right-0 w-1/2 h-1/2 bg-red-500 origin-bottom-left flex items-center justify-center text-white font-bold"
+                                style="transform: rotate(0deg) skewY(-30deg)">
+                                <span class="transform -skewY(-30deg) rotate(15deg) ml-8 mb-8 text-2xl">💰</span>
+                            </div>
+                            
+                            <!-- 幸運區 (約 5% 視覺) -->
+                            <div class="absolute top-0 right-0 w-1/2 h-1/2 bg-yellow-400 origin-bottom-left flex items-center justify-center text-slate-900 font-bold"
+                                style="transform: rotate(60deg) skewY(-60deg)">
+                                <span class="transform -skewY(-60deg) rotate(15deg) ml-10 mb-6 text-2xl">✨</span>
+                            </div>
+                            
+                            <!-- 未中獎區 (約 85% 視覺) -->
+                            <div class="absolute top-0 right-0 w-full h-full bg-slate-700 rounded-full"
+                                style="clip-path: polygon(50% 50%, 100% 100%, 0% 100%, 0% 0%, 50% 0%)">
+                                <div class="absolute bottom-10 left-1/4 text-slate-400 font-bold transform -rotate-45">謝謝惠顧</div>
+                                <div class="absolute bottom-1/4 left-10 text-slate-400 font-bold transform -rotate-90">下次再來</div>
+                                <div class="absolute top-1/4 left-10 text-slate-400 font-bold transform rotate-45">墊刀成功</div>
+                            </div>
+                            
+                            <!-- 覆蓋中心點 -->
+                            <div class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-14 h-14 bg-slate-800 rounded-full border-4 border-slate-500 z-10 flex items-center justify-center shadow-[0_5px_15px_rgba(0,0,0,0.8)]">
+                                <i data-lucide="sparkles" class="w-6 h-6 text-yellow-400"></i>
+                            </div>
+                        </div>
+
+                        <!-- 指針 (手指) 容器 - 負責旋轉 -->
+                        <div id="pointer-container" class="absolute w-full h-full z-20 pointer-events-none transition-transform ease-[cubic-bezier(0.25,0.1,0.25,1)]"
+                             style="transform: rotate(0deg); transition-duration: 2s; transform-style: preserve-3d;">
+                            <div class="absolute -top-12 left-1/2 transform -translate-x-1/2 pointer-3d flex flex-col items-center">
+                                <span class="text-7xl select-none" style="text-shadow: 0 5px 10px rgba(255,255,255,0.3);">👇</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 抽獎按鈕 -->
+                <button id="draw-btn" onclick="handleDraw()" class="relative group mt-4 px-12 py-6 rounded-full font-black text-3xl transition-all duration-100 hover:scale-105 active:scale-95 bg-gradient-to-b from-yellow-400 to-amber-600 text-slate-900 shadow-[0_0_40px_rgba(251,191,36,0.4)] hover:shadow-[0_0_60px_rgba(251,191,36,0.6)]">
+                    <div class="flex items-center gap-3">
+                        <i data-lucide="hand" class="w-8 h-8"></i>
+                        <span id="draw-btn-text">立即抽獎</span>
+                    </div>
+                </button>
+                <p id="draw-btn-subtitle" class="mt-4 text-sm text-slate-500">
+                    點擊上方按鈕轉動指針！
+                </p>
+            </div>
+
+            <!-- 訊息歷史區 -->
+            <div class="w-full bg-slate-800 rounded-xl p-6 border border-slate-700 h-64 overflow-y-auto shadow-inner">
+                <h3 class="text-slate-400 mb-4 font-bold flex items-center gap-2">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> 抽獎紀錄
+                </h3>
+                <div id="messages-list" class="space-y-3">
+                    <!-- 訊息會插入這裡 -->
+                </div>
+                <div id="no-messages" class="text-center text-slate-500 mt-10">尚無抽獎紀錄</div>
+            </div>
+        </div>
+
+        <!-- 右側：升級面板 -->
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl p-6 shadow-xl flex flex-col">
+            <div class="flex items-center gap-2 mb-6 pb-4 border-b border-slate-700">
+                <i data-lucide="trending-up" class="w-6 h-6 text-purple-400"></i>
+                <h2 class="text-xl font-bold text-white">獎池暗箱操作面板</h2>
+            </div>
+            
+            <p class="text-slate-400 text-sm mb-6">
+                只要有錢，就能「隨機」把獎池裡的好東西改得更好。這就是為什麼獎品會倍兒好！
+            </p>
+
+            <div class="space-y-4 mb-8 flex-grow">
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
+                    <span class="text-slate-300">現金大獎金額</span>
+                    <span id="money-prize-display" class="text-emerald-400 font-bold text-lg"></span>
+                </div>
+                
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
+                    <span class="text-slate-300">幸運 Buff 增幅</span>
+                    <span id="luck-boost-display" class="text-yellow-400 font-bold text-lg"></span>
+                </div>
+                
+                <div class="bg-slate-900 p-4 rounded-xl border border-slate-700 flex justify-between items-center">
+                    <span class="text-slate-300">幸運 Buff 時間</span>
+                    <span id="luck-duration-display" class="text-cyan-400 font-bold text-lg"></span>
+                </div>
+            </div>
+
+            <button id="upgrade-btn" onclick="handleUpgrade()" class="w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors bg-slate-700 text-slate-500 cursor-not-allowed" disabled>
+                <i data-lucide="trending-up" class="w-5 h-5"></i>
+                <span id="upgrade-btn-text"></span>
+            </button>
+            <p id="upgrade-warning" class="text-center text-rose-400 text-sm mt-2">餘額不足以升級</p>
+        </div>
+    </div>
+
+    <!-- 獲勝彈出視窗 -->
+    <div id="win-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm items-center justify-center p-4">
+        <div class="bg-slate-800 border-2 border-yellow-500 p-8 md:p-12 rounded-3xl max-w-lg w-full text-center shadow-[0_0_100px_rgba(234,179,8,0.2)] animate-bounce-in">
+            <i data-lucide="trophy" class="w-24 h-24 text-yellow-400 mx-auto mb-6"></i>
+            <h2 class="text-4xl font-black text-yellow-400 mb-4">暴富達成！</h2>
+            <p class="text-xl text-slate-300 mb-6">
+                你成功利用「鈔能力」升級獎池，賺到了 $1,000,000！
+            </p>
+            <div class="bg-slate-900 rounded-xl p-6 mb-8 text-left">
+                <div class="flex justify-between mb-2">
+                    <span class="text-slate-400">總花費時間:</span>
+                    <span id="win-time" class="text-cyan-400 font-mono font-bold text-xl"></span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">最終單次大獎:</span>
+                    <span id="win-money" class="text-emerald-400 font-bold text-xl"></span>
+                </div>
+            </div>
+            <button onclick="window.location.reload()" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 font-black text-xl py-4 px-8 rounded-full w-full transition-transform active:scale-95">
+                再來一局
+            </button>
+        </div>
+    </div>
+
+    <!-- 遊戲邏輯腳本 -->
+    <script>
+        // 初始化 Icons
+        lucide.createIcons();
+
+        // 載入音效檔案
+        const sound1 = new Audio('sound1.mp3');
+        const sound2 = new Audio('sound2.mp3');
+        sound1.loop = true; // 抽獎時的旋轉音效設定為循環播放
+
+        // 遊戲狀態
+        const state = {
+            balance: 0,
+            timeElapsed: 0,
+            isGameStarted: false,
+            hasWon: false,
+            moneyPrize: 100,
+            luckDuration: 5,
+            luckBoost: 35,
+            upgradeCost: 300,
+            activeLuckTime: 0,
+            messages: [],
+            isDrawing: false,
+            pointerRotation: 0
+        };
+
+        const WIN_GOAL = 1000000;
+
+        const missQuotes = [
+            "哎呀，就差一點點！",
+            "再來一次，概率倍兒高！",
+            "獎品倍兒好，值得再抽！",
+            "這波是墊刀，下波必中！",
+            "系統運算中... 完美避開大獎！",
+            "不要灰心，這只是大獎前的考驗！",
+            "哎呀，手指滑了！"
+        ];
+
+        // 格式化工具
+        function formatTime(seconds) {
+            const m = Math.floor(seconds / 60).toString().padStart(2, '0');
+            const s = (seconds % 60).toString().padStart(2, '0');
+            return `${m}:${s}`;
+        }
+
+        function formatMoney(amount) {
+            return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(amount);
+        }
+
+        // 計時器邏輯
+        let timer = null;
+        function startTimer() {
+            if (timer) return;
+            timer = setInterval(() => {
+                if (state.hasWon) {
+                    clearInterval(timer);
+                    return;
+                }
+                state.timeElapsed++;
+                if (state.activeLuckTime > 0) {
+                    state.activeLuckTime--;
+                }
+                updateUI();
+            }, 1000);
+        }
+
+        // 新增訊息
+        function addMessage(text, type) {
+            const id = Date.now() + Math.random();
+            state.messages.unshift({ id, text, type });
+            if (state.messages.length > 5) {
+                state.messages.pop();
+            }
+            renderMessages();
+        }
+
+        // 渲染訊息列表
+        function renderMessages() {
+            const list = document.getElementById('messages-list');
+            const noMsg = document.getElementById('no-messages');
+
+            if (state.messages.length === 0) {
+                noMsg.classList.remove('hidden');
+                list.innerHTML = '';
+            } else {
+                noMsg.classList.add('hidden');
+                list.innerHTML = state.messages.map(msg => {
+                    let iconName, bgColor;
+                    if (msg.type === 'money') {
+                        iconName = 'coins'; bgColor = 'bg-emerald-900/40 border-emerald-500/30 text-emerald-300';
+                    } else if (msg.type === 'luck') {
+                        iconName = 'zap'; bgColor = 'bg-yellow-900/40 border-yellow-500/30 text-yellow-300';
+                    } else if (msg.type === 'upgrade') {
+                        iconName = 'trending-up'; bgColor = 'bg-purple-900/40 border-purple-500/30 text-purple-300';
+                    } else {
+                        iconName = 'frown'; bgColor = 'bg-slate-900/50 border-slate-700/50 text-slate-400';
+                    }
+                    
+                    return `
+                        <div class="p-3 rounded-lg flex items-start gap-3 animate-fade-in-down border ${bgColor}">
+                            <i data-lucide="${iconName}" class="w-5 h-5 mt-0.5 shrink-0 ${msg.type === 'miss' ? 'opacity-50' : ''}"></i>
+                            <span class="font-medium">${msg.text}</span>
+                        </div>
+                    `;
+                }).join('');
+                // 重新渲染新插入的 icons
+                lucide.createIcons({ root: list });
+            }
+        }
+
+        // 更新介面
+        function updateUI() {
+            // 頂部資訊
+            document.getElementById('balance-display').textContent = formatMoney(state.balance);
+            document.getElementById('time-display').textContent = formatTime(state.timeElapsed);
+
+            // Buff 指示器
+            const buffContainer = document.getElementById('buff-indicator-container');
+            const buffIndicator = document.getElementById('buff-indicator');
+            const displayWinRate = Math.min(100, 15 + (state.activeLuckTime > 0 ? state.luckBoost : 0));
+            
+            if (state.activeLuckTime > 0) {
+                buffContainer.classList.remove('opacity-0', 'scale-95');
+                buffContainer.classList.add('opacity-100', 'scale-100');
+                buffIndicator.innerHTML = `
+                    <i data-lucide="zap" class="w-5 h-5"></i>
+                    歐氣爆發中！中獎率升至 ${displayWinRate}%！(剩餘 ${state.activeLuckTime} 秒)
+                `;
+                lucide.createIcons({ root: buffIndicator });
+            } else {
+                buffContainer.classList.add('opacity-0', 'scale-95');
+                buffContainer.classList.remove('opacity-100', 'scale-100');
+            }
+
+            // 按鈕狀態
+            const drawBtn = document.getElementById('draw-btn');
+            const drawBtnText = document.getElementById('draw-btn-text');
+            const drawBtnSubtitle = document.getElementById('draw-btn-subtitle');
+
+            if (state.hasWon) {
+                drawBtn.disabled = true;
+                drawBtn.className = "relative group mt-4 px-12 py-6 rounded-full font-black text-3xl transition-all duration-100 bg-slate-600 text-slate-400 cursor-not-allowed";
+            } else if (state.isDrawing) {
+                drawBtn.disabled = true;
+                drawBtn.className = "relative group mt-4 px-12 py-6 rounded-full font-black text-3xl transition-all duration-100 scale-95 opacity-80 cursor-wait bg-gradient-to-b from-yellow-400 to-amber-600 text-slate-900 shadow-[0_0_40px_rgba(251,191,36,0.4)]";
+                drawBtnText.textContent = "旋轉中...";
+                drawBtnSubtitle.textContent = "祈禱吧...";
+            } else {
+                drawBtn.disabled = false;
+                drawBtn.className = "relative group mt-4 px-12 py-6 rounded-full font-black text-3xl transition-all duration-100 hover:scale-105 active:scale-95 bg-gradient-to-b from-yellow-400 to-amber-600 text-slate-900 shadow-[0_0_40px_rgba(251,191,36,0.4)] hover:shadow-[0_0_60px_rgba(251,191,36,0.6)]";
+                drawBtnText.textContent = "立即抽獎";
+                drawBtnSubtitle.textContent = "點擊上方按鈕轉動指針！";
+            }
+
+            // 升級面板
+            document.getElementById('money-prize-display').textContent = formatMoney(state.moneyPrize);
+            document.getElementById('luck-boost-display').textContent = `+${state.luckBoost}% 勝率`;
+            document.getElementById('luck-duration-display').textContent = `${state.luckDuration} 秒`;
+            
+            const upgradeBtn = document.getElementById('upgrade-btn');
+            const upgradeWarning = document.getElementById('upgrade-warning');
+            document.getElementById('upgrade-btn-text').textContent = `隨機升級數值 (${formatMoney(state.upgradeCost)})`;
+
+            if (state.balance >= state.upgradeCost && !state.hasWon) {
+                upgradeBtn.disabled = false;
+                upgradeBtn.className = "w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors bg-purple-600 hover:bg-purple-500 text-white shadow-[0_0_15px_rgba(147,51,234,0.3)]";
+                upgradeWarning.classList.add('hidden');
+            } else {
+                upgradeBtn.disabled = true;
+                upgradeBtn.className = "w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 transition-colors bg-slate-700 text-slate-500 cursor-not-allowed";
+                if (!state.hasWon) {
+                    upgradeWarning.classList.remove('hidden');
+                }
+            }
+
+            // 獲勝狀態
+            if (state.hasWon) {
+                document.getElementById('win-modal').classList.remove('hidden');
+                document.getElementById('win-modal').classList.add('flex');
+                document.getElementById('win-time').textContent = formatTime(state.timeElapsed);
+                document.getElementById('win-money').textContent = formatMoney(state.moneyPrize);
+            }
+        }
+
+        // 抽獎邏輯
+        window.handleDraw = function() {
+            if (state.hasWon || state.isDrawing) return;
+            if (!state.isGameStarted) {
+                state.isGameStarted = true;
+                startTimer();
+            }
+
+            state.isDrawing = true;
+            updateUI(); // 先更新按鈕為旋轉中
+
+            // 【音效播放機制】開始抽獎：播放 sound1.mp3
+            sound1.currentTime = 0;
+            sound1.play().catch(err => console.log("音效1播放受瀏覽器安全機制阻擋，請確保有點擊互動:", err));
+
+            const rand = Math.random() * 100;
+            const currentWinRate = Math.min(100, 15 + (state.activeLuckTime > 0 ? state.luckBoost : 0));
+            const moneyChance = currentWinRate * (2 / 3);
+            const luckChance = currentWinRate * (1 / 3);
+
+            let resultType = 'miss';
+            let targetAngle = 0;
+
+            // 依據畫面上寫死的圖形分佈計算停留角度
+            // 現金(0~60度), 幸運(60~90度), 未中(90~360度)
+            if (rand < moneyChance) {
+                resultType = 'money';
+                targetAngle = 10 + Math.random() * 40; 
+            } else if (rand < moneyChance + luckChance) {
+                resultType = 'luck';
+                targetAngle = 65 + Math.random() * 20;
+            } else {
+                resultType = 'miss';
+                targetAngle = 100 + Math.random() * 250;
+            }
+
+            // 計算最終旋轉角度 (保持過去的累積度數並加上 5 圈)
+            const fullSpins = 360 * 5;
+            const currentBase = state.pointerRotation - (state.pointerRotation % 360);
+            state.pointerRotation = currentBase + fullSpins + targetAngle;
+
+            document.getElementById('pointer-container').style.transform = `rotate(${state.pointerRotation}deg)`;
+
+            // 等待旋轉動畫結束 (2秒)
+            setTimeout(() => {
+                state.isDrawing = false;
+                
+                // 【音效播放機制】停下時馬上暫停 sound1.mp3，並播放 sound2.mp3
+                sound1.pause();
+                sound1.currentTime = 0;
+                
+                sound2.currentTime = 0;
+                sound2.play().catch(err => console.log("音效2播放受瀏覽器安全機制阻擋:", err));
+
+                if (resultType === 'money') {
+                    state.balance += state.moneyPrize;
+                    addMessage(`🤑 爽啦！抽中現金 ${formatMoney(state.moneyPrize)}！`, 'money');
+                } else if (resultType === 'luck') {
+                    state.activeLuckTime = state.luckDuration;
+                    addMessage(`✨ 歐氣爆發！中獎率提升 ${state.luckBoost}%，持續 ${state.luckDuration} 秒！`, 'luck');
+                } else {
+                    const randomQuote = missQuotes[Math.floor(Math.random() * missQuotes.length)];
+                    addMessage(`💨 ${randomQuote}`, 'miss');
+                }
+
+                if (state.balance >= WIN_GOAL && !state.hasWon) {
+                    state.hasWon = true;
+                }
+
+                updateUI();
+            }, 2000); // 2秒動畫時間
+        };
+
+        // 升級邏輯
+        window.handleUpgrade = function() {
+            if (state.balance >= state.upgradeCost && !state.hasWon) {
+                state.balance -= state.upgradeCost;
+                
+                const roll = Math.random();
+                let upgradeMsg = "";
+
+                if (roll < 0.5) {
+                    const multiplier = 1.5 + Math.random() * 1.5;
+                    const newVal = Math.floor(state.moneyPrize * multiplier);
+                    state.moneyPrize = newVal;
+                    upgradeMsg = `現金獎勵已暴增至 ${formatMoney(newVal)}！`;
+                } else if (roll < 0.8) {
+                    const boostIncrease = Math.floor(Math.random() * 10 + 5);
+                    state.luckBoost += boostIncrease;
+                    upgradeMsg = `幸運加成幅度提升了 ${boostIncrease}%！`;
+                } else {
+                    const timeIncrease = Math.floor(Math.random() * 4 + 2);
+                    state.luckDuration += timeIncrease;
+                    upgradeMsg = `幸運 Buff 持續時間增加了 ${timeIncrease} 秒！`;
+                }
+
+                state.upgradeCost = Math.floor(state.upgradeCost * 1.6);
+                addMessage(`⬆️ 升級成功！${upgradeMsg}`, 'upgrade');
+                
+                updateUI();
+            }
+        };
+
+        // 初始渲染
+        updateUI();
+    </script>
+</body>
+</html>
