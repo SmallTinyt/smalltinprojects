@@ -1,0 +1,1055 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>805 Clicker Offical</title>
+    <!-- 載入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 Google Fonts (Inter & Noto Sans TC) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800;900&family=Noto+Sans+TC:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans TC', sans-serif;
+            background: radial-gradient(circle, #1e1b4b 0%, #030712 100%);
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        /* 隱藏滾動條 */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* 旋轉與呼吸特效 */
+        @keyframes rotate-slow {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .rotate-effect {
+            animation: rotate-slow 20s linear infinite;
+        }
+        .rotate-effect:hover {
+            animation-play-state: paused;
+        }
+        /* 點擊浮動字體動畫 */
+        @keyframes floatUp {
+            0% {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: translateY(-140px) scale(0.8) rotate(var(--rot));
+            }
+        }
+        .floating-text {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 1s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            font-weight: 900;
+            text-shadow: 0 4px 12px rgba(0,0,0,0.9), 0 0 6px rgba(255,255,255,0.4);
+        }
+        /* 隨機背景微粒 */
+        .cookie-particle {
+            position: absolute;
+            pointer-events: none;
+            background-color: #3b82f6;
+            border-radius: 50%;
+            animation: particleFall 2s linear forwards;
+        }
+        @keyframes particleFall {
+            0% {
+                transform: translateY(0) translateX(0) scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(120px) translateX(var(--drift)) scale(0);
+                opacity: 0;
+            }
+        }
+        /* 黃金餅乾閃爍 */
+        @keyframes golden-glow {
+            0%, 100% { transform: scale(1) rotate(0deg); filter: drop-shadow(0 0 15px #f59e0b) brightness(1); }
+            50% { transform: scale(1.1) rotate(15deg); filter: drop-shadow(0 0 30px #fbbf24) brightness(1.3); }
+        }
+        .golden-cookie {
+            animation: golden-glow 4s ease-in-out infinite;
+        }
+    </style>
+</head>
+<body class="text-slate-100 overflow-hidden h-screen w-screen flex flex-col">
+
+    <!-- 頂部狀態列 -->
+    <div class="flex-none bg-slate-950/80 border-b border-indigo-950/50 backdrop-blur px-4 py-3 flex justify-between items-center z-20 shadow-xl">
+        <div class="flex items-center space-x-3">
+            <div class="bg-blue-600 p-2 rounded-xl text-slate-100 shadow-lg shadow-blue-500/20"></div>
+            <div>
+                <h1 class="font-black text-lg tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-200">
+                    805 Clicker Offical
+                </h1>
+            </div>
+        </div>
+
+        <div class="flex items-center space-x-2">
+            <button id="soundToggle" class="bg-indigo-950/80 hover:bg-indigo-900 text-amber-300 p-2 rounded-lg border border-amber-500/30 transition-all text-xs flex items-center space-x-1">
+                <span id="soundIcon">🔊</span>
+                <span class="hidden sm:inline">音效: 開</span>
+            </button>
+            <button id="devPanelBtn" class="bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 px-3 py-2 rounded-lg border border-amber-500/40 transition-all text-xs font-black">
+                🛠️ 測試面板 (一鍵加分)
+            </button>
+        </div>
+    </div>
+
+    <!-- 主遊戲區 -->
+    <div class="flex-1 flex flex-col lg:flex-row overflow-hidden relative">
+
+        <!-- 左側面板：里程碑進度與目前解鎖材質 -->
+        <div class="w-full lg:w-80 bg-slate-950/40 border-r border-indigo-950/40 p-4 flex flex-col justify-between overflow-y-auto no-scrollbar order-2 lg:order-1">
+            <div class="space-y-4">
+                <div class="bg-slate-900/80 rounded-2xl p-4 border border-indigo-950/60 shadow-inner">
+                    <h2 class="text-sm font-black text-amber-300 mb-3 flex items-center gap-2">
+                        🏆 里程碑貼圖解鎖進度
+                    </h2>
+                    <div class="space-y-2.5 text-xs">
+                        <!-- 起始 -->
+                        <div id="m0-card" class="p-2.5 rounded-xl bg-indigo-950/30 border border-blue-500/30 flex justify-between items-center transition-all">
+                            <div>
+                                <p class="font-bold text-slate-200">Lv.0 神秘口罩</p>
+                                <p class="text-[10px] text-blue-400/70">解鎖條件: 初始 (backyard)</p>
+                            </div>
+                            <span class="text-blue-400 font-black">預設啟用</span>
+                        </div>
+                        <!-- 里程碑 1 -->
+                        <div id="m1-card" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center transition-all">
+                            <div>
+                                <p class="font-bold text-slate-400">Lv.1 藍衣跑者</p>
+                                <p class="text-[10px] text-slate-500">解鎖條件: 10,000 餅乾</p>
+                            </div>
+                            <span id="m1-status" class="text-slate-600 font-bold">未解鎖</span>
+                        </div>
+                        <!-- 里程碑 2 -->
+                        <div id="m2-card" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center transition-all">
+                            <div>
+                                <p class="font-bold text-slate-400">Lv.2 舒展自如</p>
+                                <p class="text-[10px] text-slate-500">解鎖條件: 100,000 餅乾</p>
+                            </div>
+                            <span id="m2-status" class="text-slate-600 font-bold">未解鎖</span>
+                        </div>
+                        <!-- 里程碑 3 -->
+                        <div id="m3-card" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center transition-all">
+                            <div>
+                                <p class="font-bold text-slate-400">Lv.3 終極沉睡</p>
+                                <p class="text-[10px] text-slate-500">解鎖條件: 1,000,000 餅乾</p>
+                            </div>
+                            <span id="m3-status" class="text-slate-600 font-bold">未解鎖</span>
+                        </div>
+                        <!-- 里程碑 4 -->
+                        <div id="m4-card" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center transition-all">
+                            <div>
+                                <p class="font-bold text-slate-400">Lv.4 驚愕瞬間</p>
+                                <p class="text-[10px] text-slate-500">解鎖條件: 10,000,000 餅乾</p>
+                            </div>
+                            <span id="m4-status" class="text-slate-600 font-bold">未解鎖</span>
+                        </div>
+                        <!-- 里程碑 5 -->
+                        <div id="m5-card" class="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between items-center transition-all">
+                            <div>
+                                <p class="font-bold text-slate-400">Lv.Max 終極黃金餅乾</p>
+                                <p class="text-[10px] text-slate-500">解鎖條件: 100,000,000 餅乾</p>
+                            </div>
+                            <span id="m5-status" class="text-slate-600 font-bold">未解鎖</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 手動材質選擇器 -->
+                <div class="bg-slate-900/80 rounded-2xl p-4 border border-indigo-950/60 shadow-inner">
+                    <h2 class="text-sm font-black text-amber-300 mb-3">🎨 已解鎖材質庫</h2>
+                    <div class="grid grid-cols-3 gap-2.5" id="skinSelectorGrid">
+                        <!-- 口罩 (backyard) - 預設解鎖 -->
+                        <button onclick="changeSkin('backyard')" id="btn-skin-backyard" class="aspect-square bg-slate-850 rounded-xl overflow-hidden border-2 border-amber-500 relative flex items-center justify-center transition-all">
+                            <img src="backyard.png" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x100/059669/ffffff?text=Mask'">
+                            <span class="absolute bottom-0 inset-x-0 text-[9px] bg-indigo-950/90 text-center font-bold text-amber-200">神秘口罩</span>
+                        </button>
+                        <!-- 跑者 (wanderer) -->
+                        <button onclick="changeSkin('wanderer')" id="btn-skin-wanderer" disabled class="aspect-square bg-slate-950 rounded-xl overflow-hidden border-2 border-transparent relative flex items-center justify-center opacity-30 transition-all">
+                            <img src="wanderer.png" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x100/1e3a8a/ffffff?text=Run'">
+                            <div class="absolute inset-0 bg-slate-950/80 flex items-center justify-center lock-icon text-sm">🔒</div>
+                            <span class="absolute bottom-0 inset-x-0 text-[9px] bg-slate-950/90 text-center font-bold text-slate-300">跑者</span>
+                        </button>
+                        <!-- 伸展 (80528) -->
+                        <button onclick="changeSkin('stretch')" id="btn-skin-stretch" disabled class="aspect-square bg-slate-950 rounded-xl overflow-hidden border-2 border-transparent relative flex items-center justify-center opacity-30 transition-all">
+                            <img src="80528.png" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x100/0d9488/ffffff?text=Stretch'">
+                            <div class="absolute inset-0 bg-slate-950/80 flex items-center justify-center lock-icon text-sm">🔒</div>
+                            <span class="absolute bottom-0 inset-x-0 text-[9px] bg-slate-950/90 text-center font-bold text-slate-300">伸展</span>
+                        </button>
+                        <!-- 沉睡 (80525) -->
+                        <button onclick="changeSkin('sleep')" id="btn-skin-sleep" disabled class="aspect-square bg-slate-950 rounded-xl overflow-hidden border-2 border-transparent relative flex items-center justify-center opacity-30 transition-all">
+                            <img src="80525.png" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x100/7c3aed/ffffff?text=Sleep'">
+                            <div class="absolute inset-0 bg-slate-950/80 flex items-center justify-center lock-icon text-sm">🔒</div>
+                            <span class="absolute bottom-0 inset-x-0 text-[9px] bg-slate-950/90 text-center font-bold text-slate-300">沉睡</span>
+                        </button>
+                        <!-- 驚愕 (IMG_20251203_200910) -->
+                        <button onclick="changeSkin('shock')" id="btn-skin-shock" disabled class="aspect-square bg-slate-950 rounded-xl overflow-hidden border-2 border-transparent relative flex items-center justify-center opacity-30 transition-all">
+                            <img src="IMG_20251203_200910.png" class="w-full h-full object-cover" onerror="this.src='https://placehold.co/100x100/db2777/ffffff?text=Shock'">
+                            <div class="absolute inset-0 bg-slate-950/80 flex items-center justify-center lock-icon text-sm">🔒</div>
+                            <span class="absolute bottom-0 inset-x-0 text-[9px] bg-slate-950/90 text-center font-bold text-slate-300">驚愕</span>
+                        </button>
+                        <!-- 終極黃金餅乾 (SVG) -->
+                        <button onclick="changeSkin('cookie')" id="btn-skin-cookie" disabled class="aspect-square bg-slate-950 rounded-xl overflow-hidden border-2 border-transparent relative flex items-center justify-center opacity-30 transition-all">
+                            <span class="text-2xl">🍪</span>
+                            <div class="absolute inset-0 bg-slate-950/80 flex items-center justify-center lock-icon text-sm">🔒</div>
+                            <span class="absolute bottom-0 inset-x-0 text-[9px] bg-slate-950/90 text-center font-bold text-slate-300">黃金餅乾</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 底部署名與重設 -->
+            <div class="mt-4 pt-4 border-t border-indigo-950/60 flex justify-between items-center">
+                <span class="text-xs text-indigo-400">藍衣專屬，奇蹟永存</span>
+                <button onclick="openConfirmReset()" class="text-xs text-rose-400 hover:text-rose-300 font-bold transition-all">
+                    ⚠️ 重新開始
+                </button>
+            </div>
+        </div>
+
+        <!-- 中央區域：經典點擊主按鈕 -->
+        <div class="flex-1 flex flex-col items-center justify-center p-6 relative overflow-hidden order-1 lg:order-2">
+            <!-- 奢華背景效果 -->
+            <div class="absolute inset-0 opacity-15 bg-[linear-gradient(to_right,#4338ca_1px,transparent_1px),linear-gradient(to_bottom,#4338ca_1px,transparent_1px)] bg-[size:32px_32px]"></div>
+            
+            <!-- 數據展示 -->
+            <div class="text-center z-10 mb-8 pointer-events-none select-none">
+                <div id="cookieCounter" class="text-5xl lg:text-6xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-b from-white via-slate-100 to-amber-200 drop-shadow-[0_4px_16px_rgba(59,130,246,0.4)] my-1">
+                    0
+                </div>
+                <div class="text-sm font-bold text-blue-300 uppercase tracking-widest">餅乾總數</div>
+                
+                <div class="text-sm font-medium text-slate-300 mt-2 flex items-center justify-center gap-2">
+                    <span>被動秒產量 (CPS):</span>
+                    <span id="cpsCounter" class="text-emerald-400 font-black">0</span>
+                </div>
+                <div class="text-xs text-indigo-300 mt-1">
+                    每次點擊收益: +<span id="clickPowerCounter" class="font-black text-amber-400">1</span> 餅乾
+                </div>
+            </div>
+
+            <!-- 巨大的中心圓形點擊按鈕 -->
+            <div class="relative z-10 flex items-center justify-center select-none">
+                <!-- 炫彩背景輝光 -->
+                <div id="clickerHalo" class="absolute -inset-8 rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-400 opacity-40 blur-2xl transition-all duration-700 scale-95"></div>
+                
+                <!-- 點擊主按鈕 -->
+                <button id="mainClickBtn" class="relative w-64 h-64 lg:w-80 lg:h-80 rounded-full border-8 border-indigo-950/60 shadow-[0_0_50px_rgba(59,130,246,0.2)] overflow-hidden transition-all duration-75 active:scale-95 cursor-pointer focus:outline-none flex items-center justify-center bg-indigo-950/30">
+                    
+                    <!-- 預設材質圖片層 (一開始就是 backyard.png) -->
+                    <img id="clickerImg" src="backyard.png" class="absolute inset-0 w-full h-full object-cover transition-opacity duration-300 opacity-100 pointer-events-none rounded-full" onerror="this.src='https://placehold.co/400x400/1e1b4b/ffffff?text=Backyard'">
+
+                    <!-- 備用 SVG 餅乾層 (當解鎖最後階段時使用) -->
+                    <div id="cookieSvgWrapper" class="absolute inset-0 p-4 rotate-effect flex items-center justify-center transition-all duration-500 opacity-0 pointer-events-none">
+                        <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-2xl">
+                            <!-- 餅乾本體 -->
+                            <circle cx="50" cy="50" r="46" fill="#ca8a04" stroke="#78350f" stroke-width="3" />
+                            <circle cx="48" cy="48" r="42" fill="#eab308" />
+                            <!-- 巧克力碎塊 -->
+                            <circle cx="30" cy="28" r="6.5" fill="#451a03" />
+                            <circle cx="70" cy="34" r="7" fill="#451a03" />
+                            <circle cx="38" cy="68" r="6" fill="#451a03" />
+                            <circle cx="64" cy="66" r="6.5" fill="#451a03" />
+                            <circle cx="52" cy="48" r="7.5" fill="#451a03" />
+                            <circle cx="24" cy="50" r="5" fill="#451a03" />
+                            <circle cx="54" cy="24" r="5.5" fill="#451a03" />
+                            <circle cx="74" cy="52" r="5" fill="#451a03" />
+                            <!-- 糖霜高光 -->
+                            <path d="M 18 35 A 36 36 0 0 1 82 35" fill="none" stroke="#fef08a" stroke-width="2" opacity="0.4" stroke-linecap="round" />
+                        </svg>
+                    </div>
+                    
+                    <!-- 點擊遮罩微光 -->
+                    <div class="absolute inset-0 bg-white opacity-0 transition-opacity hover:opacity-10 active:opacity-20 rounded-full"></div>
+                </button>
+            </div>
+
+            <!-- 當前解鎖通知氣泡 -->
+            <div id="unlockToast" class="absolute bottom-6 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-black px-6 py-3 rounded-full shadow-2xl transition-all duration-500 opacity-0 transform translate-y-10 scale-95 pointer-events-none z-30 flex items-center gap-2 border border-blue-300">
+                <span>🎉</span> <span id="toastText">解鎖全新經典材質！</span>
+            </div>
+
+            <!-- 隨機黃金餅乾浮現地 -->
+            <div id="goldenCookieLayer" class="absolute inset-0 pointer-events-none z-30"></div>
+        </div>
+
+        <!-- 右側面板：商店 -->
+        <div class="w-full lg:w-96 bg-slate-950/40 border-l border-indigo-950/40 p-4 flex flex-col overflow-y-auto no-scrollbar order-3">
+            <h2 class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-yellow-200 mb-4 flex items-center gap-2">
+                🛒 升級與工業商店
+            </h2>
+
+            <!-- 商店分頁 (點擊升級 / 自動設施) -->
+            <div class="flex bg-slate-900/90 p-1 rounded-xl border border-indigo-950/60 mb-4 flex-none">
+                <button onclick="switchShopTab('manual')" id="tab-manual" class="flex-1 py-2 text-center text-xs font-black rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md transition-all">
+                    👋 點擊研發
+                </button>
+                <button onclick="switchShopTab('passive')" id="tab-passive" class="flex-1 py-2 text-center text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200 transition-all">
+                    ⚙️ 自動生產線
+                </button>
+            </div>
+
+            <!-- 點擊研發 -->
+            <div id="shop-manual-container" class="space-y-3 flex-1 overflow-y-auto no-scrollbar">
+                <!-- 升級 1 -->
+                <button onclick="buyUpgrade('click_01')" id="item-click_01" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">🖱️</span>
+                            <div>
+                                <h3 class="font-black text-sm text-slate-200 group-hover:text-amber-300">塑膠指針</h3>
+                                <p class="text-[11px] text-slate-400">手動點擊威力 +1</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-none">
+                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-click_01" class="text-slate-300">0</span></div>
+                        <div class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-blue-500/30 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                            💰 <span id="cost-click_01">15</span>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- 升級 2 -->
+                <button onclick="buyUpgrade('click_02')" id="item-click_02" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">🔩</span>
+                            <div>
+                                <h3 class="font-black text-sm text-slate-200 group-hover:text-amber-300">鋼鐵指針</h3>
+                                <p class="text-[11px] text-slate-400">手動點擊威力 +10</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-none">
+                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-click_02" class="text-slate-300">0</span></div>
+                        <div class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-blue-500/30 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                            💰 <span id="cost-click_02">400</span>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- 升級 3 -->
+                <button onclick="buyUpgrade('click_03')" id="item-click_03" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">🦾</span>
+                            <div>
+                                <h3 class="font-black text-sm text-slate-200 group-hover:text-amber-300">鈦金合金指針</h3>
+                                <p class="text-[11px] text-slate-400">手動點擊威力 +150</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-none">
+                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-click_03" class="text-slate-300">0</span></div>
+                        <div class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-blue-500/30 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                            💰 <span id="cost-click_03">5,000</span>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- 升級 4 -->
+                <button onclick="buyUpgrade('click_04')" id="item-click_04" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">🌌</span>
+                            <div>
+                                <h3 class="font-black text-sm text-slate-200 group-hover:text-amber-300">量子力學指針</h3>
+                                <p class="text-[11px] text-slate-400">手動點擊威力 +2,500</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-none">
+                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-click_04" class="text-slate-300">0</span></div>
+                        <div class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-blue-500/30 group-hover:bg-blue-500 group-hover:text-white transition-all">
+                            💰 <span id="cost-click_04">75,000</span>
+                        </div>
+                    </div>
+                </button>
+            </div>
+
+            <!-- 自動生產設施 (預設隱藏) -->
+            <div id="shop-passive-container" class="space-y-3 flex-1 overflow-y-auto no-scrollbar hidden">
+                <!-- 自動設施 1 -->
+                <button onclick="buyUpgrade('passive_01')" id="item-passive_01" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">⚡</span>
+                            <div>
+                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">自動點擊指針</h3>
+                                <p class="text-[11px] text-slate-400">秒產 CPS +1</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-none">
+                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_01" class="text-slate-300">0</span></div>
+                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
+                            💰 <span id="cost-passive_01">100</span>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- 自動設施 2 -->
+                <button onclick="buyUpgrade('passive_02')" id="item-passive_02" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">👵</span>
+                            <div>
+                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">經典藍衣阿嬤</h3>
+                                <p class="text-[11px] text-slate-400">秒產 CPS +12</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-none">
+                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_02" class="text-slate-300">0</span></div>
+                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
+                            💰 <span id="cost-passive_02">1,200</span>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- 自動設施 3 -->
+                <button onclick="buyUpgrade('passive_03')" id="item-passive_03" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">🌾</span>
+                            <div>
+                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">高產藍衣農場</h3>
+                                <p class="text-[11px] text-slate-400">秒產 CPS +110</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-none">
+                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_03" class="text-slate-300">0</span></div>
+                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
+                            💰 <span id="cost-passive_03">15,000</span>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- 自動設施 4 -->
+                <button onclick="buyUpgrade('passive_04')" id="item-passive_04" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">⛏️</span>
+                            <div>
+                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">地下藍衣礦場</h3>
+                                <p class="text-[11px] text-slate-400">秒產 CPS +1,200</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-none">
+                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_04" class="text-slate-300">0</span></div>
+                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
+                            💰 <span id="cost-passive_04">180,000</span>
+                        </div>
+                    </div>
+                </button>
+
+                <!-- 自動設施 5 -->
+                <button onclick="buyUpgrade('passive_05')" id="item-passive_05" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                    <div class="flex-1 pr-2">
+                        <div class="flex items-center gap-2.5">
+                            <span class="text-xl">🏭</span>
+                            <div>
+                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">全自動餅乾工廠</h3>
+                                <p class="text-[11px] text-slate-400">秒產 CPS +15,000</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-right flex-none">
+                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_05" class="text-slate-300">0</span></div>
+                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
+                            💰 <span id="cost-passive_05">2,500,000</span>
+                        </div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 外掛與測試沙盒 -->
+    <div id="devPanel" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border-2 border-blue-500 w-96 rounded-2xl p-6 shadow-2xl relative">
+            <button id="closeDevBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white font-bold text-lg">✕</button>
+            <h3 class="text-lg font-black text-blue-400 mb-2 flex items-center gap-2">
+                🛠️ 外掛 / 測試沙盒
+            </h3>
+            <p class="text-xs text-slate-400 mb-4">點選下方按鈕直接灌入點數，快速觀賞在對應里程碑時主按鈕瞬間變為「其他頭像貼圖」或「最終黃金餅乾」的解鎖特效！</p>
+            
+            <div class="space-y-3">
+                <button onclick="addCheatPoints(10000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
+                    獲得 +10,000 餅乾 (解鎖 跑者)
+                </button>
+                <button onclick="addCheatPoints(100000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
+                    獲得 +100,000 餅乾 (解鎖 伸展)
+                </button>
+                <button onclick="addCheatPoints(1000000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
+                    獲得 +1,000,000 餅乾 (解鎖 沉睡)
+                </button>
+                <button onclick="addCheatPoints(10000000)" class="w-full py-2 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 rounded-xl text-xs font-bold text-amber-200">
+                    獲得 +10,000,000 餅乾 (解鎖 驚愕)
+                </button>
+                <button onclick="addCheatPoints(100000000)" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 rounded-xl text-xs font-bold text-emerald-200">
+                    獲得 +100,000,000 餅乾 (解鎖 終極黃金餅乾)
+                </button>
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    <button onclick="multiplyCheatPoints(10)" class="py-2 bg-blue-500 text-slate-950 rounded-xl text-xs font-black shadow-lg">
+                        餅乾 x10 倍爆發
+                    </button>
+                    <button onclick="clearCheat()" class="py-2 bg-rose-600/20 text-rose-400 hover:bg-rose-600/30 rounded-xl text-xs font-bold">
+                        分數清空歸零
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 自訂安全確認重設對話框 (不使用 window.confirm) -->
+    <div id="confirmResetPanel" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center hidden">
+        <div class="bg-slate-900 border-2 border-rose-500 w-80 rounded-2xl p-6 shadow-2xl text-center">
+            <span class="text-4xl">⚠️</span>
+            <h3 class="text-lg font-black text-rose-400 mt-2 mb-1">確定要重新開始嗎？</h3>
+            <p class="text-xs text-slate-400 mb-6">這將會清除您目前擁有的所有餅乾、產能以及已解鎖的頭像材質存檔！</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeConfirmReset()" class="flex-1 py-2 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-bold transition-all">
+                    取消
+                </button>
+                <button onclick="confirmResetAction()" class="flex-1 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all shadow-lg shadow-rose-600/20">
+                    確定重置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ------------------ 遊戲初始狀態與變數 ------------------
+        let gameState = {
+            cookies: 0,
+            totalEarned: 0,
+            clickPower: 1,
+            cps: 0,
+            activeSkin: 'backyard', // 初始預設材質一開始就是 backyard.png
+            soundEnabled: true,
+            
+            // 商店項目與定價
+            upgrades: {
+                click_01: { count: 0, baseCost: 15, currentCost: 15, power: 1 },
+                click_02: { count: 0, baseCost: 400, currentCost: 400, power: 10 },
+                click_03: { count: 0, baseCost: 5000, currentCost: 5000, power: 150 },
+                click_04: { count: 0, baseCost: 75000, currentCost: 75000, power: 2500 },
+                
+                passive_01: { count: 0, baseCost: 100, currentCost: 100, cps: 1 },
+                passive_02: { count: 0, baseCost: 1200, currentCost: 1200, cps: 12 },
+                passive_03: { count: 0, baseCost: 15000, currentCost: 15000, cps: 110 },
+                passive_04: { count: 0, baseCost: 180000, currentCost: 180000, cps: 1200 },
+                passive_05: { count: 0, baseCost: 2500000, currentCost: 2500000, cps: 15000 }
+            },
+            
+            // 經典里程碑解鎖定義
+            milestones: {
+                m1: { text: "藍衣跑者", score: 10000, skin: "wanderer", unlocked: false },
+                m2: { text: "舒展自如", score: 100000, skin: "stretch", unlocked: false },
+                m3: { text: "終極沉睡", score: 1000000, skin: "sleep", unlocked: false },
+                m4: { text: "驚愕瞬間", score: 10000000, skin: "shock", unlocked: false },
+                m5: { text: "終極黃金餅乾", score: 100000000, skin: "cookie", unlocked: false }
+            }
+        };
+
+        // 材質對應路徑表格
+        const skinImages = {
+            backyard: "backyard.png",
+            wanderer: "wanderer.png",
+            stretch: "80528.png",
+            sleep: "80525.png",
+            shock: "IMG_20251203_200910.png",
+            cookie: '' // 空值代表主餅乾使用原本的 SVG 設計
+        };
+
+        // ------------------ Web Audio 合成音效 ------------------
+        let audioCtx = null;
+        function playSynthesizedSound(freq = 400, type = 'sine', duration = 0.1) {
+            if (!gameState.soundEnabled) return;
+            try {
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                
+                // Clicks sound: frequency decay
+                if (freq < 400) {
+                    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + duration);
+                }
+                
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch (e) {
+                console.warn("Audio Context error:", e);
+            }
+        }
+
+        // 格式化數字 (經典百萬、十億表示法)
+        function formatVal(num) {
+            if (num < 1000) return Math.floor(num);
+            if (num < 1000000) return (num / 1000).toFixed(1) + " K";
+            if (num < 1000000000) return (num / 1000000).toFixed(2) + " Million";
+            return (num / 1000000000).toFixed(3) + " Billion";
+        }
+
+        // ------------------ 存檔與重設系統 ------------------
+        function saveGame() {
+            localStorage.setItem('cookie_clicker_blueshirt_save_v2', JSON.stringify(gameState));
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('cookie_clicker_blueshirt_save_v2');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    gameState = { ...gameState, ...parsed };
+                    recalculateUpgradeCosts();
+                } catch (e) {
+                    console.error("Failed to load save game:", e);
+                }
+            }
+        }
+
+        function recalculateUpgradeCosts() {
+            Object.keys(gameState.upgrades).forEach(key => {
+                const item = gameState.upgrades[key];
+                item.currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
+            });
+        }
+
+        // 自訂確認視窗流程
+        function openConfirmReset() {
+            document.getElementById('confirmResetPanel').classList.remove('hidden');
+        }
+
+        function closeConfirmReset() {
+            document.getElementById('confirmResetPanel').classList.add('hidden');
+        }
+
+        function confirmResetAction() {
+            localStorage.removeItem('cookie_clicker_blueshirt_save_v2');
+            location.reload();
+        }
+
+        // ------------------ 畫面數據更新 ------------------
+        function updateUI() {
+            document.getElementById('cookieCounter').innerText = formatVal(gameState.cookies);
+            document.getElementById('cpsCounter').innerText = formatVal(gameState.cps);
+            document.getElementById('clickPowerCounter').innerText = formatVal(gameState.clickPower);
+
+            // 檢查里程碑進度並切換貼圖
+            checkMilestonesAndTransitions();
+
+            // 更新右側商店列表
+            Object.keys(gameState.upgrades).forEach(key => {
+                const item = gameState.upgrades[key];
+                const btn = document.getElementById(`item-${key}`);
+                const costSpan = document.getElementById(`cost-${key}`);
+                const countSpan = document.getElementById(`count-${key}`);
+                
+                if (btn && costSpan && countSpan) {
+                    costSpan.innerText = formatVal(item.currentCost);
+                    countSpan.innerText = item.count;
+                    
+                    // 根據錢是否足夠，啟用或停用按鈕
+                    if (gameState.cookies >= item.currentCost) {
+                        btn.removeAttribute('disabled');
+                    } else {
+                        btn.setAttribute('disabled', 'true');
+                    }
+                }
+            });
+        }
+
+        // ------------------ 里程碑與圓形按鈕切換邏輯 ------------------
+        function checkMilestonesAndTransitions() {
+            let newlyUnlockedSkin = null;
+
+            Object.keys(gameState.milestones).forEach(mId => {
+                const mil = gameState.milestones[mId];
+                const card = document.getElementById(`${mId}-card`);
+                const status = document.getElementById(`${mId}-status`);
+                const skinBtn = document.getElementById(`btn-skin-${mil.skin}`);
+
+                if (gameState.totalEarned >= mil.score) {
+                    if (!mil.unlocked) {
+                        mil.unlocked = true;
+                        newlyUnlockedSkin = mil;
+                    }
+
+                    // 里程碑左側狀態列卡片亮起
+                    card.className = "p-2.5 rounded-xl bg-indigo-950/40 border border-emerald-500/40 flex justify-between items-center transition-all";
+                    status.innerText = "已解鎖";
+                    status.className = "text-emerald-400 font-black";
+
+                    // 啟用選擇器材質
+                    if (skinBtn) {
+                        skinBtn.removeAttribute('disabled');
+                        skinBtn.classList.remove('opacity-30', 'border-transparent');
+                        skinBtn.classList.add('opacity-100', 'border-slate-600');
+                        const lock = skinBtn.querySelector('.lock-icon');
+                        if (lock) lock.remove();
+                    }
+                }
+            });
+
+            // 如果有新解鎖
+            if (newlyUnlockedSkin) {
+                triggerToastBanner(`🏆 達成里程碑！解鎖貼圖：${newlyUnlockedSkin.text}`);
+                playSynthesizedSound(650, 'triangle', 0.4);
+                // 自動轉移成最新解鎖的材質
+                changeSkin(newlyUnlockedSkin.skin);
+                saveGame();
+            }
+        }
+
+        // 更換中間圓形點擊按鈕的貼圖材質
+        function changeSkin(skinName) {
+            // 安全防護
+            if (skinName !== 'backyard') {
+                const mil = Object.values(gameState.milestones).find(m => m.skin === skinName);
+                if (mil && !mil.unlocked) return;
+            }
+
+            gameState.activeSkin = skinName;
+
+            const clickerImg = document.getElementById('clickerImg');
+            const svgWrapper = document.getElementById('cookieSvgWrapper');
+            const halo = document.getElementById('clickerHalo');
+
+            if (skinName === 'cookie') {
+                // 最終階段解鎖：回歸黃金餅乾 SVG
+                clickerImg.style.opacity = '0';
+                svgWrapper.style.opacity = '1';
+                halo.className = "absolute -inset-8 rounded-full bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-400 opacity-60 blur-3xl transition-all duration-700 scale-100";
+            } else {
+                // 更換為對應的同學照片材質
+                clickerImg.src = skinImages[skinName];
+                clickerImg.style.opacity = '1';
+                svgWrapper.style.opacity = '0';
+
+                // 提供酷炫的特效光環
+                if (skinName === 'backyard') {
+                    // backyard 經典藍綠色微光
+                    halo.className = "absolute -inset-8 rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-400 opacity-40 blur-2xl transition-all duration-700 scale-95";
+                } else if (skinName === 'shock') {
+                    halo.className = "absolute -inset-8 rounded-full bg-gradient-to-r from-pink-500 via-purple-600 to-amber-400 opacity-60 blur-3xl transition-all duration-700 scale-100";
+                } else {
+                    halo.className = "absolute -inset-8 rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 opacity-40 blur-2xl transition-all duration-700 scale-95";
+                }
+            }
+
+            // 更新材質庫中已選取外框
+            const allBtns = document.querySelectorAll('#skinSelectorGrid button');
+            allBtns.forEach(b => {
+                b.classList.remove('border-amber-500', 'border-indigo-500');
+                if (!b.hasAttribute('disabled')) {
+                    b.classList.add('border-slate-600');
+                }
+            });
+            const activeBtn = document.getElementById(`btn-skin-${skinName}`);
+            if (activeBtn) {
+                activeBtn.classList.remove('border-slate-600');
+                activeBtn.classList.add('border-amber-500');
+            }
+
+            saveGame();
+        }
+
+        // 里程碑解鎖彈出橫幅
+        function triggerToastBanner(text) {
+            const toast = document.getElementById('unlockToast');
+            const toastText = document.getElementById('toastText');
+            toastText.innerText = text;
+
+            toast.classList.remove('opacity-0', 'translate-y-10', 'scale-95');
+            toast.classList.add('opacity-100', 'translate-y-0', 'scale-100');
+
+            setTimeout(() => {
+                toast.classList.remove('opacity-100', 'translate-y-0', 'scale-100');
+                toast.classList.add('opacity-0', 'translate-y-10', 'scale-95');
+            }, 4000);
+        }
+
+        // ------------------ 手動點擊與特效 ------------------
+        const clickBtn = document.getElementById('mainClickBtn');
+        
+        clickBtn.addEventListener('click', (e) => {
+            // 增量
+            gameState.cookies += gameState.clickPower;
+            gameState.totalEarned += gameState.clickPower;
+
+            // 脆碎音效
+            playSynthesizedSound(200 + Math.random() * 120, 'triangle', 0.08);
+
+            // 產生手動浮動數字
+            generateFloatingText(e.clientX, e.clientY, `+${formatVal(gameState.clickPower)}`);
+
+            // 喷灑碎屑粒子
+            generateCookieParticles(e.clientX, e.clientY);
+
+            updateUI();
+            saveGame();
+        });
+
+        // 噴灑碎屑
+        function generateCookieParticles(x, y) {
+            for (let i = 0; i < 6; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'cookie-particle';
+                const size = Math.random() * 8 + 4;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                particle.style.left = `${x}px`;
+                particle.style.top = `${y}px`;
+                
+                // 隨機橫向漂移與顏色
+                particle.style.setProperty('--drift', `${Math.random() * 100 - 50}px`);
+                const colors = ['#3b82f6', '#6366f1', '#2563eb', '#1d4ed8'];
+                particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                
+                document.body.appendChild(particle);
+                particle.addEventListener('animationend', () => particle.remove());
+            }
+        }
+
+        // 浮動文字
+        function generateFloatingText(clientX, clientY, text) {
+            const el = document.createElement('div');
+            el.className = 'floating-text text-2xl font-black text-amber-300';
+            el.innerText = text;
+            
+            const randomRot = (Math.random() * 40 - 20) + 'deg';
+            el.style.setProperty('--rot', randomRot);
+            el.style.left = `${clientX - 20}px`;
+            el.style.top = `${clientY - 30}px`;
+            
+            document.body.appendChild(el);
+            el.addEventListener('animationend', () => el.remove());
+        }
+
+        // ------------------ 隨機黃金餅乾 ------------------
+        let goldenCookieActive = false;
+        setInterval(() => {
+            if (goldenCookieActive || Math.random() > 0.15) return; // 15% 機率生成
+            
+            goldenCookieActive = true;
+            const container = document.getElementById('goldenCookieLayer');
+            
+            const goldenCookie = document.createElement('button');
+            goldenCookie.className = 'golden-cookie absolute w-24 h-24 cursor-pointer focus:outline-none pointer-events-auto z-40';
+            
+            // 隨機在主屏幕浮現
+            const randX = Math.random() * 70 + 15; // 避開邊緣
+            const randY = Math.random() * 70 + 15;
+            goldenCookie.style.left = `${randX}%`;
+            goldenCookie.style.top = `${randY}%`;
+
+            goldenCookie.innerHTML = `
+                <svg viewBox="0 0 100 100" class="w-full h-full drop-shadow-[0_0_15px_#f59e0b]">
+                    <circle cx="50" cy="50" r="45" fill="#fbbf24" stroke="#d97706" stroke-width="3" />
+                    <circle cx="48" cy="48" r="41" fill="#fef08a" />
+                    <circle cx="32" cy="32" r="5" fill="#b45309" />
+                    <circle cx="68" cy="36" r="6" fill="#b45309" />
+                    <circle cx="40" cy="65" r="5.5" fill="#b45309" />
+                    <circle cx="62" cy="62" r="5" fill="#b45309" />
+                    <circle cx="50" cy="48" r="6" fill="#b45309" />
+                </svg>
+            `;
+
+            goldenCookie.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const awardAmount = Math.max(gameState.cps * 120, 150);
+                gameState.cookies += awardAmount;
+                gameState.totalEarned += awardAmount;
+
+                generateFloatingText(e.clientX, e.clientY, `✨ 黃金餅乾! +${formatVal(awardAmount)}`);
+                playSynthesizedSound(880, 'triangle', 0.5);
+
+                goldenCookie.remove();
+                goldenCookieActive = false;
+            });
+
+            container.appendChild(goldenCookie);
+
+            // 12秒後自動消失
+            setTimeout(() => {
+                if (goldenCookie.parentNode) {
+                    goldenCookie.remove();
+                    goldenCookieActive = false;
+                }
+            }, 12000);
+
+        }, 15000); // 每 15 秒嘗試檢查一次
+
+        // ------------------ 購買研發與自動化 ------------------
+        function buyUpgrade(uId) {
+            const item = gameState.upgrades[uId];
+            if (gameState.cookies >= item.currentCost) {
+                gameState.cookies -= item.currentCost;
+                item.count++;
+
+                // 複利算價
+                item.currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
+
+                // 重新計算產能
+                recalculateProductivity();
+
+                // 播放商店採購音效
+                playSynthesizedSound(450, 'sine', 0.12);
+
+                updateUI();
+                saveGame();
+            }
+        }
+
+        function recalculateProductivity() {
+            // 點擊威力
+            let power = 1;
+            Object.keys(gameState.upgrades).forEach(key => {
+                if (key.startsWith('click_')) {
+                    power += gameState.upgrades[key].count * gameState.upgrades[key].power;
+                }
+            });
+            gameState.clickPower = power;
+
+            // 被動 CPS (秒產)
+            let currentCps = 0;
+            Object.keys(gameState.upgrades).forEach(key => {
+                if (key.startsWith('passive_')) {
+                    currentCps += gameState.upgrades[key].count * gameState.upgrades[key].cps;
+                }
+            });
+            gameState.cps = currentCps;
+        }
+
+        // ------------------ 被動時鐘計數器 (100ms 間隔流暢渲染) ------------------
+        setInterval(() => {
+            if (gameState.cps > 0) {
+                const addPerTick = gameState.cps / 10;
+                gameState.cookies += addPerTick;
+                gameState.totalEarned += addPerTick;
+                updateUI();
+            }
+        }, 100);
+
+        // 每隔十秒自動為玩家存檔
+        setInterval(saveGame, 10000);
+
+        // ------------------ 商店標籤頁切換 ------------------
+        function switchShopTab(tab) {
+            const mTab = document.getElementById('tab-manual');
+            const pTab = document.getElementById('tab-passive');
+            const mContainer = document.getElementById('shop-manual-container');
+            const pContainer = document.getElementById('shop-passive-container');
+
+            if (tab === 'manual') {
+                mTab.className = "flex-1 py-2 text-center text-xs font-black rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600 text-white shadow-md transition-all";
+                pTab.className = "flex-1 py-2 text-center text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200 transition-all";
+                mContainer.classList.remove('hidden');
+                pContainer.classList.add('hidden');
+            } else {
+                pTab.className = "flex-1 py-2 text-center text-xs font-black rounded-lg bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-950 shadow-md transition-all";
+                mTab.className = "flex-1 py-2 text-center text-xs font-bold rounded-lg text-slate-400 hover:text-slate-200 transition-all";
+                pContainer.classList.remove('hidden');
+                mContainer.classList.add('hidden');
+            }
+            playSynthesizedSound(280, 'sine', 0.05);
+        }
+
+        // ------------------ 外掛測試沙盒 ------------------
+        const devPanel = document.getElementById('devPanel');
+        const devPanelBtn = document.getElementById('devPanelBtn');
+        const closeDevBtn = document.getElementById('closeDevBtn');
+
+        devPanelBtn.addEventListener('click', () => {
+            devPanel.classList.remove('hidden');
+        });
+
+        closeDevBtn.addEventListener('click', () => {
+            devPanel.classList.add('hidden');
+        });
+
+        function addCheatPoints(amount) {
+            gameState.cookies += amount;
+            gameState.totalEarned += amount;
+            updateUI();
+            saveGame();
+            triggerToastBanner(`🛠️ 注入測試餅乾 +${formatVal(amount)}`);
+        }
+
+        function multiplyCheatPoints(multiplier) {
+            gameState.cookies *= multiplier;
+            gameState.totalEarned *= multiplier;
+            updateUI();
+            saveGame();
+            triggerToastBanner(`🛠️ 已翻倍! 餅乾數量乘上 ${multiplier} 倍`);
+        }
+
+        function clearCheat() {
+            gameState.cookies = 0;
+            gameState.totalEarned = 0;
+            updateUI();
+            saveGame();
+            triggerToastBanner("🛠️ 分數已全數清空！");
+        }
+
+        // 音效控制開關
+        const soundToggleBtn = document.getElementById('soundToggle');
+        soundToggleBtn.addEventListener('click', () => {
+            gameState.soundEnabled = !gameState.soundEnabled;
+            if (gameState.soundEnabled) {
+                soundToggleBtn.innerHTML = '🔊 <span class="hidden sm:inline">音效: 開</span>';
+                playSynthesizedSound(440, 'sine', 0.1);
+            } else {
+                soundToggleBtn.innerHTML = '🔇 <span class="hidden sm:inline">音效: 關</span>';
+            }
+            saveGame();
+        });
+
+        // ------------------ 啟動初始化 ------------------
+        window.onload = function() {
+            // 載入存檔
+            loadGame();
+            
+            // 計算收益
+            recalculateProductivity();
+            
+            // 初次更新 UI
+            updateUI();
+            
+            // 初始化選定材質 (一開始載入 backyard)
+            changeSkin(gameState.activeSkin);
+        };
+    </script>
+</body>
+</html>
