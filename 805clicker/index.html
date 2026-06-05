@@ -87,7 +87,7 @@
         <div class="flex items-center space-x-3">
             <div>
                 <h1 class="font-black text-lg tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-200">
-                    805 Clicker v1.0.01
+                    805 Clicker v1.1.0
                 </h1>
             </div>
         </div>
@@ -192,6 +192,37 @@
                         </button>
                     </div>
                 </div>
+
+                <!-- 轉世重生系統區塊 -->
+                <div class="bg-slate-900/80 rounded-2xl p-4 border border-indigo-950/60 shadow-inner mt-4">
+                    <h2 class="text-sm font-black text-pink-400 mb-3 flex items-center gap-2">
+                        🌌 重生殿堂 (Rebirth Temple)
+                    </h2>
+                    <div class="space-y-3 text-xs">
+                        <div class="bg-indigo-950/30 p-3 rounded-xl border border-pink-500/20 text-slate-300">
+                            <div class="flex justify-between items-center mb-1">
+                                <span>重生代幣:</span>
+                                <span id="rebirthTokens" class="font-black text-pink-400 text-sm">0</span>
+                            </div>
+                            <div class="flex justify-between items-center text-[11px] text-indigo-300">
+                                <span>當前產能加成:</span>
+                                <span id="rebirthBonus" class="font-black text-emerald-400">+0%</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-950/50 p-2.5 rounded-xl border border-slate-800 text-[11px]">
+                            <div class="flex justify-between mb-1">
+                                <span>本次可獲得代幣:</span>
+                                <span id="claimableTokens" class="font-black text-amber-300">0</span>
+                            </div>
+                            <div class="text-[9px] text-slate-500">
+                                下一個代幣需再累積: <span id="nextTokenCost" class="text-amber-400/80">1.00 Trillion</span> 餅乾
+                            </div>
+                        </div>
+                        <button onclick="triggerRebirth()" id="rebirthBtn" class="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-40 disabled:pointer-events-none text-white rounded-xl text-xs font-black shadow-lg shadow-purple-900/30 transition-all">
+                            🌌 執行轉世重生 (重置進度)
+                        </button>
+                    </div>
+                </div>
             </div>
 
             <!-- 底部署名與重設 -->
@@ -285,181 +316,14 @@
                 </button>
             </div>
 
-            <!-- 點擊研發 -->
+            <!-- 點擊研發 (手動升級列表) -->
             <div id="shop-manual-container" class="space-y-3 flex-1 overflow-y-auto no-scrollbar">
-                <!-- 升級 1 -->
-                <button onclick="buyUpgrade('click_01')" id="item-click_01" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
-                    <div class="flex-1 pr-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">🖱️</span>
-                            <div>
-                                <h3 class="font-black text-sm text-slate-200 group-hover:text-amber-300">塑膠指針</h3>
-                                <p class="text-[11px] text-slate-400">手動點擊威力 +1</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-none">
-                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-click_01" class="text-slate-300">0</span></div>
-                        <div class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-blue-500/30 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                            💰 <span id="cost-click_01">15</span>
-                        </div>
-                    </div>
-                </button>
-
-                <!-- 升級 2 -->
-                <button onclick="buyUpgrade('click_02')" id="item-click_02" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
-                    <div class="flex-1 pr-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">🔩</span>
-                            <div>
-                                <h3 class="font-black text-sm text-slate-200 group-hover:text-amber-300">鋼鐵指針</h3>
-                                <p class="text-[11px] text-slate-400">手動點擊威力 +10</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-none">
-                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-click_02" class="text-slate-300">0</span></div>
-                        <div class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-blue-500/30 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                            💰 <span id="cost-click_02">400</span>
-                        </div>
-                    </div>
-                </button>
-
-                <!-- 升級 3 -->
-                <button onclick="buyUpgrade('click_03')" id="item-click_03" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
-                    <div class="flex-1 pr-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">🦾</span>
-                            <div>
-                                <h3 class="font-black text-sm text-slate-200 group-hover:text-amber-300">鈦金合金指針</h3>
-                                <p class="text-[11px] text-slate-400">手動點擊威力 +150</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-none">
-                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-click_03" class="text-slate-300">0</span></div>
-                        <div class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-blue-500/30 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                            💰 <span id="cost-click_03">5,000</span>
-                        </div>
-                    </div>
-                </button>
-
-                <!-- 升級 4 -->
-                <button onclick="buyUpgrade('click_04')" id="item-click_04" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
-                    <div class="flex-1 pr-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">🌌</span>
-                            <div>
-                                <h3 class="font-black text-sm text-slate-200 group-hover:text-amber-300">量子力學指針</h3>
-                                <p class="text-[11px] text-slate-400">手動點擊威力 +2,500</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-none">
-                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-click_04" class="text-slate-300">0</span></div>
-                        <div class="bg-blue-500/20 text-blue-300 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-blue-500/30 group-hover:bg-blue-500 group-hover:text-white transition-all">
-                            💰 <span id="cost-click_04">75,000</span>
-                        </div>
-                    </div>
-                </button>
+                <!-- 由 JavaScript 動態生成 10 項升級 -->
             </div>
 
-            <!-- 自動生產設施 (預設隱藏) -->
+            <!-- 自動生產設施 (被動升級列表) -->
             <div id="shop-passive-container" class="space-y-3 flex-1 overflow-y-auto no-scrollbar hidden">
-                <!-- 自動設施 1 -->
-                <button onclick="buyUpgrade('passive_01')" id="item-passive_01" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
-                    <div class="flex-1 pr-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">⚡</span>
-                            <div>
-                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">自動點擊指針</h3>
-                                <p class="text-[11px] text-slate-400">秒產 CPS +1</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-none">
-                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_01" class="text-slate-300">0</span></div>
-                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
-                            💰 <span id="cost-passive_01">100</span>
-                        </div>
-                    </div>
-                </button>
-
-                <!-- 自動設施 2 -->
-                <button onclick="buyUpgrade('passive_02')" id="item-passive_02" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
-                    <div class="flex-1 pr-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">👵</span>
-                            <div>
-                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">經典藍衣阿嬤</h3>
-                                <p class="text-[11px] text-slate-400">秒產 CPS +12</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-none">
-                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_02" class="text-slate-300">0</span></div>
-                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
-                            💰 <span id="cost-passive_02">1,200</span>
-                        </div>
-                    </div>
-                </button>
-
-                <!-- 自動設施 3 -->
-                <button onclick="buyUpgrade('passive_03')" id="item-passive_03" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
-                    <div class="flex-1 pr-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">🌾</span>
-                            <div>
-                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">高產藍衣農場</h3>
-                                <p class="text-[11px] text-slate-400">秒產 CPS +110</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-none">
-                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_03" class="text-slate-300">0</span></div>
-                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
-                            💰 <span id="cost-passive_03">15,000</span>
-                        </div>
-                    </div>
-                </button>
-
-                <!-- 自動設施 4 -->
-                <button onclick="buyUpgrade('passive_04')" id="item-passive_04" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
-                    <div class="flex-1 pr-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">⛏️</span>
-                            <div>
-                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">地下藍衣礦場</h3>
-                                <p class="text-[11px] text-slate-400">秒產 CPS +1,200</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-none">
-                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_04" class="text-slate-300">0</span></div>
-                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
-                            💰 <span id="cost-passive_04">180,000</span>
-                        </div>
-                    </div>
-                </button>
-
-                <!-- 自動設施 5 -->
-                <button onclick="buyUpgrade('passive_05')" id="item-passive_05" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
-                    <div class="flex-1 pr-2">
-                        <div class="flex items-center gap-2.5">
-                            <span class="text-xl">🏭</span>
-                            <div>
-                                <h3 class="font-black text-sm text-slate-200 group-hover:text-emerald-400">全自動餅乾工廠</h3>
-                                <p class="text-[11px] text-slate-400">秒產 CPS +15,000</p>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="text-right flex-none">
-                        <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-passive_05" class="text-slate-300">0</span></div>
-                        <div class="bg-emerald-500/20 text-emerald-400 px-2 py-1 rounded-lg text-xs font-black mt-1 border border-emerald-500/30 group-hover:bg-emerald-500 group-hover:text-slate-950 transition-all">
-                            💰 <span id="cost-passive_05">2,500,000</span>
-                        </div>
-                    </div>
-                </button>
+                <!-- 由 JavaScript 動態生成 10 項被動設施 -->
             </div>
         </div>
 
@@ -472,7 +336,7 @@
             <h3 class="text-lg font-black text-blue-400 mb-2 flex items-center gap-2">
                 🛠️ 外掛 / 測試沙盒
             </h3>
-            <p class="text-xs text-slate-400 mb-4">點選下方按鈕直接灌入點數，快速觀賞在對應里程碑時主按鈕瞬間變為「其他頭像貼圖」或「最終黃金餅乾」的解鎖特效！</p>
+            <p class="text-xs text-slate-400 mb-4">點選下方按鈕直接灌入點數，快速觀賞在對應里程碑時主按鈕變更或測試「轉世重生系統」！</p>
             
             <div class="space-y-3">
                 <button onclick="addCheatPoints(10000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
@@ -484,8 +348,11 @@
                 <button onclick="addCheatPoints(1000000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
                     獲得 $1,000,000 (解鎖 沅沅)
                 </button>
-                <button onclick="addCheatPoints(10000000)" class="w-full py-2 bg-amber-600/20 hover:bg-amber-600/30 border border-amber-500/40 rounded-xl text-xs font-bold text-amber-200">
+                <button onclick="addCheatPoints(10000000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
                     獲得 $10,000,000 (解鎖 Genius)
+                </button>
+                <button onclick="addCheatPoints(1000000000000)" class="w-full py-2 bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/40 rounded-xl text-xs font-bold text-pink-200">
+                    獲得 $1.00 Trillion (測試轉世代幣)
                 </button>
                 <div class="grid grid-cols-2 gap-2 mt-4">
                     <button onclick="multiplyCheatPoints(10)" class="py-2 bg-blue-500 text-slate-950 rounded-xl text-xs font-black shadow-lg">
@@ -544,19 +411,32 @@
             cps: 0,
             activeSkin: 'backyard', // 初始預設材質一開始就是 backyard.png
             soundEnabled: true,
+            rebirthTokens: 0, // 轉世重生代幣
+            lifetimeCookies: 0, // 歷史累積總獲得餅乾量
             
-            // 商店項目與定價
+            // 商店項目與定價 (兩種升級皆擴充至 10 項)
             upgrades: {
                 click_01: { count: 0, baseCost: 15, currentCost: 15, power: 1 },
                 click_02: { count: 0, baseCost: 400, currentCost: 400, power: 10 },
                 click_03: { count: 0, baseCost: 5000, currentCost: 5000, power: 150 },
                 click_04: { count: 0, baseCost: 75000, currentCost: 75000, power: 2500 },
+                click_05: { count: 0, baseCost: 1200000, currentCost: 1200000, power: 40000 },
+                click_06: { count: 0, baseCost: 25000000, currentCost: 25000000, power: 750000 },
+                click_07: { count: 0, baseCost: 600000000, currentCost: 600000000, power: 12000000 },
+                click_08: { count: 0, baseCost: 15000000000, currentCost: 15000000000, power: 250000000 },
+                click_09: { count: 0, baseCost: 450000000000, currentCost: 450000000000, power: 6000000000 },
+                click_10: { count: 0, baseCost: 12000000000000, currentCost: 12000000000000, power: 150000000000 },
                 
                 passive_01: { count: 0, baseCost: 100, currentCost: 100, cps: 1 },
                 passive_02: { count: 0, baseCost: 1200, currentCost: 1200, cps: 12 },
                 passive_03: { count: 0, baseCost: 15000, currentCost: 15000, cps: 110 },
                 passive_04: { count: 0, baseCost: 180000, currentCost: 180000, cps: 1200 },
-                passive_05: { count: 0, baseCost: 2500000, currentCost: 2500000, cps: 15000 }
+                passive_05: { count: 0, baseCost: 2500000, currentCost: 2500000, cps: 15000 },
+                passive_06: { count: 0, baseCost: 40000000, currentCost: 40000000, cps: 180000 },
+                passive_07: { count: 0, baseCost: 750000000, currentCost: 750000000, cps: 2200000 },
+                passive_08: { count: 0, baseCost: 15000000000, currentCost: 15000000000, cps: 35000000 },
+                passive_09: { count: 0, baseCost: 350000000000, currentCost: 350000000000, cps: 650000000 },
+                passive_10: { count: 0, baseCost: 9500000000000, currentCost: 9500000000000, cps: 12000000000 }
             },
             
             // 經典里程碑解鎖定義
@@ -567,6 +447,31 @@
                 m4: { text: "驚愕瞬間", score: 10000000, skin: "shock", unlocked: false },
                 m5: { text: "終極黃金餅乾", score: 100000000, skin: "cookie", unlocked: false }
             }
+        };
+
+        // 升級項目顯示詳情對應表 (包含名稱、敘述與圖標)
+        const upgradeDetails = {
+            click_01: { name: "塑膠指針", desc: "手動點擊威力 +1", icon: "🖱️" },
+            click_02: { name: "鋼鐵指針", desc: "手動點擊威力 +10", icon: "🔩" },
+            click_03: { name: "鈦金合金指針", desc: "手動點擊威力 +150", icon: "🦾" },
+            click_04: { name: "量子力學指針", desc: "手動點擊威力 +2,500", icon: "🌌" },
+            click_05: { name: "核子動力指針", desc: "手動點擊威力 +40,000", icon: "⚛️" },
+            click_06: { name: "暗物質指針", desc: "手動點擊威力 +750,000", icon: "🔮" },
+            click_07: { name: "超弦多維指針", desc: "手動點擊威力 +12 Million", icon: "🌀" },
+            click_08: { name: "星際引力指針", desc: "手動點擊威力 +250 Million", icon: "🪐" },
+            click_09: { name: "反物質虛空指針", desc: "手動點擊威力 +6 Billion", icon: "☄️" },
+            click_10: { name: "奇點創世指針", desc: "手動點擊威力 +150 Billion", icon: "👑" },
+
+            passive_01: { name: "自動點擊指針", desc: "秒產 CPS +1", icon: "⚡" },
+            passive_02: { name: "經典藍衣阿嬤", desc: "秒產 CPS +12", icon: "👵" },
+            passive_03: { name: "高產藍衣農場", desc: "秒產 CPS +110", icon: "🌾" },
+            passive_04: { name: "地下藍衣礦場", desc: "秒產 CPS +1,200", icon: "⛏️" },
+            passive_05: { name: "全自動餅乾工廠", desc: "秒產 CPS +15,000", icon: "🏭" },
+            passive_06: { name: "古代藍衣神殿", desc: "秒產 CPS +180,000", icon: "🏛️" },
+            passive_07: { name: "藍衣超導實驗室", desc: "秒產 CPS +2.2 Million", icon: "🧪" },
+            passive_08: { name: "跨時空傳送門", desc: "秒產 CPS +35 Million", icon: "🚪" },
+            passive_09: { name: "藍衣時空時光機", desc: "秒產 CPS +650 Million", icon: "⏰" },
+            passive_10: { name: "藍衣反物質縮放器", desc: "秒產 CPS +12 Billion", icon: "🧬" }
         };
 
         // 材質對應路徑表格
@@ -614,12 +519,70 @@
             }
         }
 
-        // 格式化數字 (經典百萬、十億表示法)
+        // 格式化數字 (經典百萬、十億、萬億表示法，完全對應至 Decillion)
         function formatVal(num) {
+            if (num === null || num === undefined) return "0";
             if (num < 1000) return Math.floor(num);
             if (num < 1000000) return (num / 1000).toFixed(1) + " K";
-            if (num < 1000000000) return (num / 1000000).toFixed(2) + " Million";
-            return (num / 1000000000).toFixed(3) + " Billion";
+            
+            const units = [
+                "Million", "Billion", "Trillion", "Quadillion", 
+                "Quintillion", "Sextillion", "Septillion", "Octillion", "Nonillion", "Decillion"
+            ];
+            
+            const i = Math.floor(Math.log10(num) / 3) - 2; // Million 起算
+            if (i >= 0 && i < units.length) {
+                const value = num / Math.pow(10, (i + 2) * 3);
+                return value.toFixed(2) + " " + units[i];
+            } else if (i >= units.length) {
+                return num.toExponential(2);
+            }
+            return Math.floor(num).toString();
+        }
+
+        // ------------------ 轉世重生核心數學計算 ------------------
+        // 計算累積一定 cookies 所能對應的轉世代幣
+        function getTokensForCookies(cookies) {
+            if (cookies < 1e12) return 0; // 第一個重生代幣需要 1.00 Trillion
+            // 每個重生代幣難拿 1.05 倍
+            // 累計公式: 2e13 * (1.05^K - 1) = cookies => K = ln(1 + cookies / 2e13) / ln(1.05)
+            return Math.floor(Math.log(1 + cookies / 2e13) / Math.log(1.05));
+        }
+
+        // 取得當前此輪結算能額外獲得的重生代幣數量
+        function getClaimableTokens() {
+            const currentTotalEarned = (gameState.lifetimeCookies || 0) + gameState.cookies;
+            const targetTokens = getTokensForCookies(currentTotalEarned);
+            const possessedTokens = gameState.rebirthTokens || 0;
+            return Math.max(0, targetTokens - possessedTokens);
+        }
+
+        // 執行轉世重生 (重置金錢與工業，獲得轉世加成)
+        function triggerRebirth() {
+            const claimable = getClaimableTokens();
+            if (claimable <= 0) return;
+
+            // 永久累加重生代幣與生涯總餅乾
+            gameState.rebirthTokens = (gameState.rebirthTokens || 0) + claimable;
+            gameState.lifetimeCookies = (gameState.lifetimeCookies || 0) + gameState.cookies;
+
+            // 轉世重置變數
+            gameState.cookies = 0;
+            gameState.totalEarned = 0; // 重置此輪產量
+            
+            // 重置商店升級購買數
+            Object.keys(gameState.upgrades).forEach(key => {
+                gameState.upgrades[key].count = 0;
+            });
+
+            recalculateUpgradeCosts();
+            recalculateProductivity();
+            
+            playSynthesizedSound(880, 'sine', 0.6); // 播放莊嚴重生音效
+            updateUI();
+            saveGame();
+
+            triggerToastBanner(`🌌 轉世成功！獲得了 ${claimable} 個重生代幣！`);
         }
 
         // ------------------ 存檔與重設系統 ------------------
@@ -632,6 +595,7 @@
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
+                    // 深度合併，確保升級與重生項目都有正確初始化
                     gameState = { ...gameState, ...parsed };
                     recalculateUpgradeCosts();
                 } catch (e) {
@@ -661,16 +625,56 @@
             location.reload();
         }
 
+        // ------------------ 商店項目動態生成 ------------------
+        function initShopDOM() {
+            const manualContainer = document.getElementById('shop-manual-container');
+            const passiveContainer = document.getElementById('shop-passive-container');
+            
+            manualContainer.innerHTML = '';
+            passiveContainer.innerHTML = '';
+
+            Object.keys(upgradeDetails).forEach(key => {
+                const info = upgradeDetails[key];
+                const isPassive = key.startsWith('passive_');
+                const targetContainer = isPassive ? passiveContainer : manualContainer;
+                
+                const btnColor = isPassive 
+                    ? 'group-hover:bg-emerald-500 group-hover:text-slate-950 text-emerald-300 bg-emerald-500/20 border-emerald-500/30' 
+                    : 'group-hover:bg-blue-500 group-hover:text-white text-blue-300 bg-blue-500/20 border-blue-500/30';
+                
+                const btnHtml = `
+                    <button onclick="buyUpgrade('${key}')" id="item-${key}" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
+                        <div class="flex-1 pr-2 w-0 overflow-hidden">
+                            <div class="flex items-center gap-2.5">
+                                <span class="text-xl shrink-0">${info.icon}</span>
+                                <div class="truncate">
+                                    <h3 class="font-black text-sm text-slate-200 group-hover:text-amber-300 truncate">${info.name}</h3>
+                                    <p class="text-[11px] text-slate-400 truncate">${info.desc}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="text-right flex-none">
+                            <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-${key}" class="text-slate-300">0</span></div>
+                            <div class="${btnColor} px-2 py-1 rounded-lg text-xs font-black mt-1 border transition-all">
+                                💰 <span id="cost-${key}">0</span>
+                            </div>
+                        </div>
+                    </button>
+                `;
+                targetContainer.insertAdjacentHTML('beforeend', btnHtml);
+            });
+        }
+
         // ------------------ 畫面數據更新 ------------------
         function updateUI() {
             document.getElementById('cookieCounter').innerText = formatVal(gameState.cookies);
             document.getElementById('cpsCounter').innerText = formatVal(gameState.cps);
             document.getElementById('clickPowerCounter').innerText = formatVal(gameState.clickPower);
 
-            // 檢查里程碑進度並切換貼圖
+            // 檢查里程碑進度與貼圖變更
             checkMilestonesAndTransitions();
 
-            // 更新右側商店列表
+            // 更新右側商店列表數據與狀態
             Object.keys(gameState.upgrades).forEach(key => {
                 const item = gameState.upgrades[key];
                 const btn = document.getElementById(`item-${key}`);
@@ -681,7 +685,6 @@
                     costSpan.innerText = formatVal(item.currentCost);
                     countSpan.innerText = item.count;
                     
-                    // 根據錢是否足夠，啟用或停用按鈕
                     if (gameState.cookies >= item.currentCost) {
                         btn.removeAttribute('disabled');
                     } else {
@@ -689,6 +692,29 @@
                     }
                 }
             });
+
+            // 更新轉世重生介面
+            const tokenCount = gameState.rebirthTokens || 0;
+            const bonusPercent = Math.floor(tokenCount * 10);
+            document.getElementById('rebirthTokens').innerText = tokenCount;
+            document.getElementById('rebirthBonus').innerText = `+${bonusPercent}%`;
+
+            const claimable = getClaimableTokens();
+            document.getElementById('claimableTokens').innerText = claimable;
+
+            // 計算下個代幣所需的剩餘餅乾
+            const currentTotalEarned = (gameState.lifetimeCookies || 0) + gameState.cookies;
+            const currentTotalTokens = getTokensForCookies(currentTotalEarned);
+            const nextCumulativeTarget = 2e13 * (Math.pow(1.05, currentTotalTokens + 1) - 1);
+            const cookiesNeeded = Math.max(0, nextCumulativeTarget - currentTotalEarned);
+            document.getElementById('nextTokenCost').innerText = formatVal(cookiesNeeded);
+
+            const rebirthBtn = document.getElementById('rebirthBtn');
+            if (claimable > 0) {
+                rebirthBtn.removeAttribute('disabled');
+            } else {
+                rebirthBtn.setAttribute('disabled', 'true');
+            }
         }
 
         // ------------------ 里程碑與圓形按鈕切換邏輯 ------------------
@@ -707,12 +733,12 @@
                         newlyUnlockedSkin = mil;
                     }
 
-                    // 里程碑左側狀態列卡片亮起
+                    // 里程碑解鎖卡片
                     card.className = "p-2.5 rounded-xl bg-indigo-950/40 border border-emerald-500/40 flex justify-between items-center transition-all";
                     status.innerText = "已解鎖";
                     status.className = "text-emerald-400 font-black";
 
-                    // 啟用選擇器材質
+                    // 啟用材質切換按鈕
                     if (skinBtn) {
                         skinBtn.removeAttribute('disabled');
                         skinBtn.classList.remove('opacity-30', 'border-transparent');
@@ -723,11 +749,9 @@
                 }
             });
 
-            // 如果有新解鎖
             if (newlyUnlockedSkin) {
                 triggerToastBanner(`🏆 達成里程碑！解鎖貼圖：${newlyUnlockedSkin.text}`);
                 playSynthesizedSound(650, 'triangle', 0.4);
-                // 自動轉移成最新解鎖的材質
                 changeSkin(newlyUnlockedSkin.skin);
                 saveGame();
             }
@@ -735,7 +759,6 @@
 
         // 更換中間圓形點擊按鈕的貼圖材質
         function changeSkin(skinName) {
-            // 安全防護
             if (skinName !== 'backyard') {
                 const mil = Object.values(gameState.milestones).find(m => m.skin === skinName);
                 if (mil && !mil.unlocked) return;
@@ -748,19 +771,15 @@
             const halo = document.getElementById('clickerHalo');
 
             if (skinName === 'cookie') {
-                // 最終階段解鎖：回歸黃金餅乾 SVG
                 clickerImg.style.opacity = '0';
                 svgWrapper.style.opacity = '1';
                 halo.className = "absolute -inset-8 rounded-full bg-gradient-to-r from-amber-600 via-orange-500 to-yellow-400 opacity-60 blur-3xl transition-all duration-700 scale-100";
             } else {
-                // 更換為對應的同學照片材質
                 clickerImg.src = skinImages[skinName];
                 clickerImg.style.opacity = '1';
                 svgWrapper.style.opacity = '0';
 
-                // 提供酷炫的特效光環
                 if (skinName === 'backyard') {
-                    // backyard 經典藍綠色微光
                     halo.className = "absolute -inset-8 rounded-full bg-gradient-to-r from-blue-600 via-indigo-500 to-emerald-400 opacity-40 blur-2xl transition-all duration-700 scale-95";
                 } else if (skinName === 'shock') {
                     halo.className = "absolute -inset-8 rounded-full bg-gradient-to-r from-pink-500 via-purple-600 to-amber-400 opacity-60 blur-3xl transition-all duration-700 scale-100";
@@ -769,7 +788,7 @@
                 }
             }
 
-            // 更新材質庫中已選取外框
+            // 更新選取外框樣式
             const allBtns = document.querySelectorAll('#skinSelectorGrid button');
             allBtns.forEach(b => {
                 b.classList.remove('border-amber-500', 'border-indigo-500');
@@ -805,24 +824,17 @@
         const clickBtn = document.getElementById('mainClickBtn');
         
         clickBtn.addEventListener('click', (e) => {
-            // 增量
             gameState.cookies += gameState.clickPower;
             gameState.totalEarned += gameState.clickPower;
 
-            // 脆碎音效
             playSynthesizedSound(200 + Math.random() * 120, 'triangle', 0.08);
-
-            // 產生手動浮動數字
             generateFloatingText(e.clientX, e.clientY, `+${formatVal(gameState.clickPower)}`);
-
-            // 喷灑碎屑粒子
             generateCookieParticles(e.clientX, e.clientY);
 
             updateUI();
             saveGame();
         });
 
-        // 噴灑碎屑
         function generateCookieParticles(x, y) {
             for (let i = 0; i < 6; i++) {
                 const particle = document.createElement('div');
@@ -833,7 +845,6 @@
                 particle.style.left = `${x}px`;
                 particle.style.top = `${y}px`;
                 
-                // 隨機橫向漂移與顏色
                 particle.style.setProperty('--drift', `${Math.random() * 100 - 50}px`);
                 const colors = ['#3b82f6', '#6366f1', '#2563eb', '#1d4ed8'];
                 particle.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
@@ -843,7 +854,6 @@
             }
         }
 
-        // 浮動文字
         function generateFloatingText(clientX, clientY, text) {
             const el = document.createElement('div');
             el.className = 'floating-text text-2xl font-black text-amber-300';
@@ -861,7 +871,7 @@
         // ------------------ 隨機黃金餅乾 ------------------
         let goldenCookieActive = false;
         setInterval(() => {
-            if (goldenCookieActive || Math.random() > 0.15) return; // 15% 機率生成
+            if (goldenCookieActive || Math.random() > 0.15) return;
             
             goldenCookieActive = true;
             const container = document.getElementById('goldenCookieLayer');
@@ -869,8 +879,7 @@
             const goldenCookie = document.createElement('button');
             goldenCookie.className = 'golden-cookie absolute w-24 h-24 cursor-pointer focus:outline-none pointer-events-auto z-40';
             
-            // 隨機在主屏幕浮現
-            const randX = Math.random() * 70 + 15; // 避開邊緣
+            const randX = Math.random() * 70 + 15;
             const randY = Math.random() * 70 + 15;
             goldenCookie.style.left = `${randX}%`;
             goldenCookie.style.top = `${randY}%`;
@@ -902,7 +911,6 @@
 
             container.appendChild(goldenCookie);
 
-            // 12秒後自動消失
             setTimeout(() => {
                 if (goldenCookie.parentNode) {
                     goldenCookie.remove();
@@ -910,7 +918,7 @@
                 }
             }, 12000);
 
-        }, 15000); // 每 15 秒嘗試檢查一次
+        }, 15000);
 
         // ------------------ 購買研發與自動化 ------------------
         function buyUpgrade(uId) {
@@ -922,10 +930,7 @@
                 // 複利算價
                 item.currentCost = Math.floor(item.baseCost * Math.pow(1.15, item.count));
 
-                // 重新計算產能
                 recalculateProductivity();
-
-                // 播放商店採購音效
                 playSynthesizedSound(450, 'sine', 0.12);
 
                 updateUI();
@@ -941,7 +946,6 @@
                     power += gameState.upgrades[key].count * gameState.upgrades[key].power;
                 }
             });
-            gameState.clickPower = power;
 
             // 被動 CPS (秒產)
             let currentCps = 0;
@@ -950,7 +954,12 @@
                     currentCps += gameState.upgrades[key].count * gameState.upgrades[key].cps;
                 }
             });
-            gameState.cps = currentCps;
+
+            // 轉世重生加成 (每個代幣 +10% 產能)
+            const rebirthMult = 1 + ((gameState.rebirthTokens || 0) * 0.10);
+
+            gameState.clickPower = Math.floor(power * rebirthMult);
+            gameState.cps = currentCps * rebirthMult;
         }
 
         // ------------------ 被動時鐘計數器 (100ms 間隔流暢渲染) ------------------
@@ -963,10 +972,10 @@
             }
         }, 100);
 
-        // 每隔十秒自動為玩家存檔
+        // 每隔十秒自動存檔
         setInterval(saveGame, 10000);
 
-        // ------------------ 商店標籤頁切換 ------------------
+        // 商店標籤頁切換
         function switchShopTab(tab) {
             const mTab = document.getElementById('tab-manual');
             const pTab = document.getElementById('tab-passive');
@@ -1000,13 +1009,11 @@
             devPanel.classList.add('hidden');
         });
 
-        // 密碼彈窗控制邏輯
         function openPasswordModal() {
             document.getElementById('passwordModal').classList.remove('hidden');
             const passwordInput = document.getElementById('devPasswordInput');
             passwordInput.value = '';
             document.getElementById('passwordErrorMsg').classList.add('opacity-0');
-            // 自動聚焦到密碼框
             setTimeout(() => {
                 passwordInput.focus();
             }, 100);
@@ -1020,30 +1027,25 @@
             const pwdInput = document.getElementById('devPasswordInput');
             const errorMsg = document.getElementById('passwordErrorMsg');
             
-            // 嚴格區分大小寫驗證「SmallTin」
             if (pwdInput.value === 'SmallTin') {
                 closePasswordModal();
                 devPanel.classList.remove('hidden');
-                playSynthesizedSound(600, 'sine', 0.2); // 播放正確解鎖音效
+                playSynthesizedSound(600, 'sine', 0.2);
             } else {
                 errorMsg.classList.remove('opacity-0');
                 pwdInput.classList.add('border-rose-500');
-                playSynthesizedSound(120, 'sawtooth', 0.25); // 播放錯誤警示音
-                
-                // 震動/閃動輸入框效果
+                playSynthesizedSound(120, 'sawtooth', 0.25);
                 pwdInput.focus();
                 pwdInput.select();
             }
         }
 
-        // 綁定輸入框 Enter 鍵快捷提交
         document.getElementById('devPasswordInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') {
                 verifyDevPassword();
             }
         });
 
-        // 移除原有的輸入框紅框警告
         document.getElementById('devPasswordInput').addEventListener('input', () => {
             document.getElementById('devPasswordInput').classList.remove('border-rose-500');
             document.getElementById('passwordErrorMsg').classList.add('opacity-0');
@@ -1073,7 +1075,6 @@
             triggerToastBanner("🛠️ 分數已全數清空！");
         }
 
-        // 音效控制開關
         const soundToggleBtn = document.getElementById('soundToggle');
         soundToggleBtn.addEventListener('click', () => {
             gameState.soundEnabled = !gameState.soundEnabled;
@@ -1088,16 +1089,10 @@
 
         // ------------------ 啟動初始化 ------------------
         window.onload = function() {
-            // 載入存檔
+            initShopDOM(); // 初始化動態生成 10+10 項商店列表
             loadGame();
-            
-            // 計算收益
             recalculateProductivity();
-            
-            // 初次更新 UI
             updateUI();
-            
-            // 初始化選定材質 (一開始載入 backyard)
             changeSkin(gameState.activeSkin);
         };
     </script>
