@@ -1,0 +1,100 @@
+                e.preventDefault();
+                if (!performAction()) {
+                    toggleInventory();
+                }
+            }
+            // M鍵邏輯：開關地圖
+            if (e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                toggleMap();
+            }
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // 手機虛擬搖桿
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickKnob = document.getElementById('joystick-knob');
+        let isJoystickActive = false;
+        let joystickStart = { x: 0, y: 0 };
+        let joystickVector = { x: 0, y: 0 };
+
+        joystickBase.addEventListener('touchstart', e => {
+            isJoystickActive = true;
+            const rect = joystickBase.getBoundingClientRect();
+            joystickStart.x = rect.left + rect.width / 2;
+            joystickStart.y = rect.top + rect.height / 2;
+        });
+
+        window.addEventListener('touchmove', e => {
+            if (!isJoystickActive) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - joystickStart.x;
+            const dy = touch.clientY - joystickStart.y;
+            const dist = Math.hypot(dx, dy);
+            const maxDist = 40;
+
+            let angle = Math.atan2(dy, dx);
+            let kx = dx, ky = dy;
+            if (dist > maxDist) { kx = Math.cos(angle) * maxDist; ky = Math.sin(angle) * maxDist; }
+
+            joystickKnob.style.transform = `translate(${kx}px, ${ky}px)`;
+            joystickVector.x = kx / maxDist; joystickVector.y = ky / maxDist;
+        });
+
+        window.addEventListener('touchend', () => {
+            if (!isJoystickActive) return;
+            isJoystickActive = false;
+            joystickKnob.style.transform = 'translate(0px, 0px)';
+            joystickVector = { x: 0, y: 0 };
+        });
+
+        document.getElementById('btn-action').addEventListener('click', () => {
+            performAction();
+        });
+
+
+        // --- 核心遊戲循環與數值計算 ---
+        let lastTime = performance.now();
+        let exactFreezeDamage = 2.0;
+        let secondTimer = 0;
+        let stepCountReset = 0;
+
+        function gameLoop(now) {
+            let dt = (now - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = now;
+
+            if (isGameRunning && !isMapOpen) {
+                updatePhysics(dt);
+                updateGameTime(dt);
+                updateStatusBars(dt);
+                render();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhysics(dt) {
+            let mx = 0, my = 0;
+            if (keys['w'] || keys['arrowup']) { my = -1; game.player.facing = 'NW'; }
+            if (keys['s'] || keys['arrowdown']) { my = 1; game.player.facing = 'SE'; }
+            if (keys['a'] || keys['arrowleft']) { mx = -1; game.player.facing = 'SW'; }
+            if (keys['d'] || keys['arrowright']) { mx = 1; game.player.facing = 'NE'; }
+
+            if (isJoystickActive) {
+                mx = joystickVector.x; my = joystickVector.y;
+                if (Math.abs(mx) > Math.abs(my)) game.player.facing = mx > 0 ? 'NE' : 'SW';
+                else game.player.facing = my > 0 ? 'SE' : 'NW';
+            }
+
+            if (mx !== 0 && my !== 0) { const len = Math.hypot(mx, my); mx /= len; my /= len; }
+
+            let oldX = game.player.x, oldY = game.player.y;
+            let currentSpeed = game.stamina <= 0 ? game.player.speed * 0.4 : game.player.speed;
+
+            game.player.x += mx * currentSpeed; game.player.y += my * currentSpeed;
+
+            mapObjects.forEach(obj => {
+                if (obj.type === 'building' || obj.type === 'shelter') {

@@ -1,0 +1,100 @@
+                    osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'craft') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'freeze') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.5);
+                } else if (type === 'chime') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.15);
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.3);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.6);
+                }
+            } catch (e) {
+                console.error(e);
+            }
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('audio-toggle-btn');
+            if (isAudioMuted) {
+                btn.innerHTML = `<i data-lucide="volume-x" class="w-4 h-4 text-red-400"></i>`;
+            } else {
+                btn.innerHTML = `<i data-lucide="volume-2" class="w-4 h-4"></i>`;
+                initAudio();
+            }
+            lucide.createIcons();
+        }
+
+        // --- 遊戲核心數據狀態 ---
+        let game = {
+            mode: '365', // '100', '365', 'endless'
+            day: 1,
+            timeOfDay: 0,
+            hp: 100,
+            maxHp: 100,
+            hunger: 100,
+            maxHunger: 100,
+            stamina: 500,
+            maxStamina: 500,
+            customMarker: null, // 自訂地圖標記 {x, y}
+            
+            resources: {
+                wood: 15,
+                steel: 10,
+                leather: 5,
+                rawMeat: 0,
+                cookedMeat: 0
+            },
+
+            workbenchLvl: 1,
+            equippedAxe: { name: "木製斧頭", quality: 0, efficiency: 1 },
+            equippedClothes: null,
+            equippedBed: { name: "乾草睡地", quality: 0, staminaRate: 5 },
+
+            shelter: {
+                built: false,
+                level: -1,
+                upgrading: false,
+                daysRemaining: 0,
+                targetLevel: 0
+            },
+
+            player: {
+                x: 300,
+                y: 300,
+                vx: 0,
+                vy: 0,
+                speed: 3,
+                stepsCount: 0,
+                facing: 'SE'
+            }
+        };
+
+        const RECIPES = [
+            { id: 'stone_axe', name: '石製斧頭', type: 'tool', desc: '大幅增加木頭採集效率', cost: { wood: 15, steel: 5 }, minLvl: 1 },
+            { id: 'stone_sword', name: '石製鋼劍', type: 'weapon', desc: '高效擊殺動物以獲取肉塊', cost: { wood: 10, steel: 15 }, minLvl: 1 },
+            { id: 'furnace', name: '野外熔爐', type: 'building', desc: '可煮熟肉類，且在附近提供完全保暖效果', cost: { wood: 10, steel: 25 }, minLvl: 1 },
+            { id: 'leather_clothes', name: '抗寒皮革大衣', type: 'armor', desc: '穿戴後減少 50% 寒冷傷害', cost: { leather: 15, steel: 5 }, minLvl: 1 },
+            { id: 'wood_bed', name: '舒適木床', type: 'bed', desc: '放置後於夜間睡覺能以 2 倍速度恢復體力', cost: { wood: 40, leather: 10 }, minLvl: 2 },
+            { id: 'military_bed', name: '軍用鋼骨床', type: 'bed', desc: '放置後於夜間睡覺能以 4 倍速度恢復體力', cost: { steel: 50, leather: 20 }, minLvl: 3 }
+        ];

@@ -1,0 +1,100 @@
+                            <span class="text-xl">👕</span>
+                            <div>
+                                <p class="text-xs text-stone-300 font-bold truncate" id="equipped-clothes">無衣物</p>
+                                <p class="text-[9px] text-stone-500" id="clothes-warmth">防寒: 0%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 合成面板 -->
+            <div id="panel-crafting" class="space-y-4 hidden">
+                <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-bold text-stone-200">工作台 (LV.<span id="workbench-level">1</span>)</h3>
+                        <span id="workbench-status" class="text-[10px] bg-red-950 text-red-400 px-2 py-0.5 rounded font-bold">遠離工作台</span>
+                    </div>
+                    <button onclick="upgradeWorkbench()" id="btn-upgrade-workbench" class="bg-amber-600 hover:bg-amber-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold text-[10px] px-2.5 py-1 rounded transition">
+                        升級 (木:50 鋼:30)
+                    </button>
+                </div>
+                
+                <!-- 配方列表 -->
+                <div class="space-y-2 max-h-[320px] overflow-y-auto pr-1" id="recipes-list">
+                    <!-- 動態生成配方卡片 -->
+                </div>
+            </div>
+
+            <!-- 庇護所面板 -->
+            <div id="panel-shelter" class="space-y-4 hidden">
+                <div class="border-b border-stone-800 pb-2">
+                    <h3 class="text-sm font-bold text-stone-200">庇護所建造與升級</h3>
+                    <p class="text-[10px] text-stone-400 mt-0.5">庇護所能為你提供極佳的安全性與體力恢复加成</p>
+                </div>
+
+                <div class="bg-stone-900/60 p-4 rounded-lg border border-stone-800 text-center">
+                    <div class="text-4xl mb-2" id="shelter-icon">⛺</div>
+                    <h4 class="text-base font-bold text-white" id="shelter-title">尚未建造庇護所</h4>
+                    <p class="text-xs text-stone-400 mt-1" id="shelter-desc">需要資源：木頭 x30, 鋼鐵 x20 以建立初始 0 級庇護所</p>
+                    
+                    <!-- 建造/升級進度條 -->
+                    <div id="shelter-progress-container" class="mt-3 hidden">
+                        <div class="flex justify-between text-[10px] text-stone-400 mb-1">
+                            <span>正在建造升級中...</span>
+                            <span id="shelter-timer">剩餘天數: 1 天</span>
+                        </div>
+                        <div class="w-full bg-stone-800 h-2.5 rounded-full overflow-hidden">
+                            <div id="shelter-progress-bar" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <button id="btn-upgrade-shelter" onclick="handleShelterAction()" class="mt-4 w-full bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold py-2.5 rounded transition shadow">
+                        建造 0 級庇護所
+                    </button>
+                </div>
+
+                <!-- 庇護所升級規則表 -->
+                <div class="bg-stone-950 p-3 rounded border border-stone-800 text-[11px] text-stone-400 space-y-1">
+                    <p class="font-bold text-stone-300">📈 升級需求公式：前一等的 [2 * 等級] 倍</p>
+                    <p>• 0級 ➔ 1級: 需要 1 天 (消耗: 60 木, 40 鋼)</p>
+                    <p>• 1級 ➔ 2級: 需要 3 天 (消耗: 240 木, 160 鋼)</p>
+                    <p>• 2級 ➔ 3級: 需要 5 天 (消耗: 1440 木, 960 鋼)</p>
+                    <p>• 3級 ➔ 4級: 需要 10 天 (消耗: 11520 木, 7680 鋼)</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部消息提示 & 食物控制 -->
+        <div class="mt-4 border-t border-stone-800 pt-3 flex flex-col gap-2">
+            <!-- 食物快捷食用 -->
+            <div class="flex justify-between items-center bg-stone-900/40 p-2 rounded border border-stone-800">
+                <div class="flex items-center gap-2">
+                    <span class="text-xl">🥩</span>
+                    <div>
+                        <p class="text-xs text-stone-200 font-bold">生肉 x<span id="count-raw-meat">0</span> / 熟肉 x<span id="count-cooked-meat">0</span></p>
+                        <p class="text-[9px] text-stone-400 hidden md:block">熟肉可恢復 40% 飢餓，生肉恢復 10% 飢餓並扣血</p>
+                    </div>
+                </div>
+                <div class="flex gap-1.5 shrink-0">
+                    <button onclick="eatMeat('raw')" class="bg-rose-950 hover:bg-rose-900 text-rose-300 text-[10px] px-2 py-1 rounded border border-rose-800 transition">吃生肉</button>
+                    <button onclick="eatMeat('cooked')" class="bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-[10px] px-2 py-1 rounded border border-amber-800 transition">吃熟肉</button>
+                </div>
+            </div>
+
+            <!-- 系統日誌訊息 -->
+            <div id="log-box" class="h-20 bg-stone-950 p-2 rounded border border-stone-900 text-[11px] overflow-y-auto font-mono text-stone-400 space-y-0.5">
+                <div>[系統] 遊戲已載入，準備迎接末日的挑戰。</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 遊戲結束/開始 覆蓋面板 -->
+    <div id="start-overlay" class="absolute inset-0 z-50 bg-stone-950/95 flex flex-col items-center justify-center p-6 text-center">
+        <h1 class="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-500 via-amber-500 to-yellow-500 tracking-wider mb-2 drop-shadow-lg" style="font-family: 'ZCOOL KuaiLe', sans-serif;">末日都市：極限生存</h1>
+        <p class="text-stone-400 text-xs md:text-sm max-w-md mb-6 leading-relaxed">
+            克服極寒的黑夜、飢餓的侵襲與體力限制。建造溫暖的庇護所、建立熔爐與工作台，成為真正的生存大師。
+        </p>
+
+        <!-- 遊戲模式選擇 -->
+        <div class="mb-6 w-full max-w-sm">

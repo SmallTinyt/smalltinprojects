@@ -1,0 +1,100 @@
+                    if (Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < obj.size * 0.8) {
+                        game.player.x = oldX; game.player.y = oldY;
+                    }
+                }
+            });
+
+            game.player.x = Math.max(20, Math.min(WORLD_SIZE - 20, game.player.x));
+            game.player.y = Math.max(20, Math.min(WORLD_SIZE - 20, game.player.y));
+
+            let distMoved = Math.hypot(game.player.x - oldX, game.player.y - oldY);
+            if (distMoved > 0.05) {
+                stepCountReset += distMoved;
+                if (stepCountReset >= 16) {
+                    game.player.stepsCount++; stepCountReset = 0;
+                    if (game.player.stepsCount >= 10) {
+                        game.stamina = Math.max(0, game.stamina - 1);
+                        game.player.stepsCount = 0; updateUI();
+                    }
+                }
+            }
+
+            mapObjects.forEach(obj => {
+                if (obj.type === 'animal') {
+                    obj.animalWalkTimer += dt;
+                    if (obj.animalWalkTimer > 2.5) { obj.animalWalkDir = Math.random() * Math.PI * 2; obj.animalWalkTimer = 0; }
+                    obj.x += Math.cos(obj.animalWalkDir) * 0.4; obj.y += Math.sin(obj.animalWalkDir) * 0.4;
+                    obj.x = Math.max(10, Math.min(WORLD_SIZE - 10, obj.x)); obj.y = Math.max(10, Math.min(WORLD_SIZE - 10, obj.y));
+                }
+            });
+            
+            game.player.vx = mx; game.player.vy = my;
+        }
+
+        function updateGameTime(dt) {
+            game.timeOfDay += dt;
+            if (game.timeOfDay >= 600) {
+                game.timeOfDay = 0;
+                game.day++;
+                logMsg(`🎉 新的一天開始了！當前為生存第 ${game.day} 天。`, "success");
+                playSound('chime');
+
+                if (game.shelter.upgrading) {
+                    game.shelter.daysRemaining--;
+                    if (game.shelter.daysRemaining <= 0) {
+                        game.shelter.built = true; game.shelter.level = game.shelter.targetLevel; game.shelter.upgrading = false;
+                        logMsg(`🏆 庇護所成功升級到等級 ${game.shelter.level}！`, "success");
+                        showModal("⛺ 庇護所升級完成", `庇護所已升級為 LV.${game.shelter.level}！這將提供更優異的保護。`);
+                    } else {
+                        logMsg(`🔨 庇護所施工剩餘 ${game.shelter.daysRemaining} 天。`, "success");
+                    }
+                }
+
+                // 檢查獲勝條件
+                if (game.mode !== 'endless' && game.day > parseInt(game.mode)) {
+                    isGameRunning = false;
+                    showModal("🏆 恭喜通關！", `你成功在末日都市裡存活了 ${game.mode} 天！你是真正的生存大師！`);
+                }
+            }
+        }
+
+        function updateStatusBars(dt) {
+            secondTimer += dt;
+            if (secondTimer >= 1.0) {
+                secondTimer = 0;
+                game.hunger = Math.max(0, game.hunger - 0.35);
+                if (game.hunger <= 0) { game.hp = Math.max(0, game.hp - 5); logMsg("極度飢餓，迅速失血！", "danger"); }
+
+                if (game.player.vx === 0 && game.player.vy === 0 && !isJoystickActive) {
+                    game.stamina = Math.min(game.maxStamina, game.stamina + 0.2);
+                }
+
+                let nearFurnace = false, nearWorkbench = false;
+                mapObjects.forEach(obj => {
+                    let d = Math.hypot(game.player.x - obj.x, game.player.y - obj.y);
+                    if (obj.type === 'furnace' && d < 75) nearFurnace = true;
+                    if (obj.type === 'workbench' && d < 65) nearWorkbench = true;
+                });
+
+                const wbStatus = document.getElementById('workbench-status');
+                if (nearWorkbench) { wbStatus.className = "text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded font-bold"; wbStatus.innerText = "鄰近工作台"; } 
+                else { wbStatus.className = "text-[10px] bg-red-950 text-red-400 px-2 py-0.5 rounded font-bold"; wbStatus.innerText = "遠離工作台"; }
+
+                let isNight = game.timeOfDay >= 300;
+                let hasWarmth = nearFurnace || (game.shelter.built && game.shelter.level >= 0);
+                let clothesProtection = game.equippedClothes ? game.equippedClothes.warmth : 0.0;
+                const tempLabel = document.getElementById('temp-status');
+                const warningDiv = document.getElementById('freeze-warning');
+
+                if (isNight && !hasWarmth) {
+                    tempLabel.innerText = "極寒 (-15°C)"; tempLabel.className = "font-bold text-sky-400 animate-pulse";
+                    warningDiv.classList.remove('hidden');
+                    let rawDamage = exactFreezeDamage * (1.0 - clothesProtection);
+                    let finalDmg = Math.max(1, Math.round(rawDamage));
+                    game.hp = Math.max(0, game.hp - finalDmg);
+                    playSound('freeze');
+                    exactFreezeDamage *= 1.1;
+                    document.getElementById('freeze-dmg-show').innerText = Math.round(exactFreezeDamage);
+                } else {
+                    tempLabel.innerText = hasWarmth ? "溫暖 (26°C)" : "舒適 (24°C)";
+                    tempLabel.className = "font-bold text-amber-400";

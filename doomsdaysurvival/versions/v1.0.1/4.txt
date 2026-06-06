@@ -1,0 +1,100 @@
+            <p class="text-stone-300 text-sm font-bold mb-3">選擇生存目標模式：</p>
+            <div class="flex gap-2 justify-center" id="mode-selector">
+                <button class="mode-btn active px-4 py-2 bg-stone-800 border border-stone-600 rounded text-stone-300 text-sm font-bold transition flex-1" data-mode="100">100 天</button>
+                <button class="mode-btn px-4 py-2 bg-stone-800 border border-stone-600 rounded text-stone-300 text-sm font-bold transition flex-1" data-mode="365">365 天</button>
+                <button class="mode-btn px-4 py-2 bg-stone-800 border border-stone-600 rounded text-stone-300 text-sm font-bold transition flex-1" data-mode="endless">無盡模式</button>
+            </div>
+        </div>
+
+        <div class="space-y-3 w-64">
+            <button onclick="startGame(false)" class="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-white font-bold py-3 px-6 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.5)] text-sm transition transform hover:-translate-y-0.5">
+                開始全新生存
+            </button>
+            <button id="btn-load-start" onclick="startGame(true)" class="w-full bg-stone-800 hover:bg-stone-700 disabled:opacity-50 text-stone-300 font-bold py-3 px-6 rounded-lg text-sm transition border border-stone-700">
+                載入上次存檔
+            </button>
+        </div>
+        <p class="text-[10px] text-stone-600 mt-12">System will automatically adapt to Mobile/Desktop UI</p>
+    </div>
+
+    <!-- 地圖模組 (M 鍵開啟) -->
+    <div id="map-modal" class="hidden absolute inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4 backdrop-blur-sm">
+        <div class="w-full max-w-lg bg-stone-900 border border-stone-700 rounded-xl p-4 shadow-2xl flex flex-col items-center relative">
+            <button onclick="toggleMap()" class="absolute top-4 right-4 text-stone-400 hover:text-white"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <h2 class="text-white text-xl font-bold mb-1 flex items-center gap-2"><i data-lucide="map" class="w-5 h-5 text-amber-500"></i> 世界雷達地圖</h2>
+            <p class="text-xs text-stone-400 mb-4">點擊地圖任意處可以放置自訂標記。綠點: 玩家, 藍點: 工作台, 橘點: 庇護所</p>
+            
+            <div class="relative w-full aspect-square max-w-[400px] bg-stone-950 border-2 border-stone-700 rounded-lg overflow-hidden shadow-inner">
+                <canvas id="minimap-canvas" class="w-full h-full cursor-crosshair"></canvas>
+            </div>
+            
+            <button onclick="toggleMap()" class="mt-6 w-full bg-stone-700 hover:bg-stone-600 text-white font-bold py-3 rounded-lg text-sm transition">
+                關閉地圖 (M)
+            </button>
+        </div>
+    </div>
+
+    <!-- 遊戲事件彈窗模組 -->
+    <div id="modal-container" class="absolute inset-0 z-50 bg-black/80 flex items-center justify-center p-4 hidden backdrop-blur-sm">
+        <div class="bg-stone-900 border border-stone-700 p-6 rounded-xl max-w-sm w-full text-center shadow-2xl">
+            <h3 id="modal-title" class="text-lg font-bold text-white mb-2">事件</h3>
+            <p id="modal-desc" class="text-sm text-stone-300 mb-6 leading-relaxed">描述文字</p>
+            <button onclick="closeModal()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold px-6 py-2 rounded text-xs transition shadow-lg">
+                確定
+            </button>
+        </div>
+    </div>
+
+    <!-- Web Audio API 音效與核心邏輯 -->
+    <script>
+        // --- 裝置偵測與 UI 適配 ---
+        let isMobileDevice = false;
+        function detectDevice() {
+            if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || navigator.maxTouchPoints > 0) {
+                isMobileDevice = true;
+                document.body.classList.add('is-mobile');
+                // 手機版：左上角狀態欄向右推，騰出空間給地圖按鈕
+                document.getElementById('top-hud').classList.add('ml-16');
+            }
+        }
+        detectDevice();
+
+        // 模式選擇邏輯
+        let selectedMode = '365'; // 預設 365
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedMode = e.target.getAttribute('data-mode');
+            });
+        });
+
+        // --- 音效管理器 (Web Audio API) ---
+        let audioCtx = null;
+        let isAudioMuted = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'chop') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.15);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(300, audioCtx.currentTime);

@@ -1,0 +1,100 @@
+
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('apocalypse_survival_save')) {
+                document.getElementById('btn-load-start').removeAttribute('disabled');
+            } else {
+                document.getElementById('btn-load-start').setAttribute('disabled', 'true');
+            }
+            lucide.createIcons();
+        });
+
+        function showModal(title, desc) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-container').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+        }
+
+        function logMsg(text, type = "info") {
+            const box = document.getElementById('log-box');
+            let color = "text-stone-300";
+            if (type === "warning") color = "text-yellow-400 font-bold";
+            if (type === "danger") color = "text-red-400 font-bold animate-pulse";
+            if (type === "success") color = "text-green-400 font-bold";
+            
+            box.innerHTML += `<div class="${color}">[${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}] ${text}</div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function switchTab(tab) {
+            ['inventory', 'crafting', 'shelter'].forEach(t => {
+                document.getElementById(`panel-${t}`).classList.add('hidden');
+                document.getElementById(`tab-${t}`).className = "py-2 text-xs font-bold rounded text-stone-400 hover:text-stone-200 transition";
+            });
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+            document.getElementById(`tab-${tab}`).className = "py-2 text-xs font-bold rounded text-amber-500 bg-stone-800 transition";
+        }
+
+        function toggleInventory() {
+            const panel = document.getElementById('side-panel');
+            panel.classList.toggle('hidden');
+            // 如果是在電腦版切換，觸發重繪畫布大小
+            if (!isMobileDevice) {
+                setTimeout(resizeCanvas, 50);
+            }
+        }
+
+        let isMapOpen = false;
+        function toggleMap() {
+            const mapModal = document.getElementById('map-modal');
+            isMapOpen = !isMapOpen;
+            if (isMapOpen) {
+                mapModal.classList.remove('hidden');
+                drawMinimap();
+            } else {
+                mapModal.classList.add('hidden');
+            }
+        }
+
+        let isGameRunning = false;
+        function startGame(loadSaved = false) {
+            initAudio();
+            document.getElementById('start-overlay').classList.add('hidden');
+            isGameRunning = true;
+
+            if (loadSaved) {
+                loadGame();
+            } else {
+                game.mode = selectedMode;
+                game.day = 1;
+                game.timeOfDay = 0;
+                game.hp = 100;
+                game.hunger = 100;
+                game.stamina = 500;
+                game.resources = { wood: 30, steel: 20, leather: 10, rawMeat: 2, cookedMeat: 0 };
+                game.workbenchLvl = 1;
+                game.equippedAxe = { name: "木製斧頭", quality: 0, efficiency: 1 };
+                game.equippedClothes = null;
+                game.equippedBed = { name: "乾草睡地", quality: 0, staminaRate: 5 };
+                game.shelter = { built: false, level: -1, upgrading: false, daysRemaining: 0, targetLevel: 0 };
+                game.customMarker = null;
+                game.player.x = 400;
+                game.player.y = 400;
+                
+                initMap();
+                let modeTxt = game.mode === 'endless' ? '無盡模式' : `${game.mode} 天`;
+                logMsg(`全新生存開始！當前目標：${modeTxt}。按 E 鍵互動/開背包，M 鍵看地圖。`, "success");
+            }
+            
+            updateUI();
+            playSound('chime');
+        }
+
+        function saveGame() {
+            try {
+                const saveData = {
+                    game,
+                    mapObjects: mapObjects.map(obj => ({

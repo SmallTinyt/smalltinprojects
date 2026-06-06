@@ -1,0 +1,100 @@
+                }
+            });
+        }
+
+        function getEdgePos(px, py, padding) {
+            let cx = canvas.width / 2;
+            let cy = canvas.height / 2;
+            let dx = px - cx;
+            let dy = py - cy;
+            let hw = cx - padding;
+            let hh = cy - padding;
+
+            if (Math.abs(dx) <= hw && Math.abs(dy) <= hh) return { offscreen: false };
+
+            let scaleX = Math.abs(dx) > 0.001 ? hw / Math.abs(dx) : 9999;
+            let scaleY = Math.abs(dy) > 0.001 ? hh / Math.abs(dy) : 9999;
+            let scale = Math.min(scaleX, scaleY);
+
+            return { x: cx + dx * scale, y: cy + dy * scale, offscreen: true, angle: Math.atan2(dy, dx) };
+        }
+
+        function drawPointer(x, y, angle, color, label) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            // 繪製指向目標的箭頭
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(12, 0); ctx.lineTo(-8, 8); ctx.lineTo(-8, -8); ctx.closePath();
+            ctx.fill();
+            // 發光效果
+            ctx.shadowColor = color; ctx.shadowBlur = 10; ctx.fill();
+            ctx.restore();
+
+            // 繪製標籤
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(x - 18, y + 12, 36, 14);
+            ctx.fillStyle = 'white';
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x, y + 22);
+        }
+
+        function drawPointerFlag(x, y, color) {
+            ctx.fillStyle = '#cbd5e1'; ctx.fillRect(x, y, 2, 25);
+            ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x+2, y); ctx.lineTo(x+15, y+5); ctx.lineTo(x+2, y+10); ctx.fill();
+            ctx.fillStyle = 'white'; ctx.font = 'bold 10px sans-serif'; ctx.textAlign = 'center'; ctx.fillText('標記', x, y - 5);
+        }
+
+        // (其他繪圖函數保持不變)
+        function drawGround(light) {
+            ctx.save();
+            ctx.fillStyle = `rgb(${Math.floor(25 * light)}, ${Math.floor(25 * light)}, ${Math.floor(30 * light)})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = `rgba(255,255,255,${0.03 * light})`; ctx.lineWidth = 1;
+            const pTL = worldToScreen(0, 0), pTR = worldToScreen(WORLD_SIZE, 0);
+            const pBL = worldToScreen(0, WORLD_SIZE), pBR = worldToScreen(WORLD_SIZE, WORLD_SIZE);
+            ctx.beginPath(); ctx.moveTo(pTL.x, pTL.y); ctx.lineTo(pTR.x, pTR.y); ctx.lineTo(pBR.x, pBR.y); ctx.lineTo(pBL.x, pBL.y); ctx.closePath();
+            ctx.fillStyle = `rgb(${Math.floor(38 * light)}, ${Math.floor(38 * light)}, ${Math.floor(42 * light)})`;
+            ctx.fill(); ctx.stroke();
+            ctx.strokeStyle = `rgba(234, 179, 8, ${0.12 * light})`; ctx.lineWidth = 4;
+            for (let i = 0; i < WORLD_SIZE; i += 100) {
+                let p1 = worldToScreen(i, WORLD_SIZE/2), p2 = worldToScreen(i + 50, WORLD_SIZE/2);
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+                p1 = worldToScreen(WORLD_SIZE/2, i); p2 = worldToScreen(WORLD_SIZE/2, i + 50);
+                ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+            }
+            ctx.restore();
+        }
+
+        function drawBuilding(sx, sy, size, height, light) {
+            let topC = `rgb(${Math.floor(80*light)},${Math.floor(80*light)},${Math.floor(85*light)})`;
+            let leftC = `rgb(${Math.floor(55*light)},${Math.floor(55*light)},${Math.floor(60*light)})`;
+            let rightC = `rgb(${Math.floor(40*light)},${Math.floor(40*light)},${Math.floor(45*light)})`;
+            drawIsoBox(ctx, sx, sy, size, size, height, topC, leftC, rightC);
+            ctx.fillStyle = `rgba(10,10,12,${0.6 * light})`;
+            for (let h = 20; h < height - 10; h += 30) {
+                let wx1 = sx - 15*cos30, wy1 = sy + 15*sin30 - h;
+                ctx.beginPath(); ctx.moveTo(wx1, wy1); ctx.lineTo(wx1 - 10*cos30, wy1 + 10*sin30); ctx.lineTo(wx1 - 10*cos30, wy1 + 10*sin30 - 15); ctx.lineTo(wx1, wy1 - 15); ctx.fill();
+                let wx2 = sx + 15*cos30, wy2 = sy + 15*sin30 - h;
+                ctx.beginPath(); ctx.moveTo(wx2, wy2); ctx.lineTo(wx2 + 10*cos30, wy2 + 10*sin30); ctx.lineTo(wx2 + 10*cos30, wy2 + 10*sin30 - 15); ctx.lineTo(wx2, wy2 - 15); ctx.fill();
+            }
+        }
+        function drawTree(sx, sy, light) {
+            drawIsoBox(ctx, sx, sy, 4, 4, 18, `rgb(${Math.floor(100*light)},60,30)`, `rgb(${Math.floor(80*light)},45,20)`, `rgb(${Math.floor(60*light)},30,10)`);
+            drawIsoBox(ctx, sx, sy-15, 20, 20, 16, `rgb(${Math.floor(46*light)},160,55)`, `rgb(${Math.floor(34*light)},125,44)`, `rgb(${Math.floor(24*light)},100,34)`);
+        }
+        function drawSteelPile(sx, sy, light) { drawIsoBox(ctx, sx, sy, 16, 6, 6, '#a0a0aa', '#787882', '#5a5a64'); }
+        function drawLeatherPile(sx, sy, light) { drawIsoBox(ctx, sx, sy, 12, 12, 4, '#8b5a2b', '#6e461e', '#503214'); }
+        function drawWorkbench(sx, sy, quality, light) {
+            drawIsoBox(ctx, sx-8, sy+8, 3, 3, 10, '#5c4033', '#402e2a', '#2d1e1b'); drawIsoBox(ctx, sx+8, sy-8, 3, 3, 10, '#5c4033', '#402e2a', '#2d1e1b');
+            drawIsoBox(ctx, sx, sy, 22, 16, 4, '#966e50', '#78553c', '#5a412d'); drawIsoBox(ctx, sx-2, sy-6, 4, 4, 3, '#94a3b8', '#64748b', '#475569');
+        }
+        function drawFurnace(sx, sy, light) {
+            drawIsoBox(ctx, sx, sy, 20, 20, 16, '#646469', '#46464b', '#323237');
+            let rad = 6 + Math.sin(Date.now() / 100) * 2;
+            ctx.fillStyle = '#f97316'; ctx.beginPath(); ctx.arc(sx, sy - 18, rad, 0, Math.PI*2); ctx.fill();
+        }
+        function drawBed(sx, sy, obj, light) {
+            drawIsoBox(ctx, sx, sy, 16, 28, 4, '#78350f', '#451a03', '#290b00');

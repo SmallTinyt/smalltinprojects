@@ -1,0 +1,100 @@
+                    warningDiv.classList.add('hidden');
+                    exactFreezeDamage = 2.0;
+                }
+
+                if (game.hp <= 0) {
+                    isGameRunning = false;
+                    showModal("💀 你死去了", `你未能捱過末日考驗。存活了 ${game.day} 天。`);
+                    startGame(false);
+                }
+                updateUI();
+            }
+        }
+
+        // 執行互動 (回傳 true 代表有動作，false 代表空揮)
+        function performAction() {
+            if (!isGameRunning) return false;
+            let nearestObj = null; let minDist = 75;
+            mapObjects.forEach(obj => {
+                let d = Math.hypot(game.player.x - obj.x, game.player.y - obj.y);
+                if (d < minDist) { nearestObj = obj; minDist = d; }
+            });
+
+            if (nearestObj) {
+                if (nearestObj.type === 'tree') {
+                    playSound('chop');
+                    let power = game.equippedAxe ? game.equippedAxe.efficiency : 1;
+                    nearestObj.hp -= power;
+                    let got = Math.floor(2 + Math.random() * 3) * power;
+                    game.resources.wood += got; logMsg(`🪓 砍樹，獲得木頭 x${got}`, "success");
+                    if (nearestObj.hp <= 0) {
+                        mapObjects = mapObjects.filter(o => o.id !== nearestObj.id);
+                        setTimeout(() => mapObjects.push(createMapObject('tree', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE)), 5000);
+                    }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'steel_pile') {
+                    playSound('chop'); nearestObj.hp -= 2;
+                    let got = Math.floor(1 + Math.random() * 2);
+                    game.resources.steel += got; logMsg(`⛓️ 開採廢堆，獲得鋼鐵 x${got}`, "success");
+                    if (nearestObj.hp <= 0) {
+                        mapObjects = mapObjects.filter(o => o.id !== nearestObj.id);
+                        setTimeout(() => mapObjects.push(createMapObject('steel_pile', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE)), 8000);
+                    }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'leather_pile') {
+                    playSound('chop'); nearestObj.hp -= 3;
+                    let got = Math.floor(1 + Math.random() * 3);
+                    game.resources.leather += got; logMsg(`🎒 搜刮獲得皮革 x${got}`, "success");
+                    if (nearestObj.hp <= 0) {
+                        mapObjects = mapObjects.filter(o => o.id !== nearestObj.id);
+                        setTimeout(() => mapObjects.push(createMapObject('leather_pile', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE)), 10000);
+                    }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'animal') {
+                    playSound('hit');
+                    let dmg = (game.equippedAxe && game.equippedAxe.id === 'stone_sword') ? 3 : 1;
+                    nearestObj.hp -= dmg;
+                    if (nearestObj.hp <= 0) {
+                        mapObjects = mapObjects.filter(o => o.id !== nearestObj.id);
+                        let drops = Math.floor(2 + Math.random() * 3); game.resources.rawMeat += drops;
+                        logMsg(`🥩 獵殺成功！掉落生肉 x${drops}！`, "success");
+                        setTimeout(() => mapObjects.push(createMapObject('animal', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE)), 15000);
+                    }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'bed') {
+                    if (game.timeOfDay < 300) { logMsg("只能在夜晚休息！", "warning"); return true; }
+                    game.stamina = game.maxStamina; game.timeOfDay = 0; game.day++; saveGame();
+                    showModal("💤 睡覺成功", `你安穩地度過了黑夜！進度已儲存。`); playSound('chime');
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'furnace') {
+                    if (game.resources.rawMeat > 0) {
+                        game.resources.rawMeat--; game.resources.cookedMeat++;
+                        logMsg("🔥 熔爐烤熟生肉，獲得熟肉 x1", "success"); playSound('craft');
+                    } else { logMsg("沒有生肉可以烹飪。", "info"); }
+                    updateUI(); return true;
+                }
+            }
+            return false; // 沒有互動到物件
+        }
+
+        function upgradeWorkbench() {
+            if (game.resources.wood >= 50 && game.resources.steel >= 30) {
+                game.resources.wood -= 50; game.resources.steel -= 30; game.workbenchLvl++;
+                playSound('craft'); logMsg(`🔧 工作台升級到 LV.${game.workbenchLvl}！`, "success"); updateUI();
+            } else { logMsg("升級不足！需木頭x50, 鋼鐵x30", "warning"); }
+        }
+
+        function handleShelterAction() {
+            let nextLvl = game.shelter.level + 1;
+            let costWood = 30 * (nextLvl > 0 ? Math.pow(2, nextLvl) : 1);
+            let costSteel = 20 * (nextLvl > 0 ? Math.pow(2, nextLvl) : 1);
+            if (game.resources.wood < costWood || game.resources.steel < costSteel) {
+                logMsg(`資源不足！需木頭 x${costWood}, 鋼鐵 x${costSteel}`, "warning"); return;
+            }
+            game.resources.wood -= costWood; game.resources.steel -= costSteel;
+            

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>末日都市：極限生存 2.5D</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            user-select: none;
+            overflow: hidden;
+            background-color: #0d0d11;
+        }
+        canvas {
+            image-rendering: pixelated;
+        }
+        /* 隱藏滾動條 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+        /* 模式按鈕啟用狀態 */
+        .mode-btn.active {
+            background-color: #d97706;
+            color: white;
+            border-color: #f59e0b;
+        }
+        /* 手機版顯示/隱藏專用 */
+        .mobile-only { display: none; }
+        .is-mobile .mobile-only { display: flex; }
+        .is-mobile .desktop-only { display: none; }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col md:flex-row relative">
+
+    <!-- 遊戲主容器 -->
+    <div class="flex-1 h-full relative flex flex-col overflow-hidden">
+        
+        <!-- 手機版專屬：左上角地圖按鈕 -->
+        <button id="btn-mobile-map" onclick="toggleMap()" class="mobile-only absolute top-4 left-4 z-20 w-12 h-12 bg-stone-800/90 rounded-full border border-stone-600 text-white items-center justify-center shadow-lg font-bold text-xs">
+            地圖
+        </button>
+
+        <!-- 頂部 HUD (狀態欄) - 手機版往右推避免擋到地圖按鈕 -->
+        <div class="absolute top-4 md:left-4 right-4 z-10 flex flex-wrap gap-4 items-start justify-between pointer-events-none transition-all" id="top-hud">
+            <!-- 角色狀態條 -->
+            <div class="bg-black/75 backdrop-blur-md p-4 rounded-xl border border-stone-700/80 flex flex-col gap-2.5 w-64 md:w-72 pointer-events-auto shadow-2xl">
+                <!-- 生命值 (HP) -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-red-400 w-8 md:w-10">生命</span>
+                    <div class="flex-1 bg-stone-800 h-3.5 rounded-full overflow-hidden border border-red-950">
+                        <div id="hp-bar" class="bg-gradient-to-r from-red-600 to-rose-500 h-full transition-all duration-150" style="width: 100%;"></div>
+                    </div>
+                    <span id="hp-text" class="text-[10px] md:text-xs text-stone-200 font-black min-w-[40px] text-right">100/100</span>
+                </div>
+                <!-- 飢餓值 (Hunger) -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-amber-400 w-8 md:w-10">飢餓</span>
+                    <div class="flex-1 bg-stone-800 h-3.5 rounded-full overflow-hidden border border-amber-950">
+                        <div id="hunger-bar" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full transition-all duration-150" style="width: 100%;"></div>
+                    </div>
+                    <span id="hunger-text" class="text-[10px] md:text-xs text-stone-200 font-black min-w-[40px] text-right">100/100</span>
+                </div>
+                <!-- 體力值 (Stamina) -->
+                <div class="flex items-center gap-2">
+                    <span class="text-xs font-bold text-emerald-400 w-8 md:w-10">體力</span>
+                    <div class="flex-1 bg-stone-800 h-3.5 rounded-full overflow-hidden border border-emerald-950">
+                        <div id="stamina-bar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-full transition-all duration-150" style="width: 100%;"></div>
+                    </div>
+                    <span id="stamina-text" class="text-[10px] md:text-xs text-stone-200 font-black min-w-[40px] text-right">500/500</span>
+                </div>
+                <!-- 溫度狀態 -->
+                <div class="flex items-center justify-between text-xs pt-1 border-t border-stone-800 mt-1">
+                    <span class="text-stone-400 flex items-center gap-1">
+                        <i data-lucide="thermometer" class="w-3.5 h-3.5 text-blue-400"></i> <span class="hidden md:inline">環境溫度:</span>
+                    </span>
+                    <span id="temp-status" class="font-bold text-sky-400">舒適 (24°C)</span>
+                </div>
+            </div>
+
+            <!-- 時間與天數顯示 -->
+            <div class="bg-black/75 backdrop-blur-md px-4 py-3 rounded-xl border border-stone-700/80 flex flex-col items-center pointer-events-auto shadow-2xl">
+                <div class="text-[11px] md:text-sm font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-500"></i> 生存天數
+                </div>
+                <div class="text-xl md:text-3xl font-black text-white" id="day-display">1 / 365 天</div>
+                <!-- 時間指針進度條 -->
+                <div class="w-24 md:w-40 bg-stone-800 h-2 rounded-full mt-2 overflow-hidden relative">
+                    <div id="time-bar" class="bg-amber-400 h-full w-0"></div>

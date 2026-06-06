@@ -1,0 +1,100 @@
+            for (let i = 0; i < 22; i++) {
+                mapObjects.push(createMapObject('tree', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+                mapObjects.push(createMapObject('steel_pile', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+                mapObjects.push(createMapObject('leather_pile', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+            }
+            for (let i = 0; i < 8; i++) {
+                mapObjects.push(createMapObject('animal', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+            }
+        }
+
+        const cos30 = Math.cos(Math.PI / 6);
+        const sin30 = Math.sin(Math.PI / 6);
+
+        function worldToScreen(wx, wy, wz = 0) {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const dx = wx - game.player.x;
+            const dy = wy - game.player.y;
+            const sx = cx + (dx - dy) * cos30;
+            const sy = cy + (dx + dy) * sin30 - wz;
+            return { x: sx, y: sy };
+        }
+
+        function drawIsoBox(ctx, sx, sy, w, l, h, topC, leftC, rightC) {
+            ctx.fillStyle = leftC; ctx.beginPath(); ctx.moveTo(sx, sy);
+            ctx.lineTo(sx - w * cos30, sy + w * sin30); ctx.lineTo(sx - w * cos30, sy + w * sin30 - h);
+            ctx.lineTo(sx, sy - h); ctx.closePath(); ctx.fill();
+
+            ctx.fillStyle = rightC; ctx.beginPath(); ctx.moveTo(sx, sy);
+            ctx.lineTo(sx + l * cos30, sy + l * sin30); ctx.lineTo(sx + l * cos30, sy + l * sin30 - h);
+            ctx.lineTo(sx, sy - h); ctx.closePath(); ctx.fill();
+
+            ctx.fillStyle = topC; ctx.beginPath(); ctx.moveTo(sx, sy - h);
+            ctx.lineTo(sx - w * cos30, sy + w * sin30 - h); ctx.lineTo(sx + (l - w) * cos30, sy + (l + w) * sin30 - h);
+            ctx.lineTo(sx + l * cos30, sy + l * sin30 - h); ctx.closePath(); ctx.fill();
+        }
+
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!isGameRunning) return;
+
+            let ambientLight = 1.0;
+            if (game.timeOfDay > 270 && game.timeOfDay <= 300) ambientLight = 1.0 - ((game.timeOfDay - 270) / 30) * 0.6;
+            else if (game.timeOfDay > 300 && game.timeOfDay <= 570) ambientLight = 0.35;
+            else if (game.timeOfDay > 570) ambientLight = 0.35 + ((game.timeOfDay - 570) / 30) * 0.65;
+
+            drawGround(ambientLight);
+
+            let drawQueue = [...mapObjects];
+            drawQueue.push({ type: 'player', x: game.player.x, y: game.player.y, z: 0, size: 20 });
+            drawQueue.sort((a, b) => (a.x + a.y) - (b.x + b.y));
+
+            drawQueue.forEach(obj => {
+                const pos = worldToScreen(obj.x, obj.y, obj.z);
+                if (pos.x < -100 || pos.x > canvas.width + 100 || pos.y < -100 || pos.y > canvas.height + 300) return;
+
+                if (obj.type === 'player') drawRobloxPlayer(pos.x, pos.y, ambientLight);
+                else if (obj.type === 'building') drawBuilding(pos.x, pos.y, obj.size, obj.height, ambientLight);
+                else if (obj.type === 'tree') drawTree(pos.x, pos.y, ambientLight);
+                else if (obj.type === 'steel_pile') drawSteelPile(pos.x, pos.y, ambientLight);
+                else if (obj.type === 'leather_pile') drawLeatherPile(pos.x, pos.y, ambientLight);
+                else if (obj.type === 'animal') drawAnimal(pos.x, pos.y, obj, ambientLight);
+                else if (obj.type === 'workbench') drawWorkbench(pos.x, pos.y, obj.quality, ambientLight);
+                else if (obj.type === 'furnace') drawFurnace(pos.x, pos.y, ambientLight);
+                else if (obj.type === 'bed') drawBed(pos.x, pos.y, obj, ambientLight);
+                else if (obj.type === 'shelter') drawShelter(pos.x, pos.y, obj, ambientLight);
+
+                if (obj.hp < obj.maxHp && obj.maxHp < 1000) {
+                    ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(pos.x - 20, pos.y - 65, 40, 5);
+                    ctx.fillStyle = '#ef4444'; ctx.fillRect(pos.x - 20, pos.y - 65, (obj.hp / obj.maxHp) * 40, 5);
+                }
+            });
+
+            if (ambientLight < 1.0) drawDarknessAndLights(ambientLight);
+
+            // 繪製邊緣地圖指示器
+            drawEdgeIndicators();
+        }
+
+        // --- 繪製螢幕邊緣指示箭頭 ---
+        function drawEdgeIndicators() {
+            let targets = [];
+            if (game.customMarker) targets.push({ x: game.customMarker.x, y: game.customMarker.y, color: '#ef4444', label: '標記' });
+            
+            let wb = mapObjects.find(o => o.type === 'workbench');
+            if (wb) targets.push({ x: wb.x, y: wb.y, color: '#3b82f6', label: '工作台' });
+            
+            if (game.shelter.level >= 0) {
+                let sh = mapObjects.find(o => o.type === 'shelter');
+                if (sh) targets.push({ x: sh.x, y: sh.y, color: '#d97706', label: '庇護所' });
+            }
+
+            targets.forEach(t => {
+                let pos = worldToScreen(t.x, t.y, 0);
+                let edgeInfo = getEdgePos(pos.x, pos.y, 35);
+                if (edgeInfo.offscreen) {
+                    drawPointer(edgeInfo.x, edgeInfo.y, edgeInfo.angle, t.color, t.label);
+                } else if (t.label === '標記') {
+                    // 自訂標記若在畫面內，畫一個小旗幟
+                    drawPointerFlag(pos.x, pos.y - 30, t.color);

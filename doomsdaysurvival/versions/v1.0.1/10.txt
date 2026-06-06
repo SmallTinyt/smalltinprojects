@@ -1,0 +1,100 @@
+            drawIsoBox(ctx, sx, sy-4, 14, 24, 4, obj.quality === 0 ? '#ca8a04' : '#0284c7', '#1e293b', '#0f172a');
+        }
+        function drawShelter(sx, sy, obj, light) {
+            if (obj.level <= 0) { drawIsoBox(ctx, sx, sy, 32, 32, 20, '#d97706', '#b45309', '#78350f'); } 
+            else { drawIsoBox(ctx, sx, sy, 38, 38, 28, '#1e293b', '#475569', '#334155'); drawIsoBox(ctx, sx, sy-28, 40, 40, 10, '#b91c1c', '#991b1b', '#7f1d1d'); }
+        }
+        let walkCycle = 0;
+        function drawRobloxPlayer(sx, sy, light) {
+            if (game.player.vx !== 0 || game.player.vy !== 0) walkCycle += 0.25; else walkCycle = 0;
+            let swing = Math.sin(walkCycle) * 15; let legC = '#1450b4', torsoC = game.equippedClothes ? '#1e3a8a' : '#dc641e', armC = '#f0c896';
+            drawIsoBox(ctx, sx-4, sy+swing*0.2, 5, 5, 8, legC, legC, legC); drawIsoBox(ctx, sx+4, sy-swing*0.2, 5, 5, 8, legC, legC, legC);
+            drawIsoBox(ctx, sx, sy-8, 11, 11, 14, torsoC, torsoC, torsoC);
+            drawIsoBox(ctx, sx-8, sy-8+swing*0.25, 4, 4, 12, armC, armC, armC); drawIsoBox(ctx, sx+8, sy-8-swing*0.25, 4, 4, 12, armC, armC, armC);
+            drawIsoBox(ctx, sx, sy-22, 7, 7, 7, armC, armC, armC);
+            if (game.equippedAxe) {
+                ctx.strokeStyle = '#78350f'; ctx.lineWidth = 2.5; ctx.beginPath(); ctx.moveTo(sx+8, sy-14); ctx.lineTo(sx+15, sy-20-swing*0.2); ctx.stroke();
+                ctx.fillStyle = game.equippedAxe.id === 'stone_sword' ? '#cbd5e1' : '#78716c'; ctx.fillRect(sx+13, sy-24-swing*0.2, 5, 5);
+            }
+        }
+        function drawAnimal(sx, sy, obj, light) {
+            let col = obj.animalType === 'cow' ? '#7c2d12' : '#f472b6';
+            drawIsoBox(ctx, sx, sy, 14, 22, 10, col, col, col); drawIsoBox(ctx, sx+6, sy-4, 8, 8, 8, col, col, col);
+            drawIsoBox(ctx, sx-4, sy+4, 3, 3, 5, '#1e293b', '#1e293b', '#1e293b'); drawIsoBox(ctx, sx+4, sy-4, 3, 3, 5, '#1e293b', '#1e293b', '#1e293b');
+        }
+        function drawDarknessAndLights(ambientLight) {
+            ctx.save(); let alpha = Math.max(0, Math.min(0.65, 1.0 - (ambientLight - 0.35) / 0.65));
+            ctx.fillStyle = `rgba(10, 10, 15, ${alpha})`; ctx.fillRect(0, 0, canvas.width, canvas.height);
+            mapObjects.forEach(obj => {
+                if (obj.type === 'furnace') {
+                    const pos = worldToScreen(obj.x, obj.y, obj.z);
+                    let grad = ctx.createRadialGradient(pos.x, pos.y-10, 10, pos.x, pos.y-10, 110);
+                    grad.addColorStop(0, 'rgba(251, 146, 60, 0.3)'); grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = grad; ctx.globalCompositeOperation = 'screen';
+                    ctx.beginPath(); ctx.arc(pos.x, pos.y-10, 110, 0, Math.PI*2); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+                }
+            });
+            const pPos = worldToScreen(game.player.x, game.player.y, 0);
+            let pGrad = ctx.createRadialGradient(pPos.x, pPos.y-15, 5, pPos.x, pPos.y-15, 60);
+            pGrad.addColorStop(0, 'rgba(254, 240, 138, 0.15)'); pGrad.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = pGrad; ctx.globalCompositeOperation = 'screen';
+            ctx.beginPath(); ctx.arc(pPos.x, pPos.y-15, 60, 0, Math.PI*2); ctx.fill(); ctx.globalCompositeOperation = 'source-over';
+            ctx.restore();
+        }
+
+        // --- 小地圖繪製與互動 ---
+        const mapCanvas = document.getElementById('minimap-canvas');
+        mapCanvas.addEventListener('click', (e) => {
+            const rect = mapCanvas.getBoundingClientRect();
+            const mx = e.clientX - rect.left;
+            const my = e.clientY - rect.top;
+            const scale = WORLD_SIZE / mapCanvas.width;
+            game.customMarker = { x: mx * scale, y: my * scale };
+            drawMinimap();
+        });
+
+        function drawMinimap() {
+            const mctx = mapCanvas.getContext('2d');
+            mctx.clearRect(0, 0, mapCanvas.width, mapCanvas.height);
+            const scale = mapCanvas.width / WORLD_SIZE;
+
+            // 格線
+            mctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            for(let i=0; i<WORLD_SIZE; i+=280) {
+                mctx.beginPath(); mctx.moveTo(i*scale, 0); mctx.lineTo(i*scale, mapCanvas.height); mctx.stroke();
+                mctx.beginPath(); mctx.moveTo(0, i*scale); mctx.lineTo(mapCanvas.width, i*scale); mctx.stroke();
+            }
+
+            // 實體點
+            mapObjects.forEach(obj => {
+                let size = 2;
+                if (obj.type === 'building') { mctx.fillStyle = '#475569'; size = 12; }
+                else if (obj.type === 'tree') mctx.fillStyle = '#15803d';
+                else if (obj.type === 'workbench') { mctx.fillStyle = '#3b82f6'; size = 6; }
+                else if (obj.type === 'shelter') { mctx.fillStyle = '#d97706'; size = 8; }
+                else return; // 其他不畫
+                
+                mctx.fillRect(obj.x * scale - size/2, obj.y * scale - size/2, size, size);
+            });
+
+            // 自訂標記
+            if (game.customMarker) {
+                mctx.fillStyle = '#ef4444';
+                mctx.beginPath();
+                mctx.arc(game.customMarker.x * scale, game.customMarker.y * scale, 4, 0, Math.PI*2);
+                mctx.fill();
+            }
+
+            // 玩家
+            mctx.fillStyle = '#22c55e';
+            mctx.beginPath();
+            mctx.arc(game.player.x * scale, game.player.y * scale, 4, 0, Math.PI*2);
+            mctx.fill();
+        }
+
+        // --- 鍵盤監聽與手機互動 ---
+        const keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            // E鍵邏輯：優先嘗試互動，若周圍無物，則打開背包
+            if (e.key.toLowerCase() === 'e') {

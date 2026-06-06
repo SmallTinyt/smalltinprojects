@@ -1,0 +1,100 @@
+            let daysToTake = nextLvl === 1 ? 1 : (nextLvl === 2 ? 3 : (nextLvl === 3 ? 5 : (nextLvl === 4 ? 10 : 1)));
+            game.shelter.upgrading = true; game.shelter.daysRemaining = daysToTake; game.shelter.targetLevel = nextLvl;
+
+            if (nextLvl === 0) {
+                let newShelter = createMapObject('shelter', game.player.x + 40, game.player.y - 40, 0);
+                newShelter.level = 0; mapObjects.push(newShelter);
+            }
+            logMsg(`🔨 施工建造/升級！預計 ${daysToTake} 天。`, "success"); playSound('craft'); updateUI();
+        }
+
+        function craftItem(recipeId) {
+            const recipe = RECIPES.find(r => r.id === recipeId);
+            let nearWorkbench = false;
+            mapObjects.forEach(obj => {
+                if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 65) nearWorkbench = true;
+            });
+
+            if (!nearWorkbench) { showModal("遠離工作台", "請靠近工作台旁才能合成。"); return; }
+            if (game.workbenchLvl < recipe.minLvl) { logMsg(`需 LV.${recipe.minLvl}`, "warning"); return; }
+            
+            for (let res in recipe.cost) {
+                if ((game.resources[res] || 0) < recipe.cost[res]) { logMsg(`缺少: ${res}`, "warning"); return; }
+            }
+            for (let res in recipe.cost) game.resources[res] -= recipe.cost[res];
+
+            let quality = game.workbenchLvl - 1;
+            if (recipe.type === 'tool') {
+                game.equippedAxe = { id: recipe.id, name: `${recipe.name}(品質:${quality})`, quality: quality, efficiency: 1.5 + quality * 0.5 };
+                logMsg(`⚒️ 裝備：${game.equippedAxe.name}`, "success");
+            } else if (recipe.type === 'weapon') {
+                game.equippedAxe = { id: recipe.id, name: `${recipe.name}(品質:${quality})`, quality: quality, efficiency: 1.0 };
+                logMsg(`🗡️ 裝備：${game.equippedAxe.name}`, "success");
+            } else if (recipe.type === 'armor') {
+                game.equippedClothes = { id: recipe.id, name: `${recipe.name}(品質:${quality})`, quality: quality, warmth: 0.5 + quality * 0.15 };
+                logMsg(`👕 穿戴：${game.equippedClothes.name}`, "success");
+            } else if (recipe.type === 'bed') {
+                let newBed = createMapObject('bed', game.player.x - 30, game.player.y + 30, 0);
+                newBed.quality = quality; mapObjects.push(newBed);
+                game.equippedBed = { name: recipe.name, quality: quality, staminaRate: recipe.id === 'military_bed' ? 20 : 10 };
+            } else if (recipe.type === 'building' && recipe.id === 'furnace') {
+                mapObjects.push(createMapObject('furnace', game.player.x + 30, game.player.y + 30, 0));
+                logMsg("🔥 放置了 1 座野外熔爐！", "success");
+            }
+            playSound('craft'); updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('hp-bar').style.width = `${(game.hp / game.maxHp) * 100}%`;
+            document.getElementById('hp-text').innerText = `${Math.round(game.hp)}/${game.maxHp}`;
+            document.getElementById('hunger-bar').style.width = `${(game.hunger / game.maxHunger) * 100}%`;
+            document.getElementById('hunger-text').innerText = `${Math.round(game.hunger)}/${game.maxHunger}`;
+            document.getElementById('stamina-bar').style.width = `${(game.stamina / game.maxStamina) * 100}%`;
+            document.getElementById('stamina-text').innerText = `${Math.round(game.stamina)}/${game.maxStamina}`;
+
+            let modeTxt = game.mode === 'endless' ? '∞' : game.mode;
+            document.getElementById('day-display').innerText = `${game.day} / ${modeTxt} 天`;
+
+            let isNight = game.timeOfDay >= 300;
+            document.getElementById('time-bar').style.width = `${((game.timeOfDay % 300) / 300) * 100}%`;
+            let secsLeft = Math.ceil(300 - (game.timeOfDay % 300));
+            document.getElementById('time-bar').className = isNight ? 'bg-indigo-600 h-full' : 'bg-amber-400 h-full';
+            document.getElementById('time-label').innerText = `${isNight ? '黑夜 🥶' : '白天 ☀️'} (餘: ${Math.floor(secsLeft/60).toString().padStart(2,'0')}:${(secsLeft%60).toString().padStart(2,'0')})`;
+
+            document.getElementById('count-raw-meat').innerText = game.resources.rawMeat;
+            document.getElementById('count-cooked-meat').innerText = game.resources.cookedMeat;
+            document.getElementById('inventory-list').innerHTML = `
+                <div class="bg-stone-900 p-2.5 rounded border border-stone-800 flex justify-between"><span class="text-xs text-stone-300">🪵 木頭</span><span class="font-bold text-amber-500">${game.resources.wood}</span></div>
+                <div class="bg-stone-900 p-2.5 rounded border border-stone-800 flex justify-between"><span class="text-xs text-stone-300">⛓️ 鋼鐵</span><span class="font-bold text-slate-300">${game.resources.steel}</span></div>
+                <div class="bg-stone-900 p-2.5 rounded border border-stone-800 flex justify-between"><span class="text-xs text-stone-300">🎒 皮革</span><span class="font-bold text-orange-400">${game.resources.leather}</span></div>
+                <div class="bg-stone-900 p-2.5 rounded border border-stone-800 flex justify-between"><span class="text-xs text-stone-300">🥩 生肉</span><span class="font-bold text-rose-400">${game.resources.rawMeat}</span></div>
+            `;
+
+            document.getElementById('equipped-axe').innerText = game.equippedAxe ? game.equippedAxe.name : '手無寸鐵';
+            document.getElementById('equipped-clothes').innerText = game.equippedClothes ? game.equippedClothes.name : '無衣物';
+            document.getElementById('clothes-warmth').innerText = `防寒: ${game.equippedClothes ? Math.round(game.equippedClothes.warmth * 100) : 0}%`;
+
+            document.getElementById('workbench-level').innerText = game.workbenchLvl;
+            const recipesDiv = document.getElementById('recipes-list');
+            recipesDiv.innerHTML = '';
+            
+            RECIPES.forEach(recipe => {
+                let canCraft = true, costStr = [];
+                for (let r in recipe.cost) {
+                    let req = recipe.cost[r]; if ((game.resources[r]||0) < req) canCraft = false;
+                    costStr.push(`<span class="${(game.resources[r]||0) >= req ? 'text-stone-300' : 'text-red-500'}">${r==='wood'?'🪵':r==='steel'?'⛓️':'🎒'}${req}</span>`);
+                }
+                let locked = game.workbenchLvl < recipe.minLvl;
+                recipesDiv.innerHTML += `
+                    <div class="bg-stone-900/60 p-3 rounded border ${locked ? 'border-stone-950 opacity-40' : 'border-stone-800'} flex flex-col gap-2">
+                        <div><h4 class="text-xs font-bold text-white">${recipe.name} ${recipe.minLvl > 1 ? `<span class="text-[9px] bg-indigo-950 text-indigo-400 px-1 py-0.5 rounded ml-1">LV.${recipe.minLvl}</span>` : ''}</h4><p class="text-[10px] text-stone-400 mt-0.5">${recipe.desc}</p></div>
+                        <div class="flex items-center justify-between pt-1 border-t border-stone-800/40"><div class="flex gap-2 text-[10px]">${costStr.join(' ')}</div>
+                        <button onclick="craftItem('${recipe.id}')" ${locked || !canCraft ? 'disabled' : ''} class="bg-amber-600 hover:bg-amber-500 disabled:bg-stone-800 text-white font-bold text-[10px] px-3 py-1.5 rounded transition">合成</button></div>
+                    </div>`;
+            });
+
+            const shelterTitle = document.getElementById('shelter-title'), shelterDesc = document.getElementById('shelter-desc'), shelterBtn = document.getElementById('btn-upgrade-shelter');
+            if (game.shelter.level === -1 && !game.shelter.upgrading) {
+                document.getElementById('shelter-icon').innerText = "⛺"; shelterTitle.innerText = "尚未建造庇護所";
+                shelterDesc.innerText = "需木頭x30, 鋼鐵x20建立 0 級"; shelterBtn.innerText = "建造 0 級庇護所";
+                document.getElementById('shelter-progress-container').classList.add('hidden'); shelterBtn.removeAttribute('disabled');
