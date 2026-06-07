@@ -1,0 +1,250 @@
+                </div>
+                <div class="flex border-t border-stone-800">
+                    <button onclick="document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 text-stone-400 hover:text-white hover:bg-stone-800 transition text-xs font-bold">取消</button>
+                    ${canCraft 
+                        ? `<button onclick="window.craftItem('${recipe.id}'); document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white transition text-xs font-bold">確認製作</button>`
+                        : `<button disabled class="flex-1 py-3 bg-stone-800 text-stone-600 transition text-xs font-bold cursor-not-allowed">材料不足</button>`
+                    }
+                </div>
+            `;
+            document.getElementById('craft-confirm-modal').classList.remove('hidden');
+        };
+
+        window.openWorkbenchUI = openWorkbenchUI;
+        window.closeWorkbenchUI = closeWorkbenchUI;
+        window.upgradeWorkbench = upgradeWorkbench;
+        window.handleShelterAction = handleShelterAction;
+        window.eatMeat = eatMeat;
+        window.equipWeapon = equipWeapon;
+        window.startGame = startGame;
+        window.saveGame = saveGame;
+        window.loadGame = loadGame;
+        window.toggleAudio = toggleAudio;
+        window.toggleMap = toggleMap;
+        window.closeModal = closeModal;
+        window.performAction = performAction;
+        window.craftItem = craftItem;
+
+        function openWorkbenchUI() {
+            if (isMapOpen) return;
+            game.isWorkbenchOpen = true;
+            document.getElementById('workbench-overlay').classList.remove('hidden');
+            updateWorkbenchOverlayUI();
+            playSound('chime');
+        }
+
+        function closeWorkbenchUI() {
+            game.isWorkbenchOpen = false;
+            document.getElementById('workbench-overlay').classList.add('hidden');
+        }
+
+        function updateWorkbenchOverlayUI() {
+            document.getElementById('wb-overlay-level').innerText = game.workbenchLvl;
+            
+            const btnUpgrade = document.getElementById('btn-upgrade-workbench-overlay');
+            if (game.workbenchLvl === 1) {
+                btnUpgrade.innerText = "升級 (木:50 鋼:30)";
+                btnUpgrade.removeAttribute('disabled');
+            } else if (game.workbenchLvl === 2) {
+                btnUpgrade.innerText = "升級 (木:100 鋼:80)";
+                btnUpgrade.removeAttribute('disabled');
+            } else {
+                btnUpgrade.innerText = "已達最高級(3)";
+                btnUpgrade.setAttribute('disabled', 'true');
+            }
+
+            // 動態渲染置中配方列表
+            const recipeList = document.getElementById('wb-recipe-list');
+            recipeList.innerHTML = '';
+            RECIPES.forEach(recipe => {
+                let locked = game.workbenchLvl < recipe.minLvl;
+                let icon = getRecipeEmoji(recipe.id);
+                
+                let canCraft = true;
+                for (let res in recipe.cost) {
+                    if ((game.resources[res] || 0) < recipe.cost[res]) canCraft = false;
+                }
+                
+                recipeList.innerHTML += `
+                    <div onclick="window.confirmCraft('${recipe.id}')" class="p-3 rounded-xl border border-stone-800 bg-stone-900/60 ${locked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:border-amber-500 hover:bg-stone-800/80'} transition flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <span class="text-3xl">${icon}</span>
+                            <div class="truncate text-left">
+                                <h4 class="text-sm font-bold text-white">${recipe.name}</h4>
+                                <p class="text-[10px] text-stone-500 mt-0.5">${recipe.desc}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end shrink-0 gap-1">
+                            ${recipe.minLvl > 1 ? `<span class="text-[9px] bg-indigo-950 text-indigo-400 px-1 py-0.5 rounded">LV.${recipe.minLvl}</span>` : ''}
+                            ${!locked ? (canCraft ? `<span class="text-[10px] text-emerald-400 font-bold">可製作</span>` : `<span class="text-[10px] text-red-400 font-bold">材料不足</span>`) : ''}
+                        </div>
+                    </div>`;
+            });
+        }
+
+        function getRecipeEmoji(id) {
+            if (id === 'stone_axe') return '🪓';
+            if (id === 'stone_sword') return '⚔️';
+            if (id === 'furnace') return '🔥';
+            if (id === 'clothes_1') return '👕';
+            if (id === 'bed_1') return '🛏️';
+            if (id === 'backpack_1') return '🎒';
+            if (id === 'steel_axe') return '🪓';
+            if (id === 'clothes_2') return '🧥';
+            if (id === 'bed_2') return '🛌';
+            if (id === 'backpack_2') return '🎒';
+            if (id === 'backpack_3') return '🎒';
+            if (id === 'm4a1') return '🔫';
+            if (id === 'm4a1_ammo') return '📦';
+            if (id === 'revolver') return '🔫';
+            if (id === 'revolver_ammo') return '📦';
+            return '🔧';
+        }
+
+        function getResourceDisplayName(res) {
+            if (res === 'wood') return '🪵 木頭';
+            if (res === 'steel') return '⚙️ 鋼材';
+            if (res === 'leather') return '🧶 皮革';
+            if (res === 'gunpowder') return '💣 火藥';
+            return res;
+        }
+
+        // --- 輸入監聽鍵盤與搖桿控制 ---
+        let keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                // 檢查是否彈窗打開中，如果是，則優先關閉彈窗
+                if (!document.getElementById('craft-confirm-modal').classList.contains('hidden')) {
+                    document.getElementById('craft-confirm-modal').classList.add('hidden');
+                } else if (game.isWorkbenchOpen) {
+                    game.workbenchManuallyClosed = true; 
+                    closeWorkbenchUI();
+                } else {
+                    let near = false;
+                    mapObjects.forEach(obj => {
+                        if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) {
+                            near = true;
+                        }
+                    });
+                    if (near) {
+                        game.workbenchManuallyClosed = false;
+                        openWorkbenchUI();
+                    } else {
+                        performAction();
+                    }
+                }
+            }
+            if (e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                toggleMap();
+            }
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // 手機虛擬搖桿
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickKnob = document.getElementById('joystick-knob');
+        let isJoystickActive = false;
+        let joystickStart = { x: 0, y: 0 };
+        let joystickVector = { x: 0, y: 0 };
+
+        joystickBase.addEventListener('touchstart', e => {
+            isJoystickActive = true;
+            const rect = joystickBase.getBoundingClientRect();
+            joystickStart.x = rect.left + rect.width / 2;
+            joystickStart.y = rect.top + rect.height / 2;
+        });
+
+        window.addEventListener('touchmove', e => {
+            if (!isJoystickActive) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - joystickStart.x;
+            const dy = touch.clientY - joystickStart.y;
+            const dist = Math.hypot(dx, dy);
+            const maxDist = 40;
+
+            let angle = Math.atan2(dy, dx);
+            let moveDist = Math.min(dist, maxDist);
+            
+            joystickKnob.style.transform = `translate(${moveDist * Math.cos(angle)}px, ${moveDist * Math.sin(angle)}px)`;
+            
+            joystickVector.x = Math.cos(angle) * (moveDist / maxDist);
+            joystickVector.y = Math.sin(angle) * (moveDist / maxDist);
+        });
+
+        window.addEventListener('touchend', () => {
+            isJoystickActive = false;
+            joystickKnob.style.transform = `translate(0px, 0px)`;
+            joystickVector = { x: 0, y: 0 };
+        });
+
+        // 手機/網頁滑鼠發射子彈火控系統
+        let isMouseDown = false;
+        let lastShootTime = 0;
+
+        canvas.addEventListener('mousedown', e => {
+            if (!isGameRunning || isMapOpen) return;
+            if (e.target !== canvas) return; 
+            if (game.equippedWeapon === 'none') {
+                performAction();
+                return;
+            }
+            
+            isMouseDown = true;
+            shootAtMouse(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isMouseDown && game.equippedWeapon === 'm4a1') {
+                shootAtMouse(e.clientX, e.clientY);
+            }
+        });
+
+        function shootAtMouse(clientX, clientY) {
+            let now = performance.now();
+            let rate = game.equippedWeapon === 'm4a1' ? 150 : 600; 
+            if (now - lastShootTime >= rate) {
+                let rect = canvas.getBoundingClientRect();
+                let mx = clientX - rect.left;
+                let my = clientY - rect.top;
+
+                let rx = mx - canvas.width / 2;
+                let ry = my - canvas.height / 2;
+                let dx = 0.5 * (rx / cos30 + ry / sin30);
+                let dy = 0.5 * (ry / sin30 - rx / cos30);
+
+                let targetX = game.player.x + dx;
+                let targetY = game.player.y + dy;
+
+                fireBullet(targetX, targetY);
+                lastShootTime = now;
+            }
+        }
+
+        function fireBullet(targetX, targetY) {
+            if (!isGameRunning || isMapOpen) return;
+
+            let ammoProp = game.equippedWeapon === 'm4a1' ? 'm4a1Ammo' : 'revolverAmmo';
+            if ((game.resources[ammoProp] || 0) <= 0) {
+                logMsg("🚫 沒有彈藥了！請打開工作台製作對應子彈。", "warning");
+                isMouseDown = false;
+                return;
+            }
+
+            game.resources[ammoProp]--;
+
+            let angle;
+            if (targetX !== undefined && targetY !== undefined) {
+                angle = Math.atan2(targetY - game.player.y, targetX - game.player.x);
+            } else {
+                if (game.player.facing === 'NW') angle = -3 * Math.PI / 4;
+                else if (game.player.facing === 'NE') angle = -Math.PI / 4;

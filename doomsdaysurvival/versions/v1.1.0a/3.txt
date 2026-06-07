@@ -1,0 +1,250 @@
+                    osc.stop(audioCtx.currentTime + 0.15);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(90, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'craft') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'freeze') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.5);
+                } else if (type === 'chime') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.12); 
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.24); 
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.6);
+                }
+            } catch(e){}
+        }
+
+        // 槍枝開火音效
+        function playGunSound(type) {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                if (type === 'revolver') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.35);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'm4a1') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(15, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+                }
+            } catch(e){}
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('audio-toggle-btn');
+            btn.innerHTML = isAudioMuted ? `<i data-lucide="volume-x" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>` : `<i data-lucide="volume-2" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>`;
+            lucide.createIcons();
+        }
+
+        // --- 核心遊戲流程與存檔 ---
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('apocalypse_survival_save')) {
+                document.getElementById('btn-load-start').removeAttribute('disabled');
+            } else {
+                document.getElementById('btn-load-start').setAttribute('disabled', 'true');
+            }
+            lucide.createIcons();
+        });
+
+        function showModal(title, desc) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-container').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+        }
+
+        function logMsg(text, type = "info") {
+            const box = document.getElementById('log-box');
+            let color = "text-stone-300";
+            if (type === "warning") color = "text-yellow-400 font-bold";
+            if (type === "danger") color = "text-red-400 font-bold animate-pulse";
+            if (type === "success") color = "text-green-400 font-bold";
+            
+            box.innerHTML += `<div class="${color}">[${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}] ${text}</div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.classList.remove('text-amber-500', 'bg-stone-900');
+                el.classList.add('text-stone-400', 'hover:text-stone-200');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('text-amber-500', 'bg-stone-900');
+            document.getElementById(`tab-${tab}`).classList.remove('text-stone-400', 'hover:text-stone-200');
+
+            document.querySelectorAll('[id^="panel-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+        }
+
+        function toggleInventory() {
+            // 在手機端快速開關物資欄
+        }
+
+        function saveGame() {
+            try {
+                const saveData = {
+                    game,
+                    mapObjects: mapObjects.map(obj => ({
+                        id: obj.id,
+                        type: obj.type,
+                        x: obj.x, y: obj.y, z: obj.z,
+                        size: obj.size, hp: obj.hp, maxHp: obj.maxHp,
+                        height: obj.height || 0, quality: obj.quality || 0,
+                        animalType: obj.animalType || null
+                    }))
+                };
+                localStorage.setItem('apocalypse_survival_save', JSON.stringify(saveData));
+                logMsg("進度已成功儲存至本地瀏覽器！", "success");
+                showModal("💾 存檔成功", "你的生存進度已儲存。");
+            } catch (e) {
+                logMsg("存檔失敗: " + e.message, "danger");
+            }
+        }
+
+        function loadGame() {
+            try {
+                const dataStr = localStorage.getItem('apocalypse_survival_save');
+                if (!dataStr) return;
+                const saveData = JSON.parse(dataStr);
+                
+                game = saveData.game;
+                if (!game.mode) game.mode = '365';
+                
+                mapObjects = [];
+                saveData.mapObjects.forEach(obj => {
+                    let newObj = createMapObject(obj.type, obj.x, obj.y, obj.z, obj.height);
+                    newObj.hp = obj.hp; newObj.maxHp = obj.maxHp; newObj.quality = obj.quality || 0;
+                    if(obj.animalType) newObj.animalType = obj.animalType;
+                    mapObjects.push(newObj);
+                });
+
+                logMsg("已載入儲存進度！", "success");
+                updateUI();
+            } catch (e) {
+                logMsg("讀檔失敗，存檔已損壞: " + e.message, "danger");
+            }
+        }
+
+        function startGame(loadSaved) {
+            initAudio();
+            document.getElementById('start-overlay').classList.add('hidden');
+            isGameRunning = true;
+
+            if (loadSaved) {
+                loadGame();
+            } else {
+                game.mode = selectedMode;
+                game.day = 1;
+                game.timeOfDay = 0;
+                game.hp = 100;
+                game.hunger = 100;
+                game.stamina = 500;
+                game.backpackLvl = 0;
+                game.equippedWeapon = 'none';
+                game.isWorkbenchOpen = false;
+                game.wasNearWorkbench = false;
+                game.workbenchManuallyClosed = false;
+                game.resources = { 
+                    wood: 30, steel: 20, leather: 10, rawMeat: 2, cookedMeat: 0, 
+                    gunpowder: 0, m4a1Count: 0, m4a1Ammo: 0, revolverCount: 0, revolverAmmo: 0 
+                };
+                game.workbenchLvl = 1;
+                game.equippedAxe = { name: "木製斧頭", quality: 0, efficiency: 1 };
+                game.equippedClothes = null;
+                game.equippedBed = { name: "乾草睡地", quality: 0, staminaRate: 5 };
+                game.shelter = { built: false, level: -1, upgrading: false, daysRemaining: 0, targetLevel: 0 };
+                game.customMarker = null;
+                game.player.x = 400;
+                game.player.y = 400;
+                
+                initMap();
+                let modeTxt = game.mode === 'endless' ? '無盡模式' : `${game.mode} 天`;
+                logMsg(`全新生存開始！當前目標：${modeTxt}。走近工作台即可自動打開製作面板！`, "info");
+            }
+
+            resizeCanvas();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- 地圖生成與 ISO 2.5D 投影 ---
+        function createMapObject(type, x, y, z = 0, height = 0) {
+            let size = 20, hp = 10;
+            if (type === 'tree') { size = 24; hp = 5; }
+            else if (type === 'steel_pile') { size = 18; hp = 8; }
+            else if (type === 'leather_pile') { size = 16; hp = 4; }
+            else if (type === 'building') { size = 60; hp = 999999; }
+            else if (type === 'animal') { size = 15; hp = 3; }
+            else if (type === 'monster') { size = 18; hp = 100; } 
+            else if (type === 'cave') { size = 50; hp = 999999; }    
+            else if (type === 'workbench') { size = 25; hp = 9999; }
+            else if (type === 'furnace') { size = 25; hp = 9999; }
+            else if (type === 'bed') { size = 30; hp = 9999; }
+            else if (type === 'shelter') { size = 45; hp = 9999; }
+
+            return {
+                id: Math.random().toString(36).substr(2, 9),
+                type, x, y, z, size, hp, maxHp: hp, height, quality: 0,
+                animalType: type === 'animal' ? (Math.random() > 0.5 ? 'cow' : 'pig') : null,
+                animalWalkDir: Math.random() * Math.PI * 2, animalWalkTimer: 0
+            };
+        }
+
+        // --- 初始化地圖 ---
+        function initMap() {
+            mapObjects = [];
+            bullets = [];
+            
+            // 地圖中央放置最初工作台、床
+            mapObjects.push(createMapObject('workbench', 300, 420));
+            mapObjects.push(createMapObject('bed', 250, 250));
+
+            // 固定建築廢墟
+            mapObjects.push(createMapObject('building', 200, 600, 0, 40));
+            mapObjects.push(createMapObject('building', 800, 300, 0, 60));
+            mapObjects.push(createMapObject('building', 900, 800, 0, 50));
+
+            // ★ 在地圖最邊界（WORLD_SIZE - 200）放置神秘洞穴，並生成怪
+            mapObjects.push(createMapObject('cave', WORLD_SIZE - 200, WORLD_SIZE - 200, 0, 35));
+            for (let i = 0; i < 5; i++) {
+                mapObjects.push(createMapObject('monster', (WORLD_SIZE - 400) + Math.random() * 300, (WORLD_SIZE - 400) + Math.random() * 300));
+            }
+
+            // 隨機生成樹木、廢鋼堆、獸皮、動物 (世界地圖為 10,000 px，相應增加資源)

@@ -1,0 +1,2307 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>末日都市：極限生存 2.5D</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=ZCOOL+KuaiLe&family=Noto+Sans+TC:wght@400;700;900&display=swap');
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            user-select: none;
+            overflow: hidden;
+            background-color: #0d0d11;
+        }
+        canvas {
+            image-rendering: pixelated;
+        }
+        /* 隱藏滾動條 */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 3px;
+        }
+        /* 模式按鈕啟用狀態 */
+        
+.mode-btn.active {
+            background-color: #d97706;
+            color: white;
+        }
+.workbench-item{
+border:1px solid #444;
+border-radius:12px;
+padding:10px;
+min-height:140px;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+text-align:center;
+transition:.2s;
+}
+.workbench-item:hover{transform:scale(1.03);border-color:#f59e0b;}
+.workbench-item.locked{opacity:.35;}
+#workbench-overlay,
+#workbench-overlay * {
+    pointer-events: auto !important;
+}
+
+    </style>
+</head>
+<body class="text-stone-100 h-screen w-screen relative select-none">
+
+    <!-- 遊戲主要 Canvas (16:9 比例) -->
+    <div class="absolute inset-0 flex items-center justify-center bg-black">
+        <canvas id="gameCanvas" class="shadow-2xl max-w-full max-h-full"></canvas>
+    </div>
+
+    <!-- UI 覆蓋層 -->
+    <div id="ui-layer" class="absolute inset-0 z-10 p-3 md:p-6 flex flex-col justify-between pointer-events-none">
+        
+        <!-- 頂部狀態與計時 -->
+        <div class="flex justify-between items-start">
+            <!-- 玩家基礎生命與狀態 -->
+            <div class="bg-black/75 backdrop-blur-md p-3 md:p-4 rounded-xl border border-stone-700/80 flex flex-col gap-2 pointer-events-auto shadow-2xl min-w-[200px] md:min-w-[250px]">
+                <!-- 生命值 -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm md:text-base">❤️</span>
+                    <div class="flex-1 bg-stone-900 h-3 rounded-full border border-stone-800 overflow-hidden">
+                        <div id="hp-bar" class="bg-gradient-to-r from-red-600 to-rose-500 h-full transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                    <span id="hp-text" class="text-[10px] md:text-xs text-rose-200 font-black min-w-[30px] text-right">100/100</span>
+                </div>
+                <!-- 飢餓度 -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm md:text-base">🍗</span>
+                    <div class="flex-1 bg-stone-900 h-3 rounded-full border border-stone-800 overflow-hidden">
+                        <div id="hunger-bar" class="bg-gradient-to-r from-amber-600 to-yellow-500 h-full transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                    <span id="hunger-text" class="text-[10px] md:text-xs text-amber-200 font-black min-w-[30px] text-right">100/100</span>
+                </div>
+                <!-- 精力值 -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm md:text-base">⚡</span>
+                    <div class="flex-1 bg-stone-900 h-3 rounded-full border border-stone-800 overflow-hidden">
+                        <div id="stamina-bar" class="bg-gradient-to-r from-blue-600 to-cyan-400 h-full transition-all duration-300" style="width: 100%;"></div>
+                    </div>
+                    <span id="stamina-text" class="text-[10px] md:text-xs text-stone-200 font-black min-w-[40px] text-right">500/500</span>
+                </div>
+                <!-- 溫度狀態 -->
+                <div class="flex items-center justify-between text-xs pt-1 border-t border-stone-800 mt-1">
+                    <span class="text-stone-400 flex items-center gap-1">
+                        <i data-lucide="thermometer" class="w-3.5 h-3.5 text-blue-400"></i> <span class="hidden md:inline">環境溫度:</span>
+                    </span>
+                    <span id="temp-status" class="font-bold text-sky-400">舒適 (24°C)</span>
+                </div>
+            </div>
+
+            <!-- 時間與天數顯示 -->
+            <div class="bg-black/75 backdrop-blur-md px-4 py-3 rounded-xl border border-stone-700/80 flex flex-col items-center pointer-events-auto shadow-2xl">
+                <div class="text-[11px] md:text-sm font-bold text-stone-400 tracking-wider flex items-center gap-1.5">
+                    <i data-lucide="calendar" class="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-500"></i> 生存天數
+                </div>
+                <div class="text-xl md:text-3xl font-black text-amber-500 mt-1" style="font-family: 'ZCOOL KuaiLe', sans-serif;">
+                    第 <span id="day-counter">1</span> 天
+                </div>
+                <!-- 24小時日夜進度條 -->
+                <div class="w-24 md:w-32 bg-stone-900 h-2 rounded-full mt-2 border border-stone-800 overflow-hidden">
+                    <div id="time-bar" class="bg-gradient-to-r from-yellow-500 via-orange-500 to-indigo-950 h-full" style="width: 0%;"></div>
+                </div>
+                <span id="time-label" class="text-[9px] md:text-[10px] text-stone-400 mt-1">白天 (餘: 300秒)</span>
+            </div>
+
+            <!-- 右側快速控制與存檔 -->
+            <div class="flex flex-col gap-2 pointer-events-auto">
+                <div class="bg-black/75 backdrop-blur-md p-2 md:p-3 rounded-xl border border-stone-700/80 flex gap-2">
+                    <button onmousedown="saveGame()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1.5 md:px-3 rounded text-[10px] md:text-xs transition flex items-center gap-1">
+                        <i data-lucide="save" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">儲存</span>
+                    </button>
+                    <button onmousedown="loadGame()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-2 py-1.5 md:px-3 rounded text-[10px] md:text-xs transition flex items-center gap-1">
+                        <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">讀檔</span>
+                    </button>
+                    <button onmousedown="toggleAudio()" id="audio-toggle-btn" class="bg-stone-700 hover:bg-stone-600 text-white p-1.5 rounded transition">
+                        <i data-lucide="volume-2" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>
+                    </button>
+                </div>
+                <div class="bg-black/75 backdrop-blur-md p-2 rounded-xl border border-stone-700/80 text-center text-[10px] text-stone-400">
+                    <div>按 <kbd class="bg-stone-800 px-1 rounded text-white font-mono">M</kbd> 地圖</div>
+                    <div>按 <kbd class="bg-stone-800 px-1 rounded text-white font-mono">E</kbd> 背包/互動</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中間下方：凍傷威脅警告 -->
+        <div id="freeze-warning" class="self-center bg-red-950/90 border-2 border-red-500 text-red-200 px-4 py-2 rounded-xl text-center shadow-[0_0_20px_rgba(239,68,68,0.5)] font-black text-xs md:text-sm animate-bounce hidden">
+            ⚠️ 身體正在劇烈失溫！每秒扣除 <span id="freeze-dmg-show">2</span> 點生命！請儘速生火或建造並躲入庇護所！
+        </div>
+
+        <!-- 底部面板與操作 -->
+        <div class="flex justify-between items-end gap-4">
+            
+            <!-- 左下側多功能側面板 -->
+            <div class="bg-black/85 backdrop-blur-md p-4 rounded-2xl border border-stone-700/80 w-72 md:w-80 shadow-2xl pointer-events-auto flex flex-col gap-3 max-h-[320px] overflow-y-auto">
+                <!-- 標籤頁切換 -->
+                <div class="flex gap-1 border-b border-stone-800 pb-2">
+                    <button onmousedown="switchTab('inventory')" id="tab-inventory" class="flex-1 py-1 text-xs font-bold rounded text-amber-500 bg-stone-900 transition">
+                        物資
+                    </button>
+                    <button onmousedown="switchTab('shelter')" id="tab-shelter" class="flex-1 py-1 text-xs font-bold rounded text-stone-400 hover:text-stone-200 transition">
+                        庇護所
+                    </button>
+                </div>
+
+                <!-- 背包面板 -->
+                <div id="panel-inventory" class="space-y-4">
+                    <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+                        <h3 class="text-sm font-bold text-stone-200">收集到的物資</h3>
+                        <span id="backpack-cap-text" class="text-[10px] bg-stone-800 text-stone-400 px-2 py-0.5 rounded">容量：0/250</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2" id="inventory-list">
+                        <!-- 動態生成資源卡片 -->
+                    </div>
+
+                    <!-- 穿戴裝備區 -->
+                    <div class="mt-4 border-t border-stone-800 pt-3">
+                        <h4 class="text-xs font-bold text-stone-400 mb-2">已穿戴與裝備</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-stone-900/50 p-2 rounded border border-stone-800 flex items-center gap-2">
+                                <span class="text-xl">🪓</span>
+                                <div>
+                                    <p class="text-xs text-stone-300 font-bold truncate" id="equipped-axe">木斧 (品質:0)</p>
+                                    <p class="text-[9px] text-stone-500" id="axe-efficiency">採集效率: 1x</p>
+                                </div>
+                            </div>
+                            <div class="bg-stone-900/50 p-2 rounded border border-stone-800 flex items-center gap-2">
+                                <span class="text-xl">👕</span>
+                                <div>
+                                    <p class="text-xs text-stone-300 font-bold truncate" id="equipped-clothes">無衣物</p>
+                                    <p class="text-[9px] text-stone-500" id="clothes-warmth">防寒: 0%</p>
+                                </div>
+                            </div>
+                            <div class="bg-stone-900/50 p-2 rounded border border-stone-800 flex items-center gap-2 col-span-2">
+                                <span class="text-xl">🔫</span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs text-stone-300 font-bold truncate" id="equipped-weapon">當前手持: 採集工具/斧頭</p>
+                                    <p class="text-[9px] text-stone-500" id="equipped-weapon-ammo">子彈: --/--</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 武器切換區域 -->
+                        <div id="weapon-switcher-container" class="mt-2 flex gap-1 w-full">
+                            <!-- 動態生成快速切換按鈕 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 庇護所與床鋪面板 -->
+                <div id="panel-shelter" class="space-y-4 hidden">
+                    <div class="bg-stone-900/60 p-3 rounded border border-stone-800">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span id="shelter-icon" class="text-2xl">⛺</span>
+                            <h3 class="text-xs font-bold text-white" id="shelter-title">庇護所 (未建造)</h3>
+                        </div>
+                        <p class="text-[10px] text-stone-400" id="shelter-desc">建造一個穩固的家，提供完全阻絕低溫功能，並提供夜間完全儲存/睡眠過夜點。</p>
+                        
+                        <!-- 施工倒數進度條 -->
+                        <div id="shelter-progress-container" class="mt-2 bg-black p-1.5 rounded border border-stone-800 hidden">
+                            <div class="w-full bg-stone-950 h-2 rounded overflow-hidden">
+                                <div id="shelter-progress-bar" class="bg-amber-500 h-full transition-all duration-300" style="width: 0%;"></div>
+                            </div>
+                            <div class="flex justify-between items-center text-[9px] text-stone-400 mt-1">
+                                <span>施工進度...</span>
+                                <span id="shelter-timer">剩餘: 1 天</span>
+                            </div>
+                        </div>
+
+                        <button id="btn-upgrade-shelter" onmousedown="handleShelterAction()" class="w-full mt-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-stone-800 text-white font-bold text-xs py-2 rounded transition">
+                            建造 (木:30 鋼:20)
+                        </button>
+                    </div>
+
+                    <!-- 床鋪區域 -->
+                    <div class="bg-stone-900/60 p-3 rounded border border-stone-800">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-2xl">🛏️</span>
+                            <h3 class="text-xs font-bold text-white">庇護所床鋪</h3>
+                        </div>
+                        <p class="text-[10px] text-stone-400">睡眠能消耗飢餓、超速恢復精力和生命值。高階床鋪能更高效地恢復精力。</p>
+                        <p class="text-[9px] text-amber-500 mt-1" id="equipped-bed">目前：乾草睡地 (精力效率: 5x)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右下：手機虛擬搖桿 & 互動按鈕 -->
+            <div class="flex items-center gap-4 pointer-events-auto md:hidden">
+                <!-- 虛擬搖桿 -->
+                <div id="joystick-base" class="w-24 h-24 bg-stone-900/60 rounded-full border border-stone-700/80 relative flex items-center justify-center select-none active:scale-95 touch-none">
+                    <div id="joystick-knob" class="w-10 h-10 bg-stone-500/80 rounded-full border border-stone-400 pointer-events-none transition-transform duration-75"></div>
+                </div>
+                <!-- 互動大按鈕 -->
+                <button onmousedown="performAction()" class="w-16 h-16 bg-amber-600 active:bg-amber-700 border-2 border-amber-400 rounded-full flex flex-col items-center justify-center shadow-lg font-black text-xs text-white">
+                    <span>ACTION</span>
+                    <span class="text-[9px] font-normal text-amber-200">互動/火控/採集</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ★ 工作台全螢幕彈窗介面 (走近自動開、遠離/按X/按E鍵關閉) -->
+    <div id="workbench-overlay" class="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 hidden pointer-events-auto backdrop-blur-sm">
+        <div class="bg-stone-900 border border-stone-700 rounded-2xl w-full max-w-2xl overflow-hidden relative shadow-2xl flex flex-col h-[520px]">
+            <!-- 紅色關閉 X 按鈕 -->
+            <button onmousedown="game.workbenchManuallyClosed = true; closeWorkbenchUI();" class="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full transition z-50">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            
+            <!-- 上標題欄與升級按鈕 -->
+            <div class="border-b border-stone-800 p-4 flex justify-between items-center bg-stone-950/60 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🔧</span>
+                    <h3 class="font-black text-white text-base">工作台 (LV.<span id="wb-overlay-level">1</span>)</h3>
+                </div>
+                <button onmousedown="upgradeWorkbench()" id="btn-upgrade-workbench-overlay" class="bg-amber-600 hover:bg-amber-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition mr-8 shadow-lg shadow-amber-900/20">
+                    升級 (木:50 鋼:30)
+                </button>
+            </div>
+            
+            <!-- 下方主區：置中列表 -->
+            <div class="flex-1 overflow-y-auto p-4 flex flex-col items-center bg-stone-950/20">
+                <div class="w-full max-w-5xl grid grid-cols-3 md:grid-cols-4 gap-3 pb-6" id="wb-recipe-list">
+                    <!-- 動態渲染配方列表 (點擊跳出確認彈窗) -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ★ 確認購買/製作彈窗 -->
+    <div id="craft-confirm-modal" class="absolute inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 hidden pointer-events-auto backdrop-blur-sm">
+        <div id="craft-confirm-content" class="bg-stone-900 border border-stone-700 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col">
+            <!-- 內容由 JS 動態填入 -->
+        </div>
+    </div>
+
+    <!-- 地圖覆蓋模態框 -->
+    <div id="map-overlay" class="absolute inset-0 z-20 bg-stone-950/90 flex flex-col items-center justify-center p-4 hidden">
+        <div class="bg-stone-900 border border-stone-700 p-4 rounded-2xl flex flex-col items-center gap-3 w-full max-w-lg shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div class="flex justify-between w-full border-b border-stone-800 pb-2">
+                <h3 class="text-sm font-bold text-stone-300 flex items-center gap-1.5">
+                    <i data-lucide="map" class="w-4 h-4 text-emerald-500"></i> 生存衛星地圖
+                </h3>
+                <button onmousedown="toggleMap()" class="text-stone-500 hover:text-stone-300 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- 地圖畫布容器 -->
+            <div class="relative bg-black rounded-lg border border-stone-950 p-1 flex items-center justify-center overflow-hidden">
+                <canvas id="mapCanvas" class="w-[280px] h-[280px] md:w-[400px] md:h-[400px]"></canvas>
+            </div>
+            <div class="text-[10px] text-stone-500 flex justify-between w-full">
+                <span>🔴 滑鼠左鍵點擊地圖可設置自訂紅色標記</span>
+                <span>🟢 綠點為玩家自身</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 訊息彈窗 (Modal) -->
+    <div id="modal-container" class="absolute inset-0 z-40 bg-black/80 flex items-center justify-center p-4 hidden">
+        <div class="bg-stone-900 border border-stone-700 p-5 rounded-2xl w-full max-w-xs text-center flex flex-col gap-3 shadow-2xl">
+            <h3 id="modal-title" class="font-black text-lg text-white">提示訊息</h3>
+            <p id="modal-desc" class="text-xs text-stone-400 leading-relaxed">內文描述說明</p>
+            <button onmousedown="closeModal()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2 rounded-xl transition mt-1">
+                我知道了
+            </button>
+        </div>
+    </div>
+
+    
+    <div id="insufficient-materials" class="absolute top-16 left-1/2 -translate-x-1/2 z-[70] text-red-500 font-black text-2xl hidden pointer-events-none">材料不足</div>
+
+    <!-- 快速通知日誌框 -->
+    <div class="absolute bottom-4 left-4 z-15 w-64 md:w-80 pointer-events-auto flex flex-col gap-1">
+        <!-- 快速吃肉選項 -->
+        <div class="bg-black/80 backdrop-blur-md p-2 rounded-xl border border-stone-800/80 flex items-center justify-between gap-2 shadow-lg mb-1 pointer-events-auto">
+            <div class="flex items-center gap-2 overflow-hidden">
+                <span class="text-xl">🥩</span>
+                <div class="text-[10px] overflow-hidden">
+                    <div class="text-stone-300 font-bold truncate">生肉:<span id="cnt-rawmeat">0</span> 熟肉:<span id="cnt-cookedmeat">0</span></div>
+                    <p class="text-[8px] text-stone-400 hidden md:block">熟肉可恢復 40% 飢餓，生肉恢復 10% 飢餓並扣血</p>
+                </div>
+            </div>
+            <div class="flex gap-1.5 shrink-0">
+                <button onmousedown="eatMeat('raw')" class="bg-rose-950 hover:bg-rose-900 text-rose-300 text-[10px] px-2 py-1 rounded border border-rose-800 transition">吃生肉</button>
+                <button onmousedown="eatMeat('cooked')" class="bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-[10px] px-2 py-1 rounded border border-amber-800 transition">吃熟肉</button>
+            </div>
+        </div>
+
+        <!-- 系統日誌訊息 -->
+        <div id="log-box" class="h-20 bg-stone-950 p-2 rounded border border-stone-900 text-[11px] overflow-y-auto font-mono text-stone-400 space-y-0.5">
+            <div>[系統] 遊戲已載入，準備迎接末日的挑戰。</div>
+        </div>
+    </div>
+
+    <!-- 遊戲結束/開始 覆蓋面板 -->
+    <div id="start-overlay" class="absolute inset-0 z-50 bg-stone-950/95 flex flex-col items-center justify-center p-6 text-center">
+        <h1 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-amber-500 to-yellow-500 mb-2 tracking-widest" style="font-family: 'ZCOOL KuaiLe', sans-serif;">
+            末日都市：極限生存 2.5D
+        </h1>
+        <p class="text-stone-400 text-xs md:text-sm max-w-md mb-6 leading-relaxed">
+            你被困在一個資源匱乏、充滿極低溫威脅的末日郊區。你需要砍伐樹木、收集鋼材與獸皮、建造並升級你強大的避寒庇護所，努力生存下去。
+        </p>
+
+        <!-- 模式設定 -->
+        <div class="bg-stone-900/80 border border-stone-800 p-4 rounded-xl max-w-sm w-full mb-6">
+            <p class="text-stone-300 text-sm font-bold mb-3">選擇生存目標模式：</p>
+            <div class="flex gap-2 justify-center" id="mode-selector">
+                <button class="mode-btn active px-4 py-2 bg-stone-800 border border-stone-600 rounded text-stone-300 text-sm font-bold transition flex-1" data-mode="100">100 天</button>
+                <button class="mode-btn px-4 py-2 bg-stone-800 border border-stone-600 rounded text-stone-300 text-sm font-bold transition flex-1" data-mode="365">365 天</button>
+                <button class="mode-btn px-4 py-2 bg-stone-800 border border-stone-600 rounded text-stone-300 text-sm font-bold transition flex-1" data-mode="endless">無盡模式</button>
+            </div>
+        </div>
+
+        <div class="space-y-3 w-64">
+            <button onmousedown="startGame(false)" class="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-white font-bold py-3 px-6 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.5)] text-sm transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                <i data-lucide="play" class="w-4 h-4"></i> 開始全新生存
+            </button>
+            <button id="btn-load-start" onmousedown="startGame(true)" class="w-full bg-stone-800 hover:bg-stone-700 disabled:opacity-40 disabled:hover:bg-stone-800 text-stone-300 font-bold py-2.5 px-6 rounded-lg text-xs transition flex items-center justify-center gap-2">
+                <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> 繼續上次進度
+            </button>
+        </div>
+
+        <div class="mt-8 text-stone-600 text-[10px]">
+            © v1.0.1 2.5D 高效物理與光影渲染生存沙盒遊戲
+        </div>
+    </div>
+
+    <!-- 腳本區域 -->
+    <script>
+        // --- 核心變數設定 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // ★ 地圖物理世界大小擴大到 10,000 px
+        const WORLD_SIZE = 10000; 
+        
+        let isGameRunning = false;
+        let isMapOpen = false;
+        let lastTime = 0;
+        let activeTab = 'inventory';
+        let selectedMode = '100'; // 100 天
+        let mapObjects = [];
+        let bullets = [];
+        let stepCountReset = 0;
+        let exactFreezeDamage = 2.0;
+
+        // 核心遊戲狀態
+        let game = {
+            day: 1,
+            timeOfDay: 0, // 0.0 ~ 600.0 (一秒約 1 單位. 300秒白天/300秒黑夜)
+            mode: '100',
+            hp: 100,
+            hunger: 100,
+            stamina: 500,
+            backpackLvl: 0, // 背包等級，預設為 0
+            equippedWeapon: 'none', // 'none', 'm4a1', 'revolver'
+            isWorkbenchOpen: false, // 是否開啟工作台 UI
+            wasNearWorkbench: false, // 上一訊框是否在工作台附近
+            workbenchManuallyClosed: false, // 玩家是否手動關閉 (按E/點X) 
+            resources: {
+                wood: 30,
+                steel: 20,
+                leather: 10,
+                rawMeat: 2,
+                cookedMeat: 0,
+                gunpowder: 0,       
+                m4a1Count: 0,       
+                m4a1Ammo: 0,        
+                revolverCount: 0,   
+                revolverAmmo: 0     
+            },
+            workbenchLvl: 1,
+            equippedAxe: { name: "木製斧頭", quality: 0, efficiency: 1 },
+            equippedClothes: null,
+            equippedBed: { name: "乾草睡地", quality: 0, staminaRate: 5 },
+            shelter: {
+                built: false,
+                level: -1,
+                upgrading: false,
+                daysRemaining: 0,
+                targetLevel: 0
+            },
+            player: {
+                x: 300,
+                y: 300,
+                vx: 0,
+                vy: 0,
+                speed: 3.5,
+                stepsCount: 0,
+                facing: 'SE'
+            }
+        };
+
+        // 背包限額輔助函式
+        function getBackpackCapacity() {
+            let lvl = game.backpackLvl || 0;
+            if (lvl === 1) return 500;
+            if (lvl === 2) return 750;
+            if (lvl === 3) return 1000;
+            if (lvl === 50) return 9999; // 作弊用無限背包
+            return 250; 
+        }
+
+        function getTotalItemsCount() {
+            return (game.resources.wood || 0) +
+                   (game.resources.steel || 0) +
+                   (game.resources.leather || 0) +
+                   (game.resources.rawMeat || 0) +
+                   (game.resources.cookedMeat || 0) +
+                   (game.resources.gunpowder || 0) +
+                   (game.resources.m4a1Ammo || 0) +
+                   (game.resources.revolverAmmo || 0);
+        }
+
+        const RECIPES = [
+            { id: 'stone_axe', name: '石製斧頭', type: 'tool', desc: '大幅增加木頭採集效率', cost: { wood: 15, steel: 5 }, minLvl: 1 },
+            { id: 'stone_sword', name: '石製鋼劍', type: 'weapon', desc: '高效擊殺動物以獲取肉塊', cost: { wood: 10, steel: 15 }, minLvl: 1 },
+            { id: 'furnace', name: '野外熔爐', type: 'building', desc: '可煮熟肉類，且在附近提供完全保暖效果', cost: { wood: 10, steel: 15 }, minLvl: 1 },
+            { id: 'clothes_1', name: '一般毛衣', type: 'clothes', desc: '增加 25% 寒冷抗性', cost: { leather: 20 }, minLvl: 1 },
+            { id: 'bed_1', name: '暖木吊床', type: 'bed', desc: '精力恢復速率提升 (10x)', cost: { wood: 40, leather: 10 }, minLvl: 1 },
+            { id: 'backpack_1', name: '戰術背包 Lv.1', type: 'backpack', desc: '提升背包總容量至 500 件物品', cost: { wood: 5, leather: 15 }, minLvl: 1 },
+
+            { id: 'steel_axe', name: '精鋼手斧', type: 'tool', desc: '極高木頭採集效率 (效率 3x)', cost: { wood: 30, steel: 25 }, minLvl: 2 },
+            { id: 'clothes_2', name: '防寒軍大衣', type: 'clothes', desc: '增加 60% 寒冷抗性', cost: { leather: 40, steel: 10 }, minLvl: 2 },
+            { id: 'bed_2', name: '精工軟彈簧床', type: 'bed', desc: '精力恢復速率極致提升 (20x)', cost: { wood: 60, leather: 30, steel: 20 }, minLvl: 2 },
+            { id: 'backpack_2', name: '荒野探險背包 Lv.2', type: 'backpack', desc: '提升背包總容量至 750 件物品', cost: { steel: 10, leather: 25 }, minLvl: 2 },
+
+            { id: 'backpack_3', name: '特戰軍用背包 Lv.3', type: 'backpack', desc: '提升背包總容量至 1000 件物品', cost: { steel: 20, leather: 40 }, minLvl: 3 },
+            { id: 'm4a1', name: 'M4A1 突擊步槍', type: 'gun', desc: '全自動武器，射速極快 (傷害 25 / 爆頭 35)', cost: { steel: 10, wood: 15 }, minLvl: 3 },
+            { id: 'm4a1_ammo', name: 'M4A1 彈藥盒 (30發)', type: 'ammo', desc: '步槍子彈盒。需消耗鋼鐵與火藥製作', cost: { steel: 10, gunpowder: 10 }, minLvl: 3 },
+            { id: 'revolver', name: '.357 左輪手槍', type: 'gun', desc: '高單發傷害致命手槍 (傷害 55 / 爆頭 150)', cost: { steel: 5, wood: 8 }, minLvl: 3 },
+            { id: 'revolver_ammo', name: '.357 彈藥盒 (10發)', type: 'ammo', desc: '手槍子彈盒。需消耗鋼鐵與火藥製作', cost: { steel: 5, gunpowder: 5 }, minLvl: 3 }
+        ];
+
+        // 模式選擇
+        document.querySelectorAll('#mode-selector button').forEach(btn => {
+            btn.addEventListener('click', e => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedMode = e.target.getAttribute('data-mode');
+            });
+        });
+
+        // --- 音效管理器 (Web Audio API) ---
+        let audioCtx = null;
+        let isAudioMuted = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'chop') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.15);
+                } else if (type === 'hit') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(90, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.2);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.2);
+                } else if (type === 'craft') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                    osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.1);
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.3);
+                } else if (type === 'freeze') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(100, audioCtx.currentTime);
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.5);
+                } else if (type === 'chime') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); 
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.12); 
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.24); 
+                    gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.6);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.6);
+                }
+            } catch(e){}
+        }
+
+        // 槍枝開火音效
+        function playGunSound(type) {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                
+                if (type === 'revolver') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(320, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.35);
+                    gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.35);
+                } else if (type === 'm4a1') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(450, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(15, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                    osc.start(); osc.stop(audioCtx.currentTime + 0.15);
+                }
+            } catch(e){}
+        }
+
+        function toggleAudio() {
+            isAudioMuted = !isAudioMuted;
+            const btn = document.getElementById('audio-toggle-btn');
+            btn.innerHTML = isAudioMuted ? `<i data-lucide="volume-x" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>` : `<i data-lucide="volume-2" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>`;
+            lucide.createIcons();
+        }
+
+        // --- 核心遊戲流程與存檔 ---
+        window.addEventListener('DOMContentLoaded', () => {
+            if (localStorage.getItem('apocalypse_survival_save')) {
+                document.getElementById('btn-load-start').removeAttribute('disabled');
+            } else {
+                document.getElementById('btn-load-start').setAttribute('disabled', 'true');
+            }
+            lucide.createIcons();
+        });
+
+        function showModal(title, desc) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('modal-container').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('modal-container').classList.add('hidden');
+        }
+
+        function logMsg(text, type = "info") {
+            const box = document.getElementById('log-box');
+            let color = "text-stone-300";
+            if (type === "warning") color = "text-yellow-400 font-bold";
+            if (type === "danger") color = "text-red-400 font-bold animate-pulse";
+            if (type === "success") color = "text-green-400 font-bold";
+            
+            box.innerHTML += `<div class="${color}">[${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit', second:'2-digit'})}] ${text}</div>`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        
+        function showInsufficientMaterials() {
+            const el = document.getElementById('insufficient-materials');
+            if(!el) return;
+            el.classList.remove('hidden');
+            clearTimeout(window.insufficientMatTimer);
+            window.insufficientMatTimer = setTimeout(()=>el.classList.add('hidden'),1500);
+        }
+
+
+function recipeIcon(type){
+const m={tool:'🪓',weapon:'⚔️',building:'🏗️',clothes:'👕',bed:'🛏️',backpack:'🎒',gun:'🔫',ammo:'📦'};
+return m[type]||'📦';
+}
+
+function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.classList.remove('text-amber-500', 'bg-stone-900');
+                el.classList.add('text-stone-400', 'hover:text-stone-200');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('text-amber-500', 'bg-stone-900');
+            document.getElementById(`tab-${tab}`).classList.remove('text-stone-400', 'hover:text-stone-200');
+
+            document.querySelectorAll('[id^="panel-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+        }
+
+        function toggleInventory() {
+            // 在手機端快速開關物資欄
+        }
+
+        function saveGame() {
+            try {
+                const saveData = {
+                    game,
+                    mapObjects: mapObjects.map(obj => ({
+                        id: obj.id,
+                        type: obj.type,
+                        x: obj.x, y: obj.y, z: obj.z,
+                        size: obj.size, hp: obj.hp, maxHp: obj.maxHp,
+                        height: obj.height || 0, quality: obj.quality || 0,
+                        animalType: obj.animalType || null
+                    }))
+                };
+                localStorage.setItem('apocalypse_survival_save', JSON.stringify(saveData));
+                logMsg("進度已成功儲存至本地瀏覽器！", "success");
+                showModal("💾 存檔成功", "你的生存進度已儲存。");
+            } catch (e) {
+                logMsg("存檔失敗: " + e.message, "danger");
+            }
+        }
+
+        function loadGame() {
+            try {
+                const dataStr = localStorage.getItem('apocalypse_survival_save');
+                if (!dataStr) return;
+                const saveData = JSON.parse(dataStr);
+                
+                game = saveData.game;
+                if (!game.mode) game.mode = '365';
+                
+                mapObjects = [];
+                saveData.mapObjects.forEach(obj => {
+                    let newObj = createMapObject(obj.type, obj.x, obj.y, obj.z, obj.height);
+                    newObj.hp = obj.hp; newObj.maxHp = obj.maxHp; newObj.quality = obj.quality || 0;
+                    if(obj.animalType) newObj.animalType = obj.animalType;
+                    mapObjects.push(newObj);
+                });
+
+                logMsg("已載入儲存進度！", "success");
+                updateUI();
+            } catch (e) {
+                logMsg("讀檔失敗，存檔已損壞: " + e.message, "danger");
+            }
+        }
+
+        function startGame(loadSaved) {
+            initAudio();
+            document.getElementById('start-overlay').classList.add('hidden');
+            isGameRunning = true;
+
+            if (loadSaved) {
+                loadGame();
+            } else {
+                game.mode = selectedMode;
+                game.day = 1;
+                game.timeOfDay = 0;
+                game.hp = 100;
+                game.hunger = 100;
+                game.stamina = 500;
+                game.backpackLvl = 0;
+                game.equippedWeapon = 'none';
+                game.isWorkbenchOpen = false;
+                game.wasNearWorkbench = false;
+                game.workbenchManuallyClosed = false;
+                game.resources = { 
+                    wood: 30, steel: 20, leather: 10, rawMeat: 2, cookedMeat: 0, 
+                    gunpowder: 0, m4a1Count: 0, m4a1Ammo: 0, revolverCount: 0, revolverAmmo: 0 
+                };
+                game.workbenchLvl = 1;
+                game.equippedAxe = { name: "木製斧頭", quality: 0, efficiency: 1 };
+                game.equippedClothes = null;
+                game.equippedBed = { name: "乾草睡地", quality: 0, staminaRate: 5 };
+                game.shelter = { built: false, level: -1, upgrading: false, daysRemaining: 0, targetLevel: 0 };
+                game.customMarker = null;
+                game.player.x = 400;
+                game.player.y = 400;
+                
+                initMap();
+                let modeTxt = game.mode === 'endless' ? '無盡模式' : `${game.mode} 天`;
+                logMsg(`全新生存開始！當前目標：${modeTxt}。走近工作台即可自動打開製作面板！`, "info");
+            }
+
+            resizeCanvas();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- 地圖生成與 ISO 2.5D 投影 ---
+        function createMapObject(type, x, y, z = 0, height = 0) {
+            let size = 20, hp = 10;
+            if (type === 'tree') { size = 24; hp = 5; }
+            else if (type === 'steel_pile') { size = 18; hp = 8; }
+            else if (type === 'leather_pile') { size = 16; hp = 4; }
+            else if (type === 'building') { size = 60; hp = 999999; }
+            else if (type === 'animal') { size = 15; hp = 3; }
+            else if (type === 'monster') { size = 18; hp = 100; } 
+            else if (type === 'cave') { size = 50; hp = 999999; }    
+            else if (type === 'workbench') { size = 25; hp = 9999; }
+            else if (type === 'furnace') { size = 25; hp = 9999; }
+            else if (type === 'bed') { size = 30; hp = 9999; }
+            else if (type === 'shelter') { size = 45; hp = 9999; }
+
+            return {
+                id: Math.random().toString(36).substr(2, 9),
+                type, x, y, z, size, hp, maxHp: hp, height, quality: 0,
+                animalType: type === 'animal' ? (Math.random() > 0.5 ? 'cow' : 'pig') : null,
+                animalWalkDir: Math.random() * Math.PI * 2, animalWalkTimer: 0
+            };
+        }
+
+        // --- 初始化地圖 ---
+        function initMap() {
+            mapObjects = [];
+            bullets = [];
+            
+            // 地圖中央放置最初工作台、床
+            mapObjects.push(createMapObject('workbench', 300, 420));
+            mapObjects.push(createMapObject('bed', 250, 250));
+
+            // 固定建築廢墟
+            mapObjects.push(createMapObject('building', 200, 600, 0, 40));
+            mapObjects.push(createMapObject('building', 800, 300, 0, 60));
+            mapObjects.push(createMapObject('building', 900, 800, 0, 50));
+
+            // ★ 在地圖最邊界（WORLD_SIZE - 200）放置神秘洞穴，並生成怪
+            mapObjects.push(createMapObject('cave', WORLD_SIZE - 200, WORLD_SIZE - 200, 0, 35));
+            for (let i = 0; i < 5; i++) {
+                mapObjects.push(createMapObject('monster', (WORLD_SIZE - 400) + Math.random() * 300, (WORLD_SIZE - 400) + Math.random() * 300));
+            }
+
+            // 隨機生成樹木、廢鋼堆、獸皮、動物 (世界地圖為 10,000 px，相應增加資源)
+            for (let i = 0; i < 300; i++) {
+                mapObjects.push(createMapObject('tree', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+                mapObjects.push(createMapObject('steel_pile', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+                mapObjects.push(createMapObject('leather_pile', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+            }
+            for (let i = 0; i < 100; i++) {
+                mapObjects.push(createMapObject('animal', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+            }
+        }
+
+        const cos30 = Math.cos(Math.PI / 6);
+        const sin30 = Math.sin(Math.PI / 6);
+
+        function worldToScreen(wx, wy, wz = 0) {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const dx = wx - game.player.x;
+            const dy = wy - game.player.y;
+            const sx = cx + (dx - dy) * cos30;
+            const sy = cy + (dx + dy) * sin30 - wz;
+            return { x: sx, y: sy };
+        }
+
+        function drawIsoBox(ctx, sx, sy, w, l, h, topC, leftC, rightC) {
+            // 頂部面
+            ctx.fillStyle = topC;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - h);
+            ctx.lineTo(sx + w * cos30, sy - h - w * sin30);
+            ctx.lineTo(sx + (w - l) * cos30, sy - h - (w + l) * sin30);
+            ctx.lineTo(sx - l * cos30, sy - h - l * sin30);
+            ctx.closePath();
+            ctx.fill();
+
+            // 左側面
+            ctx.fillStyle = leftC;
+            ctx.beginPath();
+            ctx.moveTo(sx - l * cos30, sy - h - l * sin30);
+            ctx.lineTo(sx, sy - h);
+            ctx.lineTo(sx, sy);
+            ctx.lineTo(sx - l * cos30, sy - l * sin30);
+            ctx.closePath();
+            ctx.fill();
+
+            // 右側面
+            ctx.fillStyle = rightC;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - h);
+            ctx.lineTo(sx + w * cos30, sy - h - w * sin30);
+            ctx.lineTo(sx + w * cos30, sy - w * sin30);
+            ctx.lineTo(sx, sy);
+            ctx.closePath();
+            ctx.fill();
+        }
+
+        // --- 繪製各類物件的精細 2.5D 模型 ---
+        function drawBuilding(sx, sy, h, light) {
+            drawIsoBox(ctx, sx, sy, 30, 30, h, `rgb(${Math.floor(65*light)},75,90)`, `rgb(${Math.floor(40*light)},45,55)`, `rgb(${Math.floor(25*light)},30,35)`);
+            ctx.fillStyle = `rgba(251,191,36,${light < 0.6 ? 0.8 : 0.15})`;
+            ctx.fillRect(sx - 12, sy - h/2 - 6, 6, 8);
+            ctx.fillRect(sx + 6, sy - h/2 - 6, 6, 8);
+        }
+        function drawAnimal(sx, sy, animalType, direction, light) {
+            let bodyC = animalType === 'cow' ? '#78350f' : '#f43f5e';
+            let headC = animalType === 'cow' ? '#b45309' : '#fda4af';
+            drawIsoBox(ctx, sx, sy, 10, 16, 12, bodyC, bodyC, bodyC);
+            let headPos = worldToScreen(0, 0, 0); 
+            ctx.fillStyle = headC;
+            ctx.beginPath();
+            ctx.arc(sx, sy - 14, 5, 0, Math.PI * 2);
+            ctx.fill();
+            if (animalType === 'cow') { 
+                ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1.5;
+                ctx.beginPath(); ctx.moveTo(sx-3, sy-18); ctx.lineTo(sx-6, sy-22); ctx.stroke();
+                ctx.beginPath(); ctx.moveTo(sx+3, sy-18); ctx.lineTo(sx+6, sy-22); ctx.stroke();
+            }
+        }
+        
+        function drawCave(sx, sy, light) {
+            drawIsoBox(ctx, sx, sy, 45, 45, 30, `rgb(${Math.floor(40*light)},40,48)`, `rgb(${Math.floor(25*light)},25,32)`, `rgb(${Math.floor(18*light)},18,22)`);
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.ellipse(sx, sy - 5, 18, 14, 0, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#ef4444';
+            ctx.font = 'black 12px sans-serif';
+            ctx.fillText("💀 洞穴副本", sx - 30, sy - 35);
+        }
+
+        function drawMonster(sx, sy, light) {
+            let bodyC = '#3f0f0f';
+            let headC = '#5f1f1f';
+            let eyeC = '#ef4444';
+            let swing = Math.sin(performance.now() / 150) * 10;
+            
+            drawIsoBox(ctx, sx - 3, sy + swing/4, 3, 3, 8, '#1e0505', '#1e0505', '#1e0505');
+            drawIsoBox(ctx, sx + 3, sy - swing/4, 3, 3, 8, '#1e0505', '#1e0505', '#1e0505');
+            drawIsoBox(ctx, sx, sy - 6, 8, 12, 12, bodyC, bodyC, bodyC);
+            
+            ctx.fillStyle = headC;
+            ctx.beginPath();
+            ctx.arc(sx, sy - 14, 4.5, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = eyeC;
+            ctx.fillRect(sx - 2.5, sy - 15, 1.5, 1.5);
+            ctx.fillRect(sx + 1, sy - 15, 1.5, 1.5);
+        }
+
+        function drawFurnace(sx, sy, light) {
+            drawIsoBox(ctx, sx, sy, 16, 16, 18, '#374151', '#1f2937', '#111827');
+            let pulse = 3 + Math.sin(performance.now() / 100) * 2;
+            ctx.fillStyle = '#f97316';
+            ctx.beginPath();
+            ctx.arc(sx, sy - 4, pulse, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        function drawBed(sx, sy, obj, light) {
+            drawIsoBox(ctx, sx, sy, 12, 22, 5, '#78350f', '#451a03', '#2d0f02');
+            ctx.fillStyle = obj.quality === 0 ? '#15803d' : '#2563eb';
+            ctx.beginPath();
+            ctx.moveTo(sx - 2, sy - 5); ctx.lineTo(sx + 10, sy - 11); ctx.lineTo(sx + 6, sy - 21); ctx.lineTo(sx - 6, sy - 15); ctx.closePath(); ctx.fill();
+        }
+        function drawGrass(sx, sy, light) {
+            ctx.fillStyle = `rgba(34, 197, 94, ${0.15 * light})`;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy); ctx.lineTo(sx + 2, sy - 8); ctx.lineTo(sx + 5, sy);
+            ctx.moveTo(sx - 4, sy); ctx.lineTo(sx - 2, sy - 10); ctx.lineTo(sx + 1, sy);
+            ctx.stroke();
+        }
+        function drawTree(sx, sy, light) {
+            drawIsoBox(ctx, sx, sy, 4, 4, 18, `rgb(${Math.floor(100*light)},60,30)`, `rgb(${Math.floor(80*light)},45,20)`, `rgb(${Math.floor(60*light)},30,10)`);
+            drawIsoBox(ctx, sx, sy-15, 20, 20, 16, `rgb(${Math.floor(46*light)},160,55)`, `rgb(${Math.floor(34*light)},125,44)`, `rgb(${Math.floor(24*light)},100,34)`);
+        }
+        function drawSteelPile(sx, sy, light) { drawIsoBox(ctx, sx, sy, 16, 6, 6, '#a0a0aa', '#787882', '#5a5a64'); }
+        function drawLeatherPile(sx, sy, light) { drawIsoBox(ctx, sx, sy, 12, 12, 4, '#8b5a2b', '#6e461e', '#503214'); }
+        function drawWorkbench(sx, sy, quality, light) {
+            drawIsoBox(ctx, sx-8, sy+8, 3, 3, 10, '#5c4033', '#402e2b', '#2b1f1d');
+            drawIsoBox(ctx, sx+8, sy+8, 3, 3, 10, '#5c4033', '#402e2b', '#2b1f1d');
+            drawIsoBox(ctx, sx-8, sy-8, 3, 3, 10, '#5c4033', '#402e2b', '#2b1f1d');
+            drawIsoBox(ctx, sx+8, sy-8, 3, 3, 10, '#5c4033', '#402e2b', '#2b1f1d');
+            drawIsoBox(ctx, sx, sy-4, 14, 24, 4, game.workbenchLvl === 1 ? '#ca8a04' : (game.workbenchLvl === 2 ? '#0284c7' : '#9333ea'), '#1e293b', '#0f172a');
+        }
+        function drawShelter(sx, sy, obj, light) {
+            if (obj.level <= 0) { drawIsoBox(ctx, sx, sy, 32, 32, 20, '#d97706', '#b45309', '#78350f'); } 
+            else { drawIsoBox(ctx, sx, sy, 38, 38, 28, '#1e293b', '#475569', '#334155'); drawIsoBox(ctx, sx, sy-28, 40, 40, 10, '#b91c1c', '#991b1b', '#7f1d1d'); }
+        }
+        let walkCycle = 0;
+        function drawRobloxPlayer(sx, sy, light) {
+            if (game.player.vx !== 0 || game.player.vy !== 0) walkCycle += 0.25; else walkCycle = 0;
+            let swing = Math.sin(walkCycle) * 15; let legC = '#1450b4', torsoC = game.equippedClothes ? '#1e3a8a' : '#dc641e', armC = '#f0c896';
+            
+            drawIsoBox(ctx, sx - 4, sy + swing/4, 4, 4, 10, legC, legC, legC);
+            drawIsoBox(ctx, sx + 4, sy - swing/4, 4, 4, 10, legC, legC, legC);
+            drawIsoBox(ctx, sx, sy - 8, 8, 12, 14, torsoC, torsoC, torsoC);
+            if (game.equippedWeapon !== 'none') {
+                drawIsoBox(ctx, sx - 7, sy - 14, 3, 12, 5, '#1e293b', '#1e293b', '#1e293b'); 
+            } else {
+                drawIsoBox(ctx, sx - 7, sy - 8 + swing/4, 3, 3, 12, armC, armC, armC);
+            }
+            drawIsoBox(ctx, sx + 7, sy - 8 - swing/4, 3, 3, 12, armC, armC, armC);
+            ctx.fillStyle = '#fce7f3';
+            ctx.beginPath(); ctx.arc(sx, sy - 28, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(sx - 3, sy - 29, 2, 2); ctx.fillRect(sx + 1, sy - 29, 2, 2);
+        }
+
+        // --- 繪製黑暗與光源 ---
+        function drawDarknessAndLights(ambientLight) {
+            let darknessCanvas = document.createElement('canvas');
+            darknessCanvas.width = canvas.width;
+            darknessCanvas.height = canvas.height;
+            let dctx = darknessCanvas.getContext('2d');
+
+            dctx.fillStyle = `rgba(4, 4, 15, ${1.0 - ambientLight})`;
+            dctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let pScreen = worldToScreen(game.player.x, game.player.y);
+            let grad = dctx.createRadialGradient(pScreen.x, pScreen.y, 10, pScreen.x, pScreen.y, 120);
+            grad.addColorStop(0, 'rgba(255,255,255,1.0)');
+            grad.addColorStop(0.5, 'rgba(255,240,200,0.35)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.0)');
+            dctx.globalCompositeOperation = 'destination-out';
+            dctx.fillStyle = grad;
+            dctx.beginPath(); dctx.arc(pScreen.x, pScreen.y, 120, 0, Math.PI * 2); dctx.fill();
+
+            mapObjects.forEach(obj => {
+                let dist = Math.hypot(game.player.x - obj.x, game.player.y - obj.y);
+                if (dist > 1200) return; 
+                
+                if (obj.type === 'furnace' || (obj.type === 'shelter' && obj.level >= 0)) {
+                    let scr = worldToScreen(obj.x, obj.y);
+                    let rad = obj.type === 'furnace' ? 180 : 250;
+                    let objGrad = dctx.createRadialGradient(scr.x, scr.y, 20, scr.x, scr.y, rad);
+                    objGrad.addColorStop(0, 'rgba(255,255,255,1.0)');
+                    objGrad.addColorStop(0.4, 'rgba(253,186,116,0.5)');
+                    objGrad.addColorStop(1, 'rgba(0,0,0,0.0)');
+                    dctx.fillStyle = objGrad;
+                    dctx.beginPath(); dctx.arc(scr.x, scr.y, rad, 0, Math.PI * 2); dctx.fill();
+                }
+            });
+
+            dctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(darknessCanvas, 0, 0);
+        }
+
+        // --- 核心渲染引擎 ---
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let t = game.timeOfDay;
+            let ambientLight = 1.0;
+            if (t > 240 && t <= 300) { 
+                ambientLight = 1.0 - ((t - 240) / 60) * 0.75; 
+            } else if (t > 300 && t <= 540) { 
+                ambientLight = 0.25;
+            } else if (t > 540 && t <= 600) { 
+                ambientLight = 0.25 + ((t - 540) / 60) * 0.75; 
+            }
+
+            // 更改世界地面背景為 #676767 灰色 (並隨著環境光暗度進行運算，模擬日夜明暗)
+            let grayValue = Math.floor(103 * ambientLight);
+            ctx.fillStyle = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let renderList = [];
+            
+            for (let x = Math.floor(game.player.x - 300); x < game.player.x + 300; x += 120) {
+                for (let y = Math.floor(game.player.y - 200); y < game.player.y + 200; y += 120) {
+                    let rx = x - (x % 120); let ry = y - (y % 120);
+                    if (rx > 0 && rx < WORLD_SIZE && ry > 0 && ry < WORLD_SIZE) {
+                        let pos = worldToScreen(rx, ry);
+                        drawGrass(pos.x, pos.y, ambientLight);
+                    }
+                }
+            }
+
+            mapObjects.forEach(obj => { renderList.push({ type: 'map_obj', data: obj, sortY: obj.y + obj.x }); });
+            renderList.push({ type: 'player', data: game.player, sortY: game.player.y + game.player.x });
+
+            renderList.sort((a, b) => a.sortY - b.sortY);
+
+            renderList.forEach(item => {
+                if (item.type === 'player') {
+                    let pScreen = worldToScreen(game.player.x, game.player.y);
+                    drawRobloxPlayer(pScreen.x, pScreen.y, ambientLight);
+                } else {
+                    let obj = item.data;
+                    let pos = worldToScreen(obj.x, obj.y, obj.z);
+                    
+                    if (pos.x < -100 || pos.x > canvas.width + 100 || pos.y < -100 || pos.y > canvas.height + 150) return;
+
+                    if (obj.type === 'tree') drawTree(pos.x, pos.y, ambientLight);
+                    else if (obj.type === 'steel_pile') drawSteelPile(pos.x, pos.y, ambientLight);
+                    else if (obj.type === 'leather_pile') drawLeatherPile(pos.x, pos.y, ambientLight);
+                    else if (obj.type === 'building') drawBuilding(pos.x, pos.y, obj.height, ambientLight);
+                    else if (obj.type === 'cave') drawCave(pos.x, pos.y, ambientLight); 
+                    else if (obj.type === 'monster') drawMonster(pos.x, pos.y, ambientLight); 
+                    else if (obj.type === 'animal') drawAnimal(pos.x, pos.y, obj.animalType, obj.animalWalkDir, ambientLight);
+                    else if (obj.type === 'workbench') drawIsoBox(ctx, pos.x, pos.y, 22, 14, 10, game.workbenchLvl === 1 ? '#ca8a04' : (game.workbenchLvl === 2 ? '#0284c7' : '#9333ea'), '#b45309', '#78350f');
+                    else if (obj.type === 'furnace') drawFurnace(pos.x, pos.y, ambientLight);
+                    else if (obj.type === 'bed') drawBed(pos.x, pos.y, obj, ambientLight);
+                    else if (obj.type === 'shelter') drawShelter(pos.x, pos.y, obj, ambientLight);
+
+                    if (obj.hp < obj.maxHp && obj.maxHp < 1000) {
+                        ctx.fillStyle = 'rgba(0,0,0,0.6)'; ctx.fillRect(pos.x - 20, pos.y - 45, 40, 5);
+                        ctx.fillStyle = '#ef4444'; ctx.fillRect(pos.x - 20, pos.y - 45, (obj.hp / obj.maxHp) * 40, 5);
+                    }
+                }
+            });
+
+            bullets.forEach(b => {
+                let pos = worldToScreen(b.x, b.y);
+                ctx.fillStyle = b.type === 'm4a1' ? '#f59e0b' : '#ef4444';
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
+            ctx.save();
+            ctx.translate(-game.player.x * cos30, -game.player.y * sin30); // 獲取正確的世界轉換位置以明確標示世界邊界
+
+            // ★ 明確標示物理世界 10,000 px 邊界：繪製厚實鮮紅色的警告線與內側半透明警告斜紋
+            let screenBoundary = worldToScreen(0, 0);
+            let screenEnd = worldToScreen(WORLD_SIZE, WORLD_SIZE);
+            
+            // 由於在 ISO 視角下用 World Coordinate 做投影最為準確
+            ctx.restore();
+
+            ctx.save();
+            // 在 translated 座標系下繪製世界邊緣線
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            ctx.translate(cx - game.player.x * cos30 + game.player.y * cos30, cy - game.player.x * sin30 - game.player.y * sin30);
+
+            // 繪製正方形邊界的投影
+            ctx.strokeStyle = '#f43f5e'; // 鮮紅色邊框
+            ctx.lineWidth = 15;
+            ctx.beginPath();
+            let p1 = { x: (0 - 0)*cos30, y: (0 + 0)*sin30 };
+            let p2 = { x: (WORLD_SIZE - 0)*cos30, y: (WORLD_SIZE + 0)*sin30 };
+            let p3 = { x: (WORLD_SIZE - WORLD_SIZE)*cos30, y: (WORLD_SIZE + WORLD_SIZE)*sin30 };
+            let p4 = { x: (0 - WORLD_SIZE)*cos30, y: (0 + WORLD_SIZE)*sin30 };
+            ctx.moveTo(p1.x, p1.y);
+            ctx.lineTo(p2.x, p2.y);
+            ctx.lineTo(p3.x, p3.y);
+            ctx.lineTo(p4.x, p4.y);
+            ctx.closePath();
+            ctx.stroke();
+
+            // 繪製邊界內側警告斜紋 (Danger stripes)
+            ctx.strokeStyle = 'rgba(244, 63, 94, 0.2)';
+            ctx.lineWidth = 45;
+            ctx.stroke();
+
+            ctx.restore();
+
+            if (ambientLight < 1.0) drawDarknessAndLights(ambientLight);
+
+            drawEdgeIndicators();
+        }
+
+        // --- 繪製螢幕邊緣指示箭頭 ---
+        function drawEdgeIndicators() {
+            let targets = [];
+            if (game.customMarker) targets.push({ x: game.customMarker.x, y: game.customMarker.y, color: '#ef4444', label: '標記' });
+            
+            let wb = mapObjects.find(o => o.type === 'workbench');
+            if (wb) targets.push({ x: wb.x, y: wb.y, color: '#3b82f6', label: '工作台' });
+
+            let cv = mapObjects.find(o => o.type === 'cave');
+            if (cv) targets.push({ x: cv.x, y: cv.y, color: '#a855f7', label: '神秘洞穴副本' });
+            
+            if (game.shelter.level >= 0) {
+                let sh = mapObjects.find(o => o.type === 'shelter');
+                if (sh) targets.push({ x: sh.x, y: sh.y, color: '#d97706', label: '庇護所' });
+            }
+
+            targets.forEach(tgt => {
+                let screenPos = worldToScreen(tgt.x, tgt.y);
+                let edge = getEdgePos(screenPos.x, screenPos.y, 40);
+                if (edge.offscreen) {
+                    drawPointer(edge.x, edge.y, edge.angle, tgt.color, tgt.label);
+                }
+            });
+        }
+
+        function getEdgePos(px, py, padding) {
+            let cx = canvas.width / 2;
+            let cy = canvas.height / 2;
+            let dx = px - cx;
+            let dy = py - cy;
+            let hw = cx - padding;
+            let hh = cy - padding;
+
+            if (Math.abs(dx) <= hw && Math.abs(dy) <= hh) return { offscreen: false };
+
+            let scaleX = Math.abs(dx) > 0.001 ? hw / Math.abs(dx) : 9999;
+            let scaleY = Math.abs(dy) > 0.001 ? hh / Math.abs(dy) : 9999;
+            let scale = Math.min(scaleX, scaleY);
+
+            return { x: cx + dx * scale, y: cy + dy * scale, offscreen: true, angle: Math.atan2(dy, dx) };
+        }
+
+        function drawPointer(x, y, angle, color, label) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(12, 0); ctx.lineTo(-8, 8); ctx.lineTo(-8, -8); ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 8; ctx.shadowColor = color;
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x, y - 12);
+        }
+
+        // --- 衛星地圖系統 ---
+        const mapCanvas = document.getElementById('mapCanvas');
+        const mctx = mapCanvas.getContext('2d');
+
+        function toggleMap() {
+            isMapOpen = !isMapOpen;
+            const overlay = document.getElementById('map-overlay');
+            if (isMapOpen) {
+                overlay.classList.remove('hidden');
+                drawMinimap();
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // ★ 修改衛星雷達地圖：完全正方形，且觀測/坐標範圍鎖定在 3,000 px 規格內
+        function drawMinimap() {
+            mctx.fillStyle = '#0f172a';
+            mctx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+
+            const MAP_RANGE = 3000; // 雷達地圖限額 3000 px
+            let scale = mapCanvas.width / MAP_RANGE;
+
+            // 繪製網格
+            mctx.strokeStyle = '#1e293b'; mctx.lineWidth = 1;
+            for (let i = 0; i <= MAP_RANGE; i += 500) {
+                mctx.beginPath(); mctx.moveTo(i*scale, 0); mctx.lineTo(i*scale, mapCanvas.height); mctx.stroke();
+                mctx.beginPath(); mctx.moveTo(0, i*scale); mctx.lineTo(mapCanvas.width, i*scale); mctx.stroke();
+            }
+
+            // 繪製物資實體
+            mapObjects.forEach(obj => {
+                // 如果超出 3000 px 的範圍則在地圖上裁剪不予顯示
+                if (obj.x > MAP_RANGE || obj.y > MAP_RANGE) return;
+
+                let size = 2;
+                if (obj.type === 'building') { mctx.fillStyle = '#475569'; size = 8; }
+                else if (obj.type === 'tree') mctx.fillStyle = '#15803d';
+                else if (obj.type === 'cave') { mctx.fillStyle = '#a855f7'; size = 10; } 
+                else if (obj.type === 'workbench') { mctx.fillStyle = '#3b82f6'; size = 5; }
+                else if (obj.type === 'shelter') { mctx.fillStyle = '#d97706'; size = 7; }
+                else return; 
+                
+                mctx.fillRect(obj.x * scale - size/2, obj.y * scale - size/2, size, size);
+            });
+
+            // 繪製自訂標記 (限額在 3000px 內才顯示)
+            if (game.customMarker && game.customMarker.x <= MAP_RANGE && game.customMarker.y <= MAP_RANGE) {
+                mctx.fillStyle = '#ef4444';
+                mctx.beginPath();
+                mctx.arc(game.customMarker.x * scale, game.customMarker.y * scale, 4, 0, Math.PI*2);
+                mctx.fill();
+            }
+
+            // 繪製玩家位置 (限額在 3000px 內才顯示)
+            if (game.player.x <= MAP_RANGE && game.player.y <= MAP_RANGE) {
+                mctx.fillStyle = '#22c55e';
+                mctx.beginPath();
+                mctx.arc(game.player.x * scale, game.player.y * scale, 5, 0, Math.PI*2);
+                mctx.fill();
+            }
+        }
+
+        mapCanvas.addEventListener('mousedown', e => {
+            let rect = mapCanvas.getBoundingClientRect();
+            let clickX = e.clientX - rect.left;
+            let clickY = e.clientY - rect.top;
+            const MAP_RANGE = 3000;
+            let scale = MAP_RANGE / mapCanvas.width;
+            
+            game.customMarker = { x: clickX * scale, y: clickY * scale };
+            logMsg(`📌 設定了自訂地圖目標在: (${Math.round(game.customMarker.x)}, ${Math.round(game.customMarker.y)})`, "info");
+            drawMinimap();
+        });
+
+        // --- ★ 全局 UI 控制綁定 (確保解決 onmousedown 點選失效問題) ---
+        window.confirmCraft = function(id) {
+            const recipe = RECIPES.find(r => r.id === id);
+            if (game.workbenchLvl < recipe.minLvl) {
+                logMsg(`工作台等級不足，需要 LV.${recipe.minLvl}`, "warning");
+                return;
+            }
+            
+            let icon = getRecipeEmoji(recipe.id);
+            let canCraft = true;
+            let costHtml = [];
+            for (let res in recipe.cost) {
+                let required = recipe.cost[res];
+                let has = game.resources[res] || 0;
+                if (has < required) canCraft = false;
+                let resName = getResourceDisplayName(res);
+                costHtml.push(`
+                    <div class="flex justify-between items-center bg-stone-950/40 p-2.5 rounded-lg border border-stone-800 text-xs">
+                        <span class="text-stone-400">${resName}</span>
+                        <span class="font-black ${has >= required ? 'text-emerald-400' : 'text-red-400'}">${has}/${required}</span>
+                    </div>`);
+            }
+
+            const confirmContent = document.getElementById('craft-confirm-content');
+            confirmContent.innerHTML = `
+                <div class="p-5 flex flex-col gap-4">
+                    <div class="flex items-center gap-4 border-b border-stone-800 pb-3">
+                        <div class="w-16 h-16 bg-stone-950 rounded-2xl flex items-center justify-center border border-stone-850 shadow-inner shrink-0">
+                            <span class="text-4xl">${icon}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-base font-black text-white">${recipe.name}</h4>
+                            <p class="text-[10px] text-stone-400 mt-1 leading-relaxed">${recipe.desc}</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h5 class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">確認合成所需材料</h5>
+                        <div class="grid grid-cols-1 gap-1.5">
+                            ${costHtml.join('')}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex border-t border-stone-800">
+                    <button onmousedown="document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 text-stone-400 hover:text-white hover:bg-stone-800 transition text-xs font-bold">取消</button>
+                    ${canCraft 
+                        ? `<button onmousedown="window.craftItem('${recipe.id}'); document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white transition text-xs font-bold">確認製作</button>`
+                        : `<button disabled class="flex-1 py-3 bg-stone-800 text-stone-600 transition text-xs font-bold cursor-not-allowed">材料不足</button>`
+                    }
+                </div>
+            `;
+            document.getElementById('craft-confirm-modal').classList.remove('hidden');
+        };
+
+        window.openWorkbenchUI = openWorkbenchUI;
+        window.closeWorkbenchUI = closeWorkbenchUI;
+        window.upgradeWorkbench = upgradeWorkbench;
+        window.handleShelterAction = handleShelterAction;
+        window.eatMeat = eatMeat;
+        window.equipWeapon = equipWeapon;
+        window.startGame = startGame;
+        window.saveGame = saveGame;
+        window.loadGame = loadGame;
+        window.toggleAudio = toggleAudio;
+        window.toggleMap = toggleMap;
+        window.closeModal = closeModal;
+        window.performAction = performAction;
+        window.craftItem = craftItem;
+
+        function openWorkbenchUI() {
+            if (isMapOpen) return;
+            game.isWorkbenchOpen = true;
+            document.getElementById('workbench-overlay').classList.remove('hidden');
+            updateWorkbenchOverlayUI();
+            playSound('chime');
+        }
+
+        function closeWorkbenchUI() {
+            game.isWorkbenchOpen = false;
+            document.getElementById('workbench-overlay').classList.add('hidden');
+        }
+
+        function updateWorkbenchOverlayUI() {
+
+            document.getElementById('wb-overlay-level').innerText =
+                game.workbenchLvl;
+
+            const recipeList =
+                document.getElementById('wb-recipe-list');
+
+            recipeList.className =
+                "w-full max-w-6xl mx-auto grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-6";
+
+            recipeList.innerHTML = '';
+
+            RECIPES.forEach(recipe => {
+
+                const locked =
+                    game.workbenchLvl < recipe.minLvl;
+
+                let canCraft = true;
+
+                for (let res in recipe.cost) {
+                    if ((game.resources[res] || 0) < recipe.cost[res]) {
+                        canCraft = false;
+                    }
+                }
+
+                let costs = '';
+
+                for (let res in recipe.cost) {
+
+                    costs += `
+                        <div class="text-[10px] text-stone-400">
+                            ${getResourceDisplayName(res)}
+                            ×${recipe.cost[res]}
+                        </div>
+                    `;
+                }
+
+                let icon = getRecipeEmoji(recipe.id);
+
+                recipeList.innerHTML += `
+
+                <div title="${recipe.desc}" data-recipe="${locked ? '' : recipe.id}"
+                    class="
+                        relative
+                        h-44
+                        bg-stone-900
+                        border
+                        rounded-lg
+                        p-2
+                        flex
+                        flex-col
+                        items-center
+                        justify-center
+                        text-center
+
+                        ${
+                            locked
+                            ? 'opacity-50'
+                            : 'cursor-pointer hover:border-amber-500'
+                        }
+                    "
+
+                >
+
+                    <div class="text-4xl">
+                        ${icon}
+                    </div>
+
+                    <div class="font-bold text-xs mt-2">
+                        ${recipe.name}
+                    </div>
+
+                    <div class="text-[10px] text-stone-500">
+                        LV.${recipe.minLvl}
+                    </div>
+
+                    <div class="mt-2">
+                        ${costs}
+                    </div>
+
+                    ${
+                        locked
+                        ?
+                        `
+                        <div
+                            class="
+                                absolute
+                                inset-0
+                                bg-black/70
+                                flex
+                                items-center
+                                justify-center
+                                text-red-400
+                                font-black
+                            ">
+                            未解鎖
+                        </div>
+                        `
+                        :
+                        ''
+                    }
+
+                    ${
+                        !locked && !canCraft
+                        ?
+                        `
+                        <div
+                            class="
+                                absolute
+                                bottom-1
+                                text-red-400
+                                text-[10px]
+                                font-bold
+                            ">
+                            材料不足
+                        </div>
+                        `
+                        :
+                        ''
+                    }
+
+                </div>
+                `;
+            });
+            recipeList.onmousedown = function(e) {
+                const card = e.target.closest('[data-recipe]');
+                if (!card) return;
+                const recipeId = card.dataset.recipe;
+                if (!recipeId) return;
+                console.log("recipe clicked", recipeId);
+                craftItem(recipeId);
+            };
+        }
+
+        function getRecipeEmoji(id) {
+            if (id === 'stone_axe') return '🪓';
+            if (id === 'stone_sword') return '⚔️';
+            if (id === 'furnace') return '🔥';
+            if (id === 'clothes_1') return '👕';
+            if (id === 'bed_1') return '🛏️';
+            if (id === 'backpack_1') return '🎒';
+            if (id === 'steel_axe') return '🪓';
+            if (id === 'clothes_2') return '🧥';
+            if (id === 'bed_2') return '🛌';
+            if (id === 'backpack_2') return '🎒';
+            if (id === 'backpack_3') return '🎒';
+            if (id === 'm4a1') return '🔫';
+            if (id === 'm4a1_ammo') return '📦';
+            if (id === 'revolver') return '🔫';
+            if (id === 'revolver_ammo') return '📦';
+            return '🔧';
+        }
+
+        function getResourceDisplayName(res) {
+            if (res === 'wood') return '🪵 木頭';
+            if (res === 'steel') return '⚙️ 鋼材';
+            if (res === 'leather') return '🧶 皮革';
+            if (res === 'gunpowder') return '💣 火藥';
+            return res;
+        }
+
+        // --- 輸入監聽鍵盤與搖桿控制 ---
+        let keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                // 檢查是否彈窗打開中，如果是，則優先關閉彈窗
+                if (!document.getElementById('craft-confirm-modal').classList.contains('hidden')) {
+                    document.getElementById('craft-confirm-modal').classList.add('hidden');
+                } else if (game.isWorkbenchOpen) {
+                    game.workbenchManuallyClosed = true; 
+                    closeWorkbenchUI();
+                } else {
+                    let near = false;
+                    mapObjects.forEach(obj => {
+                        if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) {
+                            near = true;
+                        }
+                    });
+                    if (near) {
+                        game.workbenchManuallyClosed = false;
+                        openWorkbenchUI();
+                    } else {
+                        performAction();
+                    }
+                }
+            }
+            if (e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                toggleMap();
+            }
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // 手機虛擬搖桿
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickKnob = document.getElementById('joystick-knob');
+        let isJoystickActive = false;
+        let joystickStart = { x: 0, y: 0 };
+        let joystickVector = { x: 0, y: 0 };
+
+        joystickBase.addEventListener('touchstart', e => {
+            isJoystickActive = true;
+            const rect = joystickBase.getBoundingClientRect();
+            joystickStart.x = rect.left + rect.width / 2;
+            joystickStart.y = rect.top + rect.height / 2;
+        });
+
+        window.addEventListener('touchmove', e => {
+            if (!isJoystickActive) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - joystickStart.x;
+            const dy = touch.clientY - joystickStart.y;
+            const dist = Math.hypot(dx, dy);
+            const maxDist = 40;
+
+            let angle = Math.atan2(dy, dx);
+            let moveDist = Math.min(dist, maxDist);
+            
+            joystickKnob.style.transform = `translate(${moveDist * Math.cos(angle)}px, ${moveDist * Math.sin(angle)}px)`;
+            
+            joystickVector.x = Math.cos(angle) * (moveDist / maxDist);
+            joystickVector.y = Math.sin(angle) * (moveDist / maxDist);
+        });
+
+        window.addEventListener('touchend', () => {
+            isJoystickActive = false;
+            joystickKnob.style.transform = `translate(0px, 0px)`;
+            joystickVector = { x: 0, y: 0 };
+        });
+
+        // 手機/網頁滑鼠發射子彈火控系統
+        let isMouseDown = false;
+        let lastShootTime = 0;
+
+        canvas.addEventListener('mousedown', e => {
+            if (!isGameRunning || isMapOpen) return;
+            if (e.target !== canvas) return; 
+            if (game.equippedWeapon === 'none') {
+                performAction();
+                return;
+            }
+            
+            isMouseDown = true;
+            shootAtMouse(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isMouseDown && game.equippedWeapon === 'm4a1') {
+                shootAtMouse(e.clientX, e.clientY);
+            }
+        });
+
+        function shootAtMouse(clientX, clientY) {
+            let now = performance.now();
+            let rate = game.equippedWeapon === 'm4a1' ? 150 : 600; 
+            if (now - lastShootTime >= rate) {
+                let rect = canvas.getBoundingClientRect();
+                let mx = clientX - rect.left;
+                let my = clientY - rect.top;
+
+                let rx = mx - canvas.width / 2;
+                let ry = my - canvas.height / 2;
+                let dx = 0.5 * (rx / cos30 + ry / sin30);
+                let dy = 0.5 * (ry / sin30 - rx / cos30);
+
+                let targetX = game.player.x + dx;
+                let targetY = game.player.y + dy;
+
+                fireBullet(targetX, targetY);
+                lastShootTime = now;
+            }
+        }
+
+        function fireBullet(targetX, targetY) {
+            if (!isGameRunning || isMapOpen) return;
+
+            let ammoProp = game.equippedWeapon === 'm4a1' ? 'm4a1Ammo' : 'revolverAmmo';
+            if ((game.resources[ammoProp] || 0) <= 0) {
+                logMsg("🚫 沒有彈藥了！請打開工作台製作對應子彈。", "warning");
+                isMouseDown = false;
+                return;
+            }
+
+            game.resources[ammoProp]--;
+
+            let angle;
+            if (targetX !== undefined && targetY !== undefined) {
+                angle = Math.atan2(targetY - game.player.y, targetX - game.player.x);
+            } else {
+                if (game.player.facing === 'NW') angle = -3 * Math.PI / 4;
+                else if (game.player.facing === 'NE') angle = -Math.PI / 4;
+                else if (game.player.facing === 'SW') angle = 3 * Math.PI / 4;
+                else angle = Math.PI / 4;
+            }
+
+            bullets.push({
+                x: game.player.x,
+                y: game.player.y,
+                vx: Math.cos(angle) * 16,
+                vy: Math.sin(angle) * 16,
+                type: game.equippedWeapon,
+                life: 50 
+            });
+
+            playGunSound(game.equippedWeapon);
+            updateUI();
+        }
+
+        // 隨機生成飄字特效
+        let floatTexts = [];
+        function showFloatText(x, y, text, color) {
+            floatTexts.push({ x: x, y: y, text: text, color: color, life: 60, maxLife: 60 });
+        }
+
+        function createParticles(x, y, color, count) {
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    life: Math.random() * 20 + 10,
+                    color: color,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+        let particles = [];
+
+        // --- 核心更新循環與物理碰撞 ---
+        function gameLoop(now) {
+            let dt = (now - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = now;
+
+            if (isGameRunning && !isMapOpen) {
+                updatePhysics(dt);
+                updateGameTime(dt);
+                updateStatusBars(dt);
+                render();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhysics(dt) {
+            let mx = 0, my = 0;
+            if (keys['w'] || keys['arrowup']) { my = -1; game.player.facing = 'NW'; }
+            if (keys['s'] || keys['arrowdown']) { my = 1; game.player.facing = 'SE'; }
+            if (keys['a'] || keys['arrowleft']) { mx = -1; game.player.facing = 'SW'; }
+            if (keys['d'] || keys['arrowright']) { mx = 1; game.player.facing = 'NE'; }
+
+            if (isJoystickActive) {
+                mx = joystickVector.x; my = joystickVector.y;
+                if (Math.abs(mx) > Math.abs(my)) game.player.facing = mx > 0 ? 'NE' : 'SW';
+                else game.player.facing = my > 0 ? 'SE' : 'NW';
+            }
+
+            if (mx !== 0 && my !== 0) { const len = Math.hypot(mx, my); mx /= len; my /= len; }
+
+            let speed = game.player.speed;
+            let oldX = game.player.x;
+            let oldY = game.player.y;
+
+            game.player.vx = mx * speed;
+            game.player.vy = my * speed;
+
+            game.player.x += game.player.vx;
+            game.player.y += game.player.vy;
+
+            mapObjects.forEach(obj => {
+                if (obj.type === 'building' || obj.type === 'shelter' || obj.type === 'cave') {
+                    if (Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < obj.size * 0.8) {
+                        game.player.x = oldX; game.player.y = oldY;
+                    }
+                }
+            });
+
+            game.player.x = Math.max(20, Math.min(WORLD_SIZE - 20, game.player.x));
+            game.player.y = Math.max(20, Math.min(WORLD_SIZE - 20, game.player.y));
+
+            let distMoved = Math.hypot(game.player.x - oldX, game.player.y - oldY);
+            if (distMoved > 0.05) {
+                stepCountReset += distMoved;
+                if (stepCountReset >= 16) {
+                    game.player.stepsCount++; stepCountReset = 0;
+                    if (game.player.stepsCount >= 10) {
+                        game.stamina = Math.max(0, game.stamina - 1);
+                        game.player.stepsCount = 0; updateUI();
+                    }
+                }
+            }
+
+            mapObjects.forEach(obj => {
+                if (obj.type === 'animal') {
+                    obj.animalWalkTimer += dt;
+                    if (obj.animalWalkTimer > 2.5) { obj.animalWalkDir = Math.random() * Math.PI * 2; obj.animalWalkTimer = 0; }
+                    
+                    if (Math.random() > 0.4) {
+                        let ax = Math.cos(obj.animalWalkDir) * 1.0;
+                        let ay = Math.sin(obj.animalWalkDir) * 1.0;
+                        obj.x = Math.max(20, Math.min(WORLD_SIZE - 20, obj.x + ax));
+                        obj.y = Math.max(20, Math.min(WORLD_SIZE - 20, obj.y + ay));
+                    }
+                } 
+                else if (obj.type === 'monster') {
+                    let distToPlayer = Math.hypot(game.player.x - obj.x, game.player.y - obj.y);
+                    if (distToPlayer < 400) { 
+                        let angle = Math.atan2(game.player.y - obj.y, game.player.x - obj.x);
+                        obj.x += Math.cos(angle) * 1.6; 
+                        obj.y += Math.sin(angle) * 1.6;
+                        
+                        if (distToPlayer < 30) {
+                            if (!obj.lastAttackTime || performance.now() - obj.lastAttackTime > 1200) {
+                                game.hp = Math.max(0, game.hp - 8);
+                                playSound('freeze');
+                                logMsg("💥 洞穴怪物撕咬了你！生命值 -8", "danger");
+                                obj.lastAttackTime = performance.now();
+                                updateUI();
+                            }
+                        }
+                    } else {
+                        obj.animalWalkTimer += dt;
+                        if (obj.animalWalkTimer > 3.0) { obj.animalWalkDir = Math.random() * Math.PI * 2; obj.animalWalkTimer = 0; }
+                        if (Math.random() > 0.6) {
+                            // 怪物生成於 10,000 px 地圖邊界內
+                            obj.x = Math.max(WORLD_SIZE - 800, Math.min(WORLD_SIZE, obj.x + Math.cos(obj.animalWalkDir) * 0.8));
+                            obj.y = Math.max(WORLD_SIZE - 800, Math.min(WORLD_SIZE, obj.y + Math.sin(obj.animalWalkDir) * 0.8));
+                        }
+                    }
+                }
+            });
+
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                let b = bullets[i];
+                b.x += b.vx;
+                b.y += b.vy;
+                b.life--;
+
+                let hitObj = null;
+                for (let j = 0; j < mapObjects.length; j++) {
+                    let obj = mapObjects[j];
+                    if (obj.type === 'animal' || obj.type === 'monster') {
+                        if (Math.hypot(b.x - obj.x, b.y - obj.y) < obj.size + 5) {
+                            hitObj = obj;
+                            break;
+                        }
+                    }
+                }
+
+                if (hitObj) {
+                    let baseDmg = b.type === 'm4a1' ? 25 : 55;
+                    let headshotDmg = b.type === 'm4a1' ? 35 : 150;
+                    let isHeadshot = Math.random() < 0.25; 
+                    let finalDmg = isHeadshot ? headshotDmg : baseDmg;
+
+                    hitObj.hp -= finalDmg;
+                    createParticles(hitObj.x, hitObj.y, '#ef4444', 6);
+                    
+                    if (isHeadshot) {
+                        showFloatText(hitObj.x, hitObj.y - 15, `HEADSHOT! -${finalDmg}`, '#f43f5e');
+                        playSound('chime');
+                    } else {
+                        showFloatText(hitObj.x, hitObj.y - 15, `-${finalDmg}`, '#f87171');
+                    }
+
+                    if (hitObj.hp <= 0) {
+                        let cap = getBackpackCapacity();
+                        let current = getTotalItemsCount();
+
+                        if (hitObj.type === 'animal') {
+                            let gotMeat = Math.floor(2 + Math.random() * 3);
+                            let gotLeather = Math.floor(1 + Math.random() * 2);
+                            
+                            if (current + gotMeat > cap) gotMeat = Math.max(0, cap - current);
+                            game.resources.rawMeat += gotMeat;
+                            current = getTotalItemsCount();
+                            
+                            if (current + gotLeather > cap) gotLeather = Math.max(0, cap - current);
+                            game.resources.leather += gotLeather;
+
+                            logMsg(`⚔️ 射殺獵物，獲得生肉 x${gotMeat}，皮革 x${gotLeather}`, "success");
+                            mapObjects = mapObjects.filter(o => o.id !== hitObj.id);
+                            setTimeout(() => { mapObjects.push(createMapObject('animal', Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE)); }, 5000);
+                        } 
+                        else if (hitObj.type === 'monster') {
+                            let gotGunpowder = Math.floor(2 + Math.random() * 3); 
+                            if (current + gotGunpowder > cap) gotGunpowder = Math.max(0, cap - current);
+                            game.resources.gunpowder += gotGunpowder;
+
+                            logMsg(`⚔️ 擊殺洞穴惡魔，獲得火藥 x${gotGunpowder}！`, "success");
+                            mapObjects = mapObjects.filter(o => o.id !== hitObj.id);
+                            setTimeout(() => { mapObjects.push(createMapObject('monster', (WORLD_SIZE - 500) + Math.random()*450, (WORLD_SIZE - 500) + Math.random()*450)); }, 8000);
+                        }
+                    }
+                    bullets.splice(i, 1);
+                    updateUI();
+                } else if (b.life <= 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            for (let i = floatTexts.length - 1; i >= 0; i--) {
+                let ft = floatTexts[i];
+                ft.y -= 1; ft.life--;
+                if (ft.life <= 0) floatTexts.splice(i, 1);
+            }
+        }
+
+        // --- 寒冷判定、時間更新與致命判定 ---
+        function updateGameTime(dt) {
+            game.timeOfDay += dt; 
+            
+            let monsterCount = mapObjects.filter(o => o.type === 'monster').length;
+            if (monsterCount < 6 && Math.random() < 0.03) {
+                mapObjects.push(createMapObject('monster', (WORLD_SIZE - 500) + Math.random()*450, (WORLD_SIZE - 500) + Math.random()*450));
+            }
+
+            if (game.timeOfDay >= 600) { 
+                game.timeOfDay = 0;
+                game.day++;
+                logMsg(`🌙 新的一天到來！第 ${game.day} 天。`, "info");
+                
+                game.hunger = Math.max(0, game.hunger - 15);
+                if (game.hunger <= 0) {
+                    game.hp = Math.max(0, game.hp - 20);
+                    logMsg("🔥 你飢寒交迫！因嚴重飢餓而虛脫扣血！", "danger");
+                }
+
+                if (game.shelter.upgrading) {
+                    game.shelter.daysRemaining--;
+                    if (game.shelter.daysRemaining <= 0) {
+                        game.shelter.upgrading = false;
+                        game.shelter.level = game.shelter.targetLevel;
+                        game.shelter.built = true;
+                        logMsg(`🎉 你的庇護所已被成功升級/建造完成至 LV.${game.shelter.level}！`, "success");
+                        showModal("🎉 升級完成", `你的庇護所已建造至 ${game.shelter.level} 等級！現在更溫暖抗寒了。`);
+                    }
+                }
+
+                if (game.mode !== 'endless' && game.day > parseInt(game.mode)) {
+                    isGameRunning = false;
+                    showModal("🏆 生存挑戰成功！", `你成功在末日極低溫世界中活過了 ${game.mode} 天！恭喜你！`);
+                    startGame(false);
+                }
+
+                updateUI();
+            }
+        }
+
+        function updateStatusBars(dt) {
+            let nearFurnace = false;
+            let nearWorkbench = false;
+            mapObjects.forEach(obj => {
+                if (obj.type === 'furnace' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 100) nearFurnace = true;
+                if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) nearWorkbench = true;
+            });
+
+            // 工作台接近自動彈出與遠離自動關閉 UI 機制
+            if (nearWorkbench) {
+                if (!game.wasNearWorkbench && !game.workbenchManuallyClosed) {
+                    openWorkbenchUI();
+                }
+            } else {
+                if (game.wasNearWorkbench) {
+                    closeWorkbenchUI();
+                    // 遠離時也確保購買彈窗被關閉
+                    document.getElementById('craft-confirm-modal').classList.add('hidden');
+                }
+                game.workbenchManuallyClosed = false; 
+            }
+            game.wasNearWorkbench = nearWorkbench;
+
+            let isNight = game.timeOfDay >= 300;
+            let hasWarmth = nearFurnace || (game.shelter.built && game.shelter.level >= 0);
+            let clothesProtection = game.equippedClothes ? game.equippedClothes.warmth : 0.0;
+            const tempLabel = document.getElementById('temp-status');
+            const warningDiv = document.getElementById('freeze-warning');
+
+            if (isNight && !hasWarmth) {
+                tempLabel.innerText = "極寒 (-15°C)"; tempLabel.className = "font-bold text-sky-400 animate-pulse";
+                warningDiv.classList.remove('hidden');
+                let rawDamage = exactFreezeDamage * (1.0 - clothesProtection);
+                let finalDmg = Math.max(1, Math.round(rawDamage));
+                game.hp = Math.max(0, game.hp - finalDmg);
+                playSound('freeze');
+                exactFreezeDamage *= 1.1;
+                document.getElementById('freeze-dmg-show').innerText = Math.round(exactFreezeDamage);
+            } else {
+                tempLabel.innerText = isNight ? "涼爽 (10°C)" : "舒適 (24°C)";
+                tempLabel.className = "font-bold text-emerald-400";
+                warningDiv.classList.add('hidden');
+                exactFreezeDamage = 2.0;
+            }
+
+            if (game.hp <= 0) {
+                isGameRunning = false;
+                showModal("💀 你死去了", `你未能捱過末日考驗。存活了 ${game.day} 天。`);
+                startGame(false);
+            }
+            updateUI();
+        }
+
+        function performAction() {
+            if (!isGameRunning) return false;
+            
+            if (game.equippedWeapon !== 'none') {
+                fireBullet();
+                return true;
+            }
+
+            let nearestObj = null; let minDist = 75;
+            mapObjects.forEach(obj => {
+                let d = Math.hypot(game.player.x - obj.x, game.player.y - obj.y);
+                if (d < minDist) { nearestObj = obj; minDist = d; }
+            });
+
+            if (nearestObj) {
+                let currentTotal = getTotalItemsCount();
+                let backpackCap = getBackpackCapacity();
+                if (currentTotal >= backpackCap && (nearestObj.type === 'tree' || nearestObj.type === 'steel_pile' || nearestObj.type === 'leather_pile' || nearestObj.type === 'animal')) {
+                    showModal("🎒 背包已滿！", `你目前的物品數為 ${currentTotal}/${backpackCap}，無法繼續收集資源，請升級背包或消耗物資。`);
+                    return false;
+                }
+
+                if (nearestObj.type === 'tree') {
+                    playSound('chop');
+                    let power = game.equippedAxe ? game.equippedAxe.efficiency : 1;
+                    nearestObj.hp -= power;
+                    let got = Math.floor(2 + Math.random() * 3) * power;
+                    if (currentTotal + got > backpackCap) got = Math.max(0, backpackCap - currentTotal);
+                    game.resources.wood += got; logMsg(`🪓 砍樹，獲得木頭 x${got}`, "success");
+                    if (nearestObj.hp <= 0) {
+                        mapObjects = mapObjects.filter(o => o.id !== nearestObj.id);
+                        setTimeout(() => { mapObjects.push(createMapObject('tree', Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE)); }, 3000);
+                    }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'steel_pile') {
+                    playSound('hit');
+                    nearestObj.hp--;
+                    let got = Math.floor(1 + Math.random() * 2);
+                    if (currentTotal + got > backpackCap) got = Math.max(0, backpackCap - currentTotal);
+                    game.resources.steel += got; logMsg(`⛏️ 採集廢鋼堆，獲得鋼材 x${got}`, "success");
+                    if (nearestObj.hp <= 0) { mapObjects = mapObjects.filter(o => o.id !== nearestObj.id); }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'leather_pile') {
+                    playSound('hit');
+                    nearestObj.hp--;
+                    let got = Math.floor(1 + Math.random() * 3);
+                    if (currentTotal + got > backpackCap) got = Math.max(0, backpackCap - currentTotal);
+                    game.resources.leather += got; logMsg(`🧶 搜刮皮卷，獲得皮革 x${got}`, "success");
+                    if (nearestObj.hp <= 0) { mapObjects = mapObjects.filter(o => o.id !== nearestObj.id); }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'animal') {
+                    playSound('hit');
+                    nearestObj.hp--;
+                    if (nearestObj.hp <= 0) {
+                        let gotMeat = Math.floor(2 + Math.random() * 3);
+                        let gotLeather = Math.floor(1 + Math.random() * 2);
+                        
+                        if (currentTotal + gotMeat > backpackCap) gotMeat = Math.max(0, backpackCap - currentTotal);
+                        game.resources.rawMeat += gotMeat;
+                        currentTotal = getTotalItemsCount();
+                        
+                        if (currentTotal + gotLeather > backpackCap) gotLeather = Math.max(0, backpackCap - currentTotal);
+                        game.resources.leather += gotLeather;
+
+                        logMsg(`⚔️ 擊殺獵物，取得生肉 x${gotMeat}，皮革 x${gotLeather}！`, "success");
+                        mapObjects = mapObjects.filter(o => o.id !== nearestObj.id);
+                        setTimeout(() => { mapObjects.push(createMapObject('animal', Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE)); }, 5000);
+                    } else {
+                        logMsg("⚔️ 打擊獵物！獵物驚慌四散。", "info");
+                        nearestObj.animalWalkDir = Math.atan2(nearestObj.y - game.player.y, nearestObj.x - game.player.x);
+                        nearestObj.animalWalkTimer = 0;
+                    }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'bed') {
+                    if (game.timeOfDay < 300) {
+                        showModal("🌞 還不能睡覺", "只有晚上才能睡覺。");
+                        return true;
+                    }
+                    logMsg("💤 躺在床上睡覺...", "info");
+                    game.stamina = 500;
+                    game.hp = Math.min(100, game.hp + 20);
+                    game.timeOfDay = 0; 
+                    game.day++;
+                    logMsg(`☀️ 睡醒了！新的一天。天數: ${game.day}`, "success");
+                    saveGame();
+                    showModal("💤 睡覺成功", `你安穩地度過了黑夜！進度已儲存。`); playSound('chime');
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'furnace') {
+                    if (game.resources.rawMeat > 0) {
+                        game.resources.rawMeat--; game.resources.cookedMeat++;
+                        logMsg("🔥 熔爐烤熟生肉，獲得熟肉 x1", "success"); playSound('craft');
+                    } else { logMsg("沒有生肉可以烹飪。", "info"); }
+                    updateUI(); return true;
+                }
+            }
+            return false; 
+        }
+
+        function upgradeWorkbench() {
+            if (game.workbenchLvl === 1) {
+                if (game.resources.wood >= 50 && game.resources.steel >= 30) {
+                    game.resources.wood -= 50; game.resources.steel -= 30; game.workbenchLvl++;
+                    playSound('craft'); logMsg(`🔧 工作台升級到 LV.${game.workbenchLvl}！`, "success"); 
+                    updateWorkbenchOverlayUI(); updateUI();
+                } else { logMsg("升級不足！需木頭x50, 鋼鐵x30", "warning"); }
+            } else if (game.workbenchLvl === 2) {
+                if (game.resources.wood >= 100 && game.resources.steel >= 80) {
+                    game.resources.wood -= 100; game.resources.steel -= 80; game.workbenchLvl++;
+                    playSound('craft'); logMsg(`🔧 工作台升級到 LV.${game.workbenchLvl}！`, "success"); 
+                    updateWorkbenchOverlayUI(); updateUI();
+                } else { logMsg("升級不足！需木頭x100, 鋼鐵x80", "warning"); }
+            } else {
+                logMsg("工作台已達到最高等級 (LV.3)！", "info");
+            }
+        }
+
+        function handleShelterAction() {
+            let nextLvl = game.shelter.level + 1;
+            let costWood = 30 * (nextLvl > 0 ? Math.pow(2, nextLvl) : 1);
+            let costSteel = 20 * (nextLvl > 0 ? Math.pow(2, nextLvl) : 1);
+
+            if (nextLvl === 0) { costWood = 30; costSteel = 20; }
+
+            if (game.resources.wood < costWood || game.resources.steel < costSteel) {
+                logMsg(`資源不足以建造/升級庇護所！`, "danger"); return;
+            }
+
+            game.resources.wood -= costWood;
+            game.resources.steel -= costSteel;
+
+            let daysToTake = nextLvl === 1 ? 1 : (nextLvl === 2 ? 3 : (nextLvl === 3 ? 5 : (nextLvl === 4 ? 10 : 1)));
+            game.shelter.upgrading = true; game.shelter.daysRemaining = daysToTake; game.shelter.targetLevel = nextLvl;
+
+            if (nextLvl === 0) {
+                let newShelter = createMapObject('shelter', game.player.x + 40, game.player.y - 40, 0);
+                newShelter.level = 0; mapObjects.push(newShelter);
+            }
+            logMsg(`🔨 施工建造/升級！預計 ${daysToTake} 天。`, "success"); playSound('craft'); updateUI();
+        }
+
+        function equipWeapon(type) {
+            game.equippedWeapon = type;
+            logMsg(`🔫 當前持槍裝備切換為：${type === 'none' ? '採集工具/斧頭' : type === 'm4a1' ? 'M4A1 突擊步槍' : '.357 左輪手槍'}`);
+            updateUI();
+        }
+
+        function craftItem(recipeId) {
+            const recipe = RECIPES.find(r => r.id === recipeId);
+            let nearWorkbench = false;
+            mapObjects.forEach(obj => {
+                if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) nearWorkbench = true;
+            });
+
+            //if (!nearWorkbench) { showModal("遠離工作台", "請靠近工作台旁才能合成。"); return; }
+            if (game.workbenchLvl < recipe.minLvl) { logMsg(`工作台等級不足，需要 LV.${recipe.minLvl}`, "warning"); return; }
+
+            let cap = getBackpackCapacity();
+            let current = getTotalItemsCount();
+            
+            let totalCostItems = 0;
+            for (let r in recipe.cost) { totalCostItems += recipe.cost[r]; }
+            let netGainItems = 0;
+            if (recipeId === 'm4a1_ammo') netGainItems = 30;
+            else if (recipeId === 'revolver_ammo') netGainItems = 10;
+            
+            if (current - totalCostItems + netGainItems > cap) {
+                showModal("🎒 背包空間不足！", `合成此物品將使得物資超出背包上限。現有容量：${current}/${cap}`);
+                return;
+            }
+
+            for (let res in recipe.cost) {
+                if (game.resources[res] < recipe.cost[res]) {
+                    logMsg(`合成材料不足！`, "danger"); return;
+                }
+            }
+            for (let res in recipe.cost) { game.resources[res] -= recipe.cost[res]; }
+
+            if (recipeId === 'stone_axe') { game.equippedAxe = { name: "石製斧頭", quality: 1, efficiency: 2 }; }
+            else if (recipeId === 'steel_axe') { game.equippedAxe = { name: "精鋼手斧", quality: 2, efficiency: 3 }; }
+            else if (recipeId === 'clothes_1') { game.equippedClothes = { name: "一般毛衣", warmth: 0.25 }; }
+            else if (recipeId === 'clothes_2') { game.equippedClothes = { name: "防寒軍大衣", warmth: 0.60 }; }
+            else if (recipeId === 'bed_1') { game.equippedBed = { name: "暖木吊床", quality: 1, staminaRate: 10 }; }
+            else if (recipeId === 'bed_2') { game.equippedBed = { name: "精工軟彈簧床", quality: 2, staminaRate: 20 }; }
+            else if (recipeId === 'backpack_1') { game.backpackLvl = 1; }
+            else if (recipeId === 'backpack_2') { game.backpackLvl = 2; }
+            else if (recipeId === 'backpack_3') { game.backpackLvl = 3; }
+            else if (recipeId === 'm4a1') { game.resources.m4a1Count = (game.resources.m4a1Count || 0) + 1; }
+            else if (recipeId === 'm4a1_ammo') { game.resources.m4a1Ammo = (game.resources.m4a1Ammo || 0) + 30; }
+            else if (recipeId === 'revolver') { game.resources.revolverCount = (game.resources.revolverCount || 0) + 1; }
+            else if (recipeId === 'revolver_ammo') { game.resources.revolverAmmo = (game.resources.revolverAmmo || 0) + 10; }
+            else if (recipeId === 'furnace') {
+                mapObjects.push(createMapObject('furnace', game.player.x + 30, game.player.y + 30));
+                logMsg("🔥 已在地上架設了野外保暖熔爐！", "success");
+            }
+
+            playSound('craft'); logMsg(`🎉 成功合成 ${recipe.name}!`, "success"); 
+            updateWorkbenchOverlayUI(); // 即時重繪工作台確保狀態更新
+            updateUI();
+        }
+
+        function eatMeat(type) {
+            if (type === 'raw') {
+                if (game.resources.rawMeat > 0) {
+                    game.resources.rawMeat--;
+                    game.hunger = Math.min(100, game.hunger + 10);
+                    game.hp = Math.max(5, game.hp - 10);
+                    logMsg("🥩 吞下了生肉！口感極差，恢復微量飢餓並扣減10生命值。", "danger");
+                }
+            } else {
+                if (game.resources.cookedMeat > 0) {
+                    game.resources.cookedMeat--;
+                    game.hunger = Math.min(100, game.hunger + 40);
+                    game.hp = Math.min(100, game.hp + 5);
+                    logMsg("🍗 吃了美味熟肉，感覺精力充沛！飢餓值大幅恢復。", "success");
+                }
+            }
+            updateUI();
+        }
+
+        // --- 全局 UI 資料同步 ---
+        function updateUI() {
+            if (game.resources.gunpowder === undefined) game.resources.gunpowder = 0;
+            if (game.resources.m4a1Ammo === undefined) game.resources.m4a1Ammo = 0;
+            if (game.resources.revolverAmmo === undefined) game.resources.revolverAmmo = 0;
+            if (game.resources.m4a1Count === undefined) game.resources.m4a1Count = 0;
+            if (game.resources.revolverCount === undefined) game.resources.revolverCount = 0;
+            if (game.backpackLvl === undefined) game.backpackLvl = 0;
+            if (game.equippedWeapon === undefined) game.equippedWeapon = 'none';
+
+            document.getElementById('hp-bar').style.width = `${game.hp}%`;
+            document.getElementById('hp-text').innerText = `${game.hp}/100`;
+
+            document.getElementById('hunger-bar').style.width = `${game.hunger}%`;
+            document.getElementById('hunger-text').innerText = `${game.hunger}/100`;
+
+            document.getElementById('stamina-bar').style.width = `${(game.stamina / 500) * 100}%`;
+            document.getElementById('stamina-text').innerText = `${game.stamina}/500`;
+
+            document.getElementById('day-counter').innerText = game.day;
+            
+            document.getElementById('time-bar').style.width = `${(game.timeOfDay / 600) * 100}%`;
+            let remainingMins = Math.max(0, Math.floor(300 - (game.timeOfDay % 300)));
+            let zoneLabel = game.timeOfDay >= 300 ? `黑夜 (餘: ${remainingMins}秒)` : `白天 (餘: ${remainingMins}秒)`;
+            document.getElementById('time-label').innerText = zoneLabel;
+
+            const list = document.getElementById('inventory-list');
+            let cap = getBackpackCapacity();
+            let total = getTotalItemsCount();
+            
+            document.getElementById('backpack-cap-text').innerText = `容量：${total}/${cap}`;
+            
+            list.innerHTML = `
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">🪵 木頭</span> <span class="font-black text-amber-500">${game.resources.wood}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">⚙️ 鋼材</span> <span class="font-black text-blue-400">${game.resources.steel}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">🧶 皮革</span> <span class="font-black text-amber-300">${game.resources.leather}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">💣 火藥</span> <span class="font-black text-red-400">${game.resources.gunpowder}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs col-span-2">
+                    <span class="text-stone-400">🎒 背包容量等級</span> <span class="font-black text-emerald-400">Lv.${game.backpackLvl} (${cap} 限額)</span>
+                </div>
+            `;
+
+            document.getElementById('cnt-rawmeat').innerText = game.resources.rawMeat;
+            document.getElementById('cnt-cookedmeat').innerText = game.resources.cookedMeat;
+
+            // 裝備卡
+            document.getElementById('equipped-axe').innerText = game.equippedAxe.name;
+            document.getElementById('axe-efficiency').innerText = `採集效率: ${game.equippedAxe.efficiency}x`;
+            document.getElementById('equipped-clothes').innerText = game.equippedClothes ? game.equippedClothes.name : '無衣物';
+            document.getElementById('clothes-warmth').innerText = `防寒: ${game.equippedClothes ? game.equippedClothes.warmth*100 : 0}%`;
+            document.getElementById('equipped-bed').innerText = `目前：${game.equippedBed.name} (精力效率: ${game.equippedBed.staminaRate}x)`;
+
+            // 手持與副手武器/子彈提示
+            const eqWeaponText = document.getElementById('equipped-weapon');
+            const eqWeaponAmmo = document.getElementById('equipped-weapon-ammo');
+            if (game.equippedWeapon === 'none') {
+                eqWeaponText.innerText = "當前手持: 採集工具/斧頭";
+                eqWeaponAmmo.innerText = "點擊地圖資源點進行砍伐與採集";
+            } else if (game.equippedWeapon === 'm4a1') {
+                eqWeaponText.innerText = "當前手持: M4A1 突擊步槍";
+                eqWeaponAmmo.innerText = `剩餘子彈: ${game.resources.m4a1Ammo} 發 (按住點擊全自動開火)`;
+            } else if (game.equippedWeapon === 'revolver') {
+                eqWeaponText.innerText = "當前手持: .357 左輪手槍";
+                eqWeaponAmmo.innerText = `剩餘子彈: ${game.resources.revolverAmmo} 發 (點擊單發重火力開火)`;
+            }
+
+            // 快速武器切換鈕
+            const switcher = document.getElementById('weapon-switcher-container');
+            if (switcher) {
+                let btnsHTML = `<button onmousedown="window.equipWeapon('none')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'none' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">手工具</button>`;
+                if (game.resources.m4a1Count > 0) {
+                    btnsHTML += `<button onmousedown="window.equipWeapon('m4a1')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'm4a1' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">M4A1 (${game.resources.m4a1Ammo})</button>`;
+                }
+                if (game.resources.revolverCount > 0) {
+                    btnsHTML += `<button onmousedown="window.equipWeapon('revolver')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'revolver' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">.357 (${game.resources.revolverAmmo})</button>`;
+                }
+                switcher.innerHTML = btnsHTML;
+            }
+
+            const shelterTitle = document.getElementById('shelter-title'), shelterDesc = document.getElementById('shelter-desc'), shelterBtn = document.getElementById('btn-upgrade-shelter');
+            if (game.shelter.level === -1 && !game.shelter.upgrading) {
+                document.getElementById('shelter-icon').innerText = "⛺";
+                shelterTitle.innerText = "庇護所 (未建造)";
+                shelterDesc.innerText = "建造以完全阻絕極寒！需：木頭 x30, 鋼鐵 x20";
+                shelterBtn.innerText = "建造 0 級庇護所"; shelterBtn.removeAttribute('disabled');
+                document.getElementById('shelter-progress-container').classList.add('hidden');
+            } else if (game.shelter.upgrading) {
+                shelterTitle.innerText = `庇護所 施工中... ➔ LV.${game.shelter.targetLevel}`;
+                shelterBtn.setAttribute('disabled', 'true'); shelterBtn.innerText = "施工中...";
+                document.getElementById('shelter-progress-container').classList.remove('hidden');
+                let t = game.shelter.targetLevel; let total = t===1?1:(t===2?3:(t===3?5:10));
+                document.getElementById('shelter-progress-bar').style.width = `${((total - game.shelter.daysRemaining) / total) * 100}%`;
+                document.getElementById('shelter-timer').innerText = `剩餘: ${game.shelter.daysRemaining} 天`;
+            } else {
+                document.getElementById('shelter-icon').innerText = game.shelter.level >= 1 ? "🏡" : "⛺";
+                shelterTitle.innerText = `庇護所 (LV.${game.shelter.level})`; document.getElementById('shelter-progress-container').classList.add('hidden');
+                shelterBtn.removeAttribute('disabled');
+                let next = game.shelter.level + 1; let cw = 30 * Math.pow(2, next), cs = 20 * Math.pow(2, next);
+                shelterDesc.innerText = `升至 LV.${next} 需：木頭 x${cw}, 鋼鐵 x${cs}`; shelterBtn.innerText = `升級至 ${next} 級`;
+            }
+
+            // 同步更新工作台專屬 UI (若工作台開啟中)
+            if (game.isWorkbenchOpen) {
+                updateWorkbenchOverlayUI();
+            }
+        }
+
+        function resizeCanvas() {
+            const targetRatio = 16 / 9;
+            let w = window.innerWidth;
+            let h = window.innerHeight;
+            
+            if (w / h > targetRatio) {
+                canvas.height = h;
+                canvas.width = h * targetRatio;
+            } else {
+                canvas.width = w;
+                canvas.height = w / targetRatio;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        document.querySelectorAll('#workbench-overlay *')
+        .forEach(el => {
+            el.style.pointerEvents = 'auto';
+        });
+    </script>
+</body>
+</html>
