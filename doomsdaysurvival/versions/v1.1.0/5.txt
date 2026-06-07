@@ -1,0 +1,100 @@
+                m4a1Count: 0,       
+                m4a1Ammo: 0,        
+                revolverCount: 0,   
+                revolverAmmo: 0     
+            },
+            workbenchLvl: 1,
+            equippedAxe: { name: "木製斧頭", quality: 0, efficiency: 1 },
+            equippedClothes: null,
+            equippedBed: { name: "乾草睡地", quality: 0, staminaRate: 5 },
+            shelter: {
+                built: false,
+                level: -1,
+                upgrading: false,
+                daysRemaining: 0,
+                targetLevel: 0
+            },
+            player: {
+                x: 300,
+                y: 300,
+                vx: 0,
+                vy: 0,
+                speed: 3.5,
+                stepsCount: 0,
+                facing: 'SE'
+            }
+        };
+
+        // 背包限額輔助函式
+        function getBackpackCapacity() {
+            let lvl = game.backpackLvl || 0;
+            if (lvl === 1) return 500;
+            if (lvl === 2) return 750;
+            if (lvl === 3) return 1000;
+            return 250; 
+        }
+
+        function getTotalItemsCount() {
+            return (game.resources.wood || 0) +
+                   (game.resources.steel || 0) +
+                   (game.resources.leather || 0) +
+                   (game.resources.rawMeat || 0) +
+                   (game.resources.cookedMeat || 0) +
+                   (game.resources.gunpowder || 0) +
+                   (game.resources.m4a1Ammo || 0) +
+                   (game.resources.revolverAmmo || 0);
+        }
+
+        const RECIPES = [
+            { id: 'stone_axe', name: '石製斧頭', type: 'tool', desc: '大幅增加木頭採集效率', cost: { wood: 15, steel: 5 }, minLvl: 1 },
+            { id: 'stone_sword', name: '石製鋼劍', type: 'weapon', desc: '高效擊殺動物以獲取肉塊', cost: { wood: 10, steel: 15 }, minLvl: 1 },
+            { id: 'furnace', name: '野外熔爐', type: 'building', desc: '可煮熟肉類，且在附近提供完全保暖效果', cost: { wood: 10, steel: 15 }, minLvl: 1 },
+            { id: 'clothes_1', name: '一般毛衣', type: 'clothes', desc: '增加 25% 寒冷抗性', cost: { leather: 20 }, minLvl: 1 },
+            { id: 'bed_1', name: '暖木吊床', type: 'bed', desc: '精力恢復速率提升 (10x)', cost: { wood: 40, leather: 10 }, minLvl: 1 },
+            { id: 'backpack_1', name: '戰術背包 Lv.1', type: 'backpack', desc: '提升背包總容量至 500 件物品', cost: { wood: 5, leather: 15 }, minLvl: 1 },
+
+            { id: 'steel_axe', name: '精鋼手斧', type: 'tool', desc: '極高木頭採集效率 (效率 3x)', cost: { wood: 30, steel: 25 }, minLvl: 2 },
+            { id: 'clothes_2', name: '防寒軍大衣', type: 'clothes', desc: '增加 60% 寒冷抗性', cost: { leather: 40, steel: 10 }, minLvl: 2 },
+            { id: 'bed_2', name: '精工軟彈簧床', type: 'bed', desc: '精力恢復速率極致提升 (20x)', cost: { wood: 60, leather: 30, steel: 20 }, minLvl: 2 },
+            { id: 'backpack_2', name: '荒野探險背包 Lv.2', type: 'backpack', desc: '提升背包總容量至 750 件物品', cost: { steel: 10, leather: 25 }, minLvl: 2 },
+
+            { id: 'backpack_3', name: '特戰軍用背包 Lv.3', type: 'backpack', desc: '提升背包總容量至 1000 件物品', cost: { steel: 20, leather: 40 }, minLvl: 3 },
+            { id: 'm4a1', name: 'M4A1 突擊步槍', type: 'gun', desc: '全自動武器，射速極快 (傷害 25 / 爆頭 35)', cost: { steel: 10, wood: 15 }, minLvl: 3 },
+            { id: 'm4a1_ammo', name: 'M4A1 彈藥盒 (30發)', type: 'ammo', desc: '步槍子彈盒。需消耗鋼鐵與火藥製作', cost: { steel: 10, gunpowder: 10 }, minLvl: 3 },
+            { id: 'revolver', name: '.357 左輪手槍', type: 'gun', desc: '高單發傷害致命手槍 (傷害 55 / 爆頭 150)', cost: { steel: 5, wood: 8 }, minLvl: 3 },
+            { id: 'revolver_ammo', name: '.357 彈藥盒 (10發)', type: 'ammo', desc: '手槍子彈盒。需消耗鋼鐵與火藥製作', cost: { steel: 5, gunpowder: 5 }, minLvl: 3 }
+        ];
+
+        // 模式選擇
+        document.querySelectorAll('#mode-selector button').forEach(btn => {
+            btn.addEventListener('click', e => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedMode = e.target.getAttribute('data-mode');
+            });
+        });
+
+        // --- 音效管理器 (Web Audio API) ---
+        let audioCtx = null;
+        let isAudioMuted = false;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (isAudioMuted || !audioCtx) return;
+            try {
+                let osc = audioCtx.createOscillator();
+                let gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'chop') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(120, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(10, audioCtx.currentTime + 0.15);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);

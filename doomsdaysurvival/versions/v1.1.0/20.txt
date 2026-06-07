@@ -1,0 +1,100 @@
+                else if (nearestObj.type === 'bed') {
+                    logMsg("💤 躺在床上睡覺...", "info");
+                    game.stamina = 500;
+                    game.hp = Math.min(100, game.hp + 20);
+                    game.timeOfDay = 0; 
+                    game.day++;
+                    logMsg(`☀️ 睡醒了！新的一天。天數: ${game.day}`, "success");
+                    saveGame();
+                    showModal("💤 睡覺成功", `你安穩地度過了黑夜！進度已儲存。`); playSound('chime');
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'furnace') {
+                    if (game.resources.rawMeat > 0) {
+                        game.resources.rawMeat--; game.resources.cookedMeat++;
+                        logMsg("🔥 熔爐烤熟生肉，獲得熟肉 x1", "success"); playSound('craft');
+                    } else { logMsg("沒有生肉可以烹飪。", "info"); }
+                    updateUI(); return true;
+                }
+            }
+            return false; 
+        }
+
+        function upgradeWorkbench() {
+            if (game.workbenchLvl === 1) {
+                if (game.resources.wood >= 50 && game.resources.steel >= 30) {
+                    game.resources.wood -= 50; game.resources.steel -= 30; game.workbenchLvl++;
+                    playSound('craft'); logMsg(`🔧 工作台升級到 LV.${game.workbenchLvl}！`, "success"); 
+                    updateWorkbenchOverlayUI(); updateUI();
+                } else { logMsg("升級不足！需木頭x50, 鋼鐵x30", "warning"); }
+            } else if (game.workbenchLvl === 2) {
+                if (game.resources.wood >= 100 && game.resources.steel >= 80) {
+                    game.resources.wood -= 100; game.resources.steel -= 80; game.workbenchLvl++;
+                    playSound('craft'); logMsg(`🔧 工作台升級到 LV.${game.workbenchLvl}！`, "success"); 
+                    updateWorkbenchOverlayUI(); updateUI();
+                } else { logMsg("升級不足！需木頭x100, 鋼鐵x80", "warning"); }
+            } else {
+                logMsg("工作台已達到最高等級 (LV.3)！", "info");
+            }
+        }
+
+        function handleShelterAction() {
+            let nextLvl = game.shelter.level + 1;
+            let costWood = 30 * (nextLvl > 0 ? Math.pow(2, nextLvl) : 1);
+            let costSteel = 20 * (nextLvl > 0 ? Math.pow(2, nextLvl) : 1);
+
+            if (nextLvl === 0) { costWood = 30; costSteel = 20; }
+
+            if (game.resources.wood < costWood || game.resources.steel < costSteel) {
+                logMsg(`資源不足以建造/升級庇護所！`, "danger"); return;
+            }
+
+            game.resources.wood -= costWood;
+            game.resources.steel -= costSteel;
+
+            let daysToTake = nextLvl === 1 ? 1 : (nextLvl === 2 ? 3 : (nextLvl === 3 ? 5 : (nextLvl === 4 ? 10 : 1)));
+            game.shelter.upgrading = true; game.shelter.daysRemaining = daysToTake; game.shelter.targetLevel = nextLvl;
+
+            if (nextLvl === 0) {
+                let newShelter = createMapObject('shelter', game.player.x + 40, game.player.y - 40, 0);
+                newShelter.level = 0; mapObjects.push(newShelter);
+            }
+            logMsg(`🔨 施工建造/升級！預計 ${daysToTake} 天。`, "success"); playSound('craft'); updateUI();
+        }
+
+        function equipWeapon(type) {
+            game.equippedWeapon = type;
+            logMsg(`🔫 當前持槍裝備切換為：${type === 'none' ? '採集工具/斧頭' : type === 'm4a1' ? 'M4A1 突擊步槍' : '.357 左輪手槍'}`);
+            updateUI();
+        }
+
+        // 修改工作台合成邏輯 (使配合新右側詳情頁直接渲染)
+        function craftItem(recipeId) {
+            const recipe = RECIPES.find(r => r.id === recipeId);
+            let nearWorkbench = false;
+            mapObjects.forEach(obj => {
+                if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) nearWorkbench = true;
+            });
+
+            if (!nearWorkbench) { showModal("遠離工作台", "請靠近工作台旁才能合成。"); return; }
+            if (game.workbenchLvl < recipe.minLvl) { logMsg(`工作台等級不足，需要 LV.${recipe.minLvl}`, "warning"); return; }
+
+            let cap = getBackpackCapacity();
+            let current = getTotalItemsCount();
+            
+            let totalCostItems = 0;
+            for (let r in recipe.cost) { totalCostItems += recipe.cost[r]; }
+            let netGainItems = 0;
+            if (recipeId === 'm4a1_ammo') netGainItems = 30;
+            else if (recipeId === 'revolver_ammo') netGainItems = 10;
+            
+            if (current - totalCostItems + netGainItems > cap) {
+                showModal("🎒 背包空間不足！", `合成此物品將使得物資超出背包上限。現有容量：${current}/${cap}`);
+                return;
+            }
+
+            for (let res in recipe.cost) {
+                if (game.resources[res] < recipe.cost[res]) {
+                    logMsg(`合成材料不足！`, "danger"); return;
+                }
+            }

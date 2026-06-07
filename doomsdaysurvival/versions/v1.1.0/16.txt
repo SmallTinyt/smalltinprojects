@@ -1,0 +1,100 @@
+
+            let angle;
+            if (targetX !== undefined && targetY !== undefined) {
+                angle = Math.atan2(targetY - game.player.y, targetX - game.player.x);
+            } else {
+                if (game.player.facing === 'NW') angle = -3 * Math.PI / 4;
+                else if (game.player.facing === 'NE') angle = -Math.PI / 4;
+                else if (game.player.facing === 'SW') angle = 3 * Math.PI / 4;
+                else angle = Math.PI / 4;
+            }
+
+            bullets.push({
+                x: game.player.x,
+                y: game.player.y,
+                vx: Math.cos(angle) * 16,
+                vy: Math.sin(angle) * 16,
+                type: game.equippedWeapon,
+                life: 50 
+            });
+
+            playGunSound(game.equippedWeapon);
+            updateUI();
+        }
+
+        // 隨機生成飄字特效
+        let floatTexts = [];
+        function showFloatText(x, y, text, color) {
+            floatTexts.push({ x: x, y: y, text: text, color: color, life: 60, maxLife: 60 });
+        }
+
+        function createParticles(x, y, color, count) {
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    life: Math.random() * 20 + 10,
+                    color: color,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+        let particles = [];
+
+        // --- 核心更新循環與物理碰撞 ---
+        function gameLoop(now) {
+            let dt = (now - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = now;
+
+            if (isGameRunning && !isMapOpen) {
+                updatePhysics(dt);
+                updateGameTime(dt);
+                updateStatusBars(dt);
+                render();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhysics(dt) {
+            let mx = 0, my = 0;
+            if (keys['w'] || keys['arrowup']) { my = -1; game.player.facing = 'NW'; }
+            if (keys['s'] || keys['arrowdown']) { my = 1; game.player.facing = 'SE'; }
+            if (keys['a'] || keys['arrowleft']) { mx = -1; game.player.facing = 'SW'; }
+            if (keys['d'] || keys['arrowright']) { mx = 1; game.player.facing = 'NE'; }
+
+            if (isJoystickActive) {
+                mx = joystickVector.x; my = joystickVector.y;
+                if (Math.abs(mx) > Math.abs(my)) game.player.facing = mx > 0 ? 'NE' : 'SW';
+                else game.player.facing = my > 0 ? 'SE' : 'NW';
+            }
+
+            if (mx !== 0 && my !== 0) { const len = Math.hypot(mx, my); mx /= len; my /= len; }
+
+            let speed = game.player.speed;
+            let oldX = game.player.x;
+            let oldY = game.player.y;
+
+            game.player.vx = mx * speed;
+            game.player.vy = my * speed;
+
+            game.player.x += game.player.vx;
+            game.player.y += game.player.vy;
+
+            mapObjects.forEach(obj => {
+                if (obj.type === 'building' || obj.type === 'shelter' || obj.type === 'cave') {
+                    if (Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < obj.size * 0.8) {
+                        game.player.x = oldX; game.player.y = oldY;
+                    }
+                }
+            });
+
+            game.player.x = Math.max(20, Math.min(WORLD_SIZE - 20, game.player.x));
+            game.player.y = Math.max(20, Math.min(WORLD_SIZE - 20, game.player.y));
+
+            let distMoved = Math.hypot(game.player.x - oldX, game.player.y - oldY);
+            if (distMoved > 0.05) {
+                stepCountReset += distMoved;
+                if (stepCountReset >= 16) {

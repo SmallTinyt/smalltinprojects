@@ -1,0 +1,100 @@
+            }
+
+            resizeCanvas();
+            lastTime = performance.now();
+            requestAnimationFrame(gameLoop);
+        }
+
+        // --- 地圖生成與 ISO 2.5D 投影 ---
+        function createMapObject(type, x, y, z = 0, height = 0) {
+            let size = 20, hp = 10;
+            if (type === 'tree') { size = 24; hp = 5; }
+            else if (type === 'steel_pile') { size = 18; hp = 8; }
+            else if (type === 'leather_pile') { size = 16; hp = 4; }
+            else if (type === 'building') { size = 60; hp = 999999; }
+            else if (type === 'animal') { size = 15; hp = 3; }
+            else if (type === 'monster') { size = 18; hp = 100; } 
+            else if (type === 'cave') { size = 50; hp = 999999; }    
+            else if (type === 'workbench') { size = 25; hp = 9999; }
+            else if (type === 'furnace') { size = 25; hp = 9999; }
+            else if (type === 'bed') { size = 30; hp = 9999; }
+            else if (type === 'shelter') { size = 45; hp = 9999; }
+
+            return {
+                id: Math.random().toString(36).substr(2, 9),
+                type, x, y, z, size, hp, maxHp: hp, height, quality: 0,
+                animalType: type === 'animal' ? (Math.random() > 0.5 ? 'cow' : 'pig') : null,
+                animalWalkDir: Math.random() * Math.PI * 2, animalWalkTimer: 0
+            };
+        }
+
+        // --- 初始化地圖 ---
+        function initMap() {
+            mapObjects = [];
+            bullets = [];
+            
+            // 地圖中央放置最初工作台、床
+            mapObjects.push(createMapObject('workbench', 300, 420));
+            mapObjects.push(createMapObject('bed', 250, 250));
+
+            // 固定建築廢墟
+            mapObjects.push(createMapObject('building', 200, 600, 0, 40));
+            mapObjects.push(createMapObject('building', 800, 300, 0, 60));
+            mapObjects.push(createMapObject('building', 900, 800, 0, 50));
+
+            // ★ 在地圖最邊界（WORLD_SIZE - 200）放置神秘洞穴，並生成怪
+            mapObjects.push(createMapObject('cave', WORLD_SIZE - 200, WORLD_SIZE - 200, 0, 35));
+            for (let i = 0; i < 5; i++) {
+                mapObjects.push(createMapObject('monster', (WORLD_SIZE - 400) + Math.random() * 300, (WORLD_SIZE - 400) + Math.random() * 300));
+            }
+
+            // 隨機生成樹木、廢鋼堆、獸皮、動物 (世界地圖為 10,000 px，相應增加資源)
+            for (let i = 0; i < 300; i++) {
+                mapObjects.push(createMapObject('tree', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+                mapObjects.push(createMapObject('steel_pile', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+                mapObjects.push(createMapObject('leather_pile', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+            }
+            for (let i = 0; i < 100; i++) {
+                mapObjects.push(createMapObject('animal', Math.random() * WORLD_SIZE, Math.random() * WORLD_SIZE));
+            }
+        }
+
+        const cos30 = Math.cos(Math.PI / 6);
+        const sin30 = Math.sin(Math.PI / 6);
+
+        function worldToScreen(wx, wy, wz = 0) {
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+            const dx = wx - game.player.x;
+            const dy = wy - game.player.y;
+            const sx = cx + (dx - dy) * cos30;
+            const sy = cy + (dx + dy) * sin30 - wz;
+            return { x: sx, y: sy };
+        }
+
+        function drawIsoBox(ctx, sx, sy, w, l, h, topC, leftC, rightC) {
+            // 頂部面
+            ctx.fillStyle = topC;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - h);
+            ctx.lineTo(sx + w * cos30, sy - h - w * sin30);
+            ctx.lineTo(sx + (w - l) * cos30, sy - h - (w + l) * sin30);
+            ctx.lineTo(sx - l * cos30, sy - h - l * sin30);
+            ctx.closePath();
+            ctx.fill();
+
+            // 左側面
+            ctx.fillStyle = leftC;
+            ctx.beginPath();
+            ctx.moveTo(sx - l * cos30, sy - h - l * sin30);
+            ctx.lineTo(sx, sy - h);
+            ctx.lineTo(sx, sy);
+            ctx.lineTo(sx - l * cos30, sy - l * sin30);
+            ctx.closePath();
+            ctx.fill();
+
+            // 右側面
+            ctx.fillStyle = rightC;
+            ctx.beginPath();
+            ctx.moveTo(sx, sy - h);
+            ctx.lineTo(sx + w * cos30, sy - h - w * sin30);

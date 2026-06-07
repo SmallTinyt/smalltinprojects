@@ -234,9 +234,9 @@
         </div>
     </div>
 
-    <!-- ★ 工作台全螢幕彈窗介面 (走近自動開、遠離/按X/按E鍵關閉) -->
-    <div id="workbench-overlay" class="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 hidden pointer-events-auto backdrop-blur-sm">
-        <div class="bg-stone-900 border border-stone-700 rounded-2xl w-full max-w-2xl overflow-hidden relative shadow-2xl flex flex-col h-[520px]">
+    <!-- ★ 工作台全螢幕彈窗介面 (走近自動開、點擊看右側詳情、遠離/按X/按E鍵關閉) -->
+    <div id="workbench-overlay" class="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 hidden pointer-events-auto">
+        <div class="bg-stone-900 border border-stone-700 rounded-2xl w-full max-w-2xl overflow-hidden relative shadow-2xl flex flex-col h-[480px]">
             <!-- 紅色關閉 X 按鈕 -->
             <button onclick="game.workbenchManuallyClosed = true; closeWorkbenchUI();" class="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full transition z-50">
                 <i data-lucide="x" class="w-5 h-5"></i>
@@ -248,24 +248,22 @@
                     <span class="text-2xl">🔧</span>
                     <h3 class="font-black text-white text-base">工作台 (LV.<span id="wb-overlay-level">1</span>)</h3>
                 </div>
-                <button onclick="upgradeWorkbench()" id="btn-upgrade-workbench-overlay" class="bg-amber-600 hover:bg-amber-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition mr-8 shadow-lg shadow-amber-900/20">
+                <button onclick="upgradeWorkbench()" id="btn-upgrade-workbench-overlay" class="bg-amber-600 hover:bg-amber-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition mr-8">
                     升級 (木:50 鋼:30)
                 </button>
             </div>
             
-            <!-- 下方主區：置中列表 -->
-            <div class="flex-1 overflow-y-auto p-4 flex flex-col items-center bg-stone-950/20">
-                <div class="w-full max-w-md space-y-3 pb-6" id="wb-recipe-list">
-                    <!-- 動態渲染配方列表 (點擊跳出確認彈窗) -->
+            <!-- 下方主區分左右欄 -->
+            <div class="flex flex-1 overflow-hidden min-h-0">
+                <!-- 左側：物品列表 -->
+                <div class="w-1/2 border-r border-stone-800 p-4 overflow-y-auto space-y-2" id="wb-recipe-list">
+                    <!-- 動態渲染配方列表 -->
+                </div>
+                <!-- 右側：確認製作頁面 -->
+                <div class="w-1/2 p-4 flex flex-col justify-between overflow-y-auto" id="wb-detail-pane">
+                    <!-- 動態渲染確認製作詳細內容 -->
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- ★ 確認購買/製作彈窗 -->
-    <div id="craft-confirm-modal" class="absolute inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 hidden pointer-events-auto backdrop-blur-sm">
-        <div id="craft-confirm-content" class="bg-stone-900 border border-stone-700 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col">
-            <!-- 內容由 JS 動態填入 -->
         </div>
     </div>
 
@@ -376,6 +374,9 @@
         let bullets = [];
         let stepCountReset = 0;
         let exactFreezeDamage = 2.0;
+
+        // 工作台 UI 專用狀態
+        let selectedRecipeId = null;
 
         // 核心遊戲狀態
         let game = {
@@ -1208,56 +1209,9 @@
         });
 
         // --- ★ 全局 UI 控制綁定 (確保解決 onclick 點選失效問題) ---
-        window.confirmCraft = function(id) {
-            const recipe = RECIPES.find(r => r.id === id);
-            if (game.workbenchLvl < recipe.minLvl) {
-                logMsg(`工作台等級不足，需要 LV.${recipe.minLvl}`, "warning");
-                return;
-            }
-            
-            let icon = getRecipeEmoji(recipe.id);
-            let canCraft = true;
-            let costHtml = [];
-            for (let res in recipe.cost) {
-                let required = recipe.cost[res];
-                let has = game.resources[res] || 0;
-                if (has < required) canCraft = false;
-                let resName = getResourceDisplayName(res);
-                costHtml.push(`
-                    <div class="flex justify-between items-center bg-stone-950/40 p-2.5 rounded-lg border border-stone-800 text-xs">
-                        <span class="text-stone-400">${resName}</span>
-                        <span class="font-black ${has >= required ? 'text-emerald-400' : 'text-red-400'}">${has}/${required}</span>
-                    </div>`);
-            }
-
-            const confirmContent = document.getElementById('craft-confirm-content');
-            confirmContent.innerHTML = `
-                <div class="p-5 flex flex-col gap-4">
-                    <div class="flex items-center gap-4 border-b border-stone-800 pb-3">
-                        <div class="w-16 h-16 bg-stone-950 rounded-2xl flex items-center justify-center border border-stone-850 shadow-inner shrink-0">
-                            <span class="text-4xl">${icon}</span>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <h4 class="text-base font-black text-white">${recipe.name}</h4>
-                            <p class="text-[10px] text-stone-400 mt-1 leading-relaxed">${recipe.desc}</p>
-                        </div>
-                    </div>
-                    <div class="space-y-2">
-                        <h5 class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">確認合成所需材料</h5>
-                        <div class="grid grid-cols-1 gap-1.5">
-                            ${costHtml.join('')}
-                        </div>
-                    </div>
-                </div>
-                <div class="flex border-t border-stone-800">
-                    <button onclick="document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 text-stone-400 hover:text-white hover:bg-stone-800 transition text-xs font-bold">取消</button>
-                    ${canCraft 
-                        ? `<button onclick="window.craftItem('${recipe.id}'); document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white transition text-xs font-bold">確認製作</button>`
-                        : `<button disabled class="flex-1 py-3 bg-stone-800 text-stone-600 transition text-xs font-bold cursor-not-allowed">材料不足</button>`
-                    }
-                </div>
-            `;
-            document.getElementById('craft-confirm-modal').classList.remove('hidden');
+        window.selectRecipe = function(id) {
+            selectedRecipeId = id;
+            updateWorkbenchOverlayUI();
         };
 
         window.openWorkbenchUI = openWorkbenchUI;
@@ -1278,6 +1232,7 @@
         function openWorkbenchUI() {
             if (isMapOpen) return;
             game.isWorkbenchOpen = true;
+            selectedRecipeId = null; 
             document.getElementById('workbench-overlay').classList.remove('hidden');
             updateWorkbenchOverlayUI();
             playSound('chime');
@@ -1303,33 +1258,88 @@
                 btnUpgrade.setAttribute('disabled', 'true');
             }
 
-            // 動態渲染置中配方列表
+            // 動態渲染左側配方列表 (修復並綁定全域 selectRecipe)
             const recipeList = document.getElementById('wb-recipe-list');
             recipeList.innerHTML = '';
             RECIPES.forEach(recipe => {
                 let locked = game.workbenchLvl < recipe.minLvl;
+                let activeClass = selectedRecipeId === recipe.id ? 'border-amber-500 bg-stone-850 shadow-md ring-1 ring-amber-500/50' : 'border-stone-850 bg-stone-900/60';
                 let icon = getRecipeEmoji(recipe.id);
                 
-                let canCraft = true;
-                for (let res in recipe.cost) {
-                    if ((game.resources[res] || 0) < recipe.cost[res]) canCraft = false;
-                }
-                
                 recipeList.innerHTML += `
-                    <div onclick="window.confirmCraft('${recipe.id}')" class="p-3 rounded-xl border border-stone-800 bg-stone-900/60 ${locked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:border-amber-500 hover:bg-stone-800/80'} transition flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <span class="text-3xl">${icon}</span>
-                            <div class="truncate text-left">
-                                <h4 class="text-sm font-bold text-white">${recipe.name}</h4>
-                                <p class="text-[10px] text-stone-500 mt-0.5">${recipe.desc}</p>
+                    <div onclick="window.selectRecipe('${recipe.id}')" class="p-3 rounded-xl border ${activeClass} ${locked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:border-stone-700 hover:bg-stone-800/40'} transition flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5 overflow-hidden">
+                            <span class="text-2xl">${icon}</span>
+                            <div class="truncate">
+                                <h4 class="text-xs font-bold text-white">${recipe.name}</h4>
+                                <p class="text-[9px] text-stone-500 mt-0.5">${recipe.desc}</p>
                             </div>
                         </div>
-                        <div class="flex flex-col items-end shrink-0 gap-1">
-                            ${recipe.minLvl > 1 ? `<span class="text-[9px] bg-indigo-950 text-indigo-400 px-1 py-0.5 rounded">LV.${recipe.minLvl}</span>` : ''}
-                            ${!locked ? (canCraft ? `<span class="text-[10px] text-emerald-400 font-bold">可製作</span>` : `<span class="text-[10px] text-red-400 font-bold">材料不足</span>`) : ''}
-                        </div>
+                        ${recipe.minLvl > 1 ? `<span class="text-[9px] bg-indigo-950 text-indigo-400 px-1 py-0.5 rounded shrink-0">LV.${recipe.minLvl}</span>` : ''}
                     </div>`;
             });
+
+            // 動態渲染右側確認製作頁面
+            const detailPane = document.getElementById('wb-detail-pane');
+            if (!selectedRecipeId) {
+                detailPane.innerHTML = `
+                    <div class="flex-1 flex flex-col items-center justify-center text-stone-500 text-xs">
+                        <span class="text-4xl mb-3">👈</span>
+                        <span>請點選左側配方</span>
+                        <span class="text-[10px] mt-1 text-stone-600">以開啟確認製作頁面</span>
+                    </div>`;
+                return;
+            }
+
+            const recipe = RECIPES.find(r => r.id === selectedRecipeId);
+            let locked = game.workbenchLvl < recipe.minLvl;
+            let icon = getRecipeEmoji(recipe.id);
+            
+            let canCraft = true;
+            let costHtml = [];
+            for (let res in recipe.cost) {
+                let required = recipe.cost[res];
+                let has = game.resources[res] || 0;
+                if (has < required) canCraft = false;
+                let resName = getResourceDisplayName(res);
+                costHtml.push(`
+                    <div class="flex justify-between items-center bg-stone-950/40 p-2.5 rounded-lg border border-stone-800 text-xs">
+                        <span class="text-stone-400">${resName}</span>
+                        <span class="font-black ${has >= required ? 'text-emerald-400' : 'text-red-400'}">${has}/${required}</span>
+                    </div>`);
+            }
+
+            detailPane.innerHTML = `
+                <div class="space-y-4 flex-1 overflow-y-auto pr-1">
+                    <div class="flex items-center gap-4 border-b border-stone-800 pb-3">
+                        <div class="w-16 h-16 bg-stone-950 rounded-2xl flex items-center justify-center border border-stone-850 shadow-inner shrink-0">
+                            <span class="text-4xl">${icon}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-black text-white">${recipe.name}</h4>
+                            <p class="text-[10px] text-stone-400 mt-1 leading-relaxed">${recipe.desc}</p>
+                            ${locked ? `<span class="text-[9px] bg-red-950/60 border border-red-800 text-red-400 px-1.5 py-0.5 rounded font-bold inline-block mt-1">需要工作台 LV.${recipe.minLvl}</span>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <h5 class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">製作所需材料</h5>
+                        <div class="grid grid-cols-1 gap-1.5">
+                            ${costHtml.join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-4 border-t border-stone-800 shrink-0">
+                    ${locked ? `
+                        <button disabled class="w-full py-3 bg-stone-800 text-stone-600 font-bold rounded-xl cursor-not-allowed text-xs">工作台等級不足</button>
+                    ` : (canCraft ? `
+                        <button onclick="window.craftItem('${recipe.id}')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-xs active:scale-95 shadow-lg shadow-emerald-900/20">製作</button>
+                    ` : `
+                        <button disabled class="w-full py-3 bg-stone-700 text-stone-500 font-bold rounded-xl cursor-not-allowed text-xs">材料不足</button>
+                    `)}
+                </div>
+            `;
         }
 
         function getRecipeEmoji(id) {
@@ -1366,10 +1376,7 @@
             
             if (e.key.toLowerCase() === 'e') {
                 e.preventDefault();
-                // 檢查是否彈窗打開中，如果是，則優先關閉彈窗
-                if (!document.getElementById('craft-confirm-modal').classList.contains('hidden')) {
-                    document.getElementById('craft-confirm-modal').classList.add('hidden');
-                } else if (game.isWorkbenchOpen) {
+                if (game.isWorkbenchOpen) {
                     game.workbenchManuallyClosed = true; 
                     closeWorkbenchUI();
                 } else {
@@ -1723,6 +1730,7 @@
 
         // --- 寒冷判定、時間更新與致命判定 ---
         function updateGameTime(dt) {
+            // ★ 刪除乘以 0.75 的流速計算，將時間流速完全重置
             game.timeOfDay += dt; 
             
             let monsterCount = mapObjects.filter(o => o.type === 'monster').length;
@@ -1778,8 +1786,6 @@
             } else {
                 if (game.wasNearWorkbench) {
                     closeWorkbenchUI();
-                    // 遠離時也確保購買彈窗被關閉
-                    document.getElementById('craft-confirm-modal').classList.add('hidden');
                 }
                 game.workbenchManuallyClosed = false; 
             }
@@ -1962,6 +1968,7 @@
             updateUI();
         }
 
+        // 修改工作台合成邏輯 (使配合新右側詳情頁直接渲染)
         function craftItem(recipeId) {
             const recipe = RECIPES.find(r => r.id === recipeId);
             let nearWorkbench = false;
@@ -2012,7 +2019,7 @@
             }
 
             playSound('craft'); logMsg(`🎉 成功合成 ${recipe.name}!`, "success"); 
-            updateWorkbenchOverlayUI(); // 即時重繪工作台確保狀態更新
+            updateWorkbenchOverlayUI(); // 即時重繪工作台詳情
             updateUI();
         }
 

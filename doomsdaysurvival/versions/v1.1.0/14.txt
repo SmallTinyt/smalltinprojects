@@ -1,0 +1,100 @@
+                let required = recipe.cost[res];
+                let has = game.resources[res] || 0;
+                if (has < required) canCraft = false;
+                let resName = getResourceDisplayName(res);
+                costHtml.push(`
+                    <div class="flex justify-between items-center bg-stone-950/40 p-2.5 rounded-lg border border-stone-800 text-xs">
+                        <span class="text-stone-400">${resName}</span>
+                        <span class="font-black ${has >= required ? 'text-emerald-400' : 'text-red-400'}">${has}/${required}</span>
+                    </div>`);
+            }
+
+            detailPane.innerHTML = `
+                <div class="space-y-4 flex-1 overflow-y-auto pr-1">
+                    <div class="flex items-center gap-4 border-b border-stone-800 pb-3">
+                        <div class="w-16 h-16 bg-stone-950 rounded-2xl flex items-center justify-center border border-stone-850 shadow-inner shrink-0">
+                            <span class="text-4xl">${icon}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-sm font-black text-white">${recipe.name}</h4>
+                            <p class="text-[10px] text-stone-400 mt-1 leading-relaxed">${recipe.desc}</p>
+                            ${locked ? `<span class="text-[9px] bg-red-950/60 border border-red-800 text-red-400 px-1.5 py-0.5 rounded font-bold inline-block mt-1">需要工作台 LV.${recipe.minLvl}</span>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <h5 class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">製作所需材料</h5>
+                        <div class="grid grid-cols-1 gap-1.5">
+                            ${costHtml.join('')}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="pt-4 border-t border-stone-800 shrink-0">
+                    ${locked ? `
+                        <button disabled class="w-full py-3 bg-stone-800 text-stone-600 font-bold rounded-xl cursor-not-allowed text-xs">工作台等級不足</button>
+                    ` : (canCraft ? `
+                        <button onclick="window.craftItem('${recipe.id}')" class="w-full py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl transition-all text-xs active:scale-95 shadow-lg shadow-emerald-900/20">製作</button>
+                    ` : `
+                        <button disabled class="w-full py-3 bg-stone-700 text-stone-500 font-bold rounded-xl cursor-not-allowed text-xs">材料不足</button>
+                    `)}
+                </div>
+            `;
+        }
+
+        function getRecipeEmoji(id) {
+            if (id === 'stone_axe') return '🪓';
+            if (id === 'stone_sword') return '⚔️';
+            if (id === 'furnace') return '🔥';
+            if (id === 'clothes_1') return '👕';
+            if (id === 'bed_1') return '🛏️';
+            if (id === 'backpack_1') return '🎒';
+            if (id === 'steel_axe') return '🪓';
+            if (id === 'clothes_2') return '🧥';
+            if (id === 'bed_2') return '🛌';
+            if (id === 'backpack_2') return '🎒';
+            if (id === 'backpack_3') return '🎒';
+            if (id === 'm4a1') return '🔫';
+            if (id === 'm4a1_ammo') return '📦';
+            if (id === 'revolver') return '🔫';
+            if (id === 'revolver_ammo') return '📦';
+            return '🔧';
+        }
+
+        function getResourceDisplayName(res) {
+            if (res === 'wood') return '🪵 木頭';
+            if (res === 'steel') return '⚙️ 鋼材';
+            if (res === 'leather') return '🧶 皮革';
+            if (res === 'gunpowder') return '💣 火藥';
+            return res;
+        }
+
+        // --- 輸入監聽鍵盤與搖桿控制 ---
+        let keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                if (game.isWorkbenchOpen) {
+                    game.workbenchManuallyClosed = true; 
+                    closeWorkbenchUI();
+                } else {
+                    let near = false;
+                    mapObjects.forEach(obj => {
+                        if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) {
+                            near = true;
+                        }
+                    });
+                    if (near) {
+                        game.workbenchManuallyClosed = false;
+                        openWorkbenchUI();
+                    } else {
+                        performAction();
+                    }
+                }
+            }
+            if (e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                toggleMap();
+            }

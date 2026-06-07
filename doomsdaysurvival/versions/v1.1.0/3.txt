@@ -1,0 +1,100 @@
+                                <span id="shelter-timer">剩餘: 1 天</span>
+                            </div>
+                        </div>
+
+                        <button id="btn-upgrade-shelter" onclick="handleShelterAction()" class="w-full mt-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-stone-800 text-white font-bold text-xs py-2 rounded transition">
+                            建造 (木:30 鋼:20)
+                        </button>
+                    </div>
+
+                    <!-- 床鋪區域 -->
+                    <div class="bg-stone-900/60 p-3 rounded border border-stone-800">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="text-2xl">🛏️</span>
+                            <h3 class="text-xs font-bold text-white">庇護所床鋪</h3>
+                        </div>
+                        <p class="text-[10px] text-stone-400">睡眠能消耗飢餓、超速恢復精力和生命值。高階床鋪能更高效地恢復精力。</p>
+                        <p class="text-[9px] text-amber-500 mt-1" id="equipped-bed">目前：乾草睡地 (精力效率: 5x)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右下：手機虛擬搖桿 & 互動按鈕 -->
+            <div class="flex items-center gap-4 pointer-events-auto md:hidden">
+                <!-- 虛擬搖桿 -->
+                <div id="joystick-base" class="w-24 h-24 bg-stone-900/60 rounded-full border border-stone-700/80 relative flex items-center justify-center select-none active:scale-95 touch-none">
+                    <div id="joystick-knob" class="w-10 h-10 bg-stone-500/80 rounded-full border border-stone-400 pointer-events-none transition-transform duration-75"></div>
+                </div>
+                <!-- 互動大按鈕 -->
+                <button onclick="performAction()" class="w-16 h-16 bg-amber-600 active:bg-amber-700 border-2 border-amber-400 rounded-full flex flex-col items-center justify-center shadow-lg font-black text-xs text-white">
+                    <span>ACTION</span>
+                    <span class="text-[9px] font-normal text-amber-200">互動/火控/採集</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ★ 工作台全螢幕彈窗介面 (走近自動開、點擊看右側詳情、遠離/按X/按E鍵關閉) -->
+    <div id="workbench-overlay" class="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 hidden pointer-events-auto">
+        <div class="bg-stone-900 border border-stone-700 rounded-2xl w-full max-w-2xl overflow-hidden relative shadow-2xl flex flex-col h-[480px]">
+            <!-- 紅色關閉 X 按鈕 -->
+            <button onclick="game.workbenchManuallyClosed = true; closeWorkbenchUI();" class="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full transition z-50">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            
+            <!-- 上標題欄與升級按鈕 -->
+            <div class="border-b border-stone-800 p-4 flex justify-between items-center bg-stone-950/60 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🔧</span>
+                    <h3 class="font-black text-white text-base">工作台 (LV.<span id="wb-overlay-level">1</span>)</h3>
+                </div>
+                <button onclick="upgradeWorkbench()" id="btn-upgrade-workbench-overlay" class="bg-amber-600 hover:bg-amber-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition mr-8">
+                    升級 (木:50 鋼:30)
+                </button>
+            </div>
+            
+            <!-- 下方主區分左右欄 -->
+            <div class="flex flex-1 overflow-hidden min-h-0">
+                <!-- 左側：物品列表 -->
+                <div class="w-1/2 border-r border-stone-800 p-4 overflow-y-auto space-y-2" id="wb-recipe-list">
+                    <!-- 動態渲染配方列表 -->
+                </div>
+                <!-- 右側：確認製作頁面 -->
+                <div class="w-1/2 p-4 flex flex-col justify-between overflow-y-auto" id="wb-detail-pane">
+                    <!-- 動態渲染確認製作詳細內容 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 地圖覆蓋模態框 -->
+    <div id="map-overlay" class="absolute inset-0 z-20 bg-stone-950/90 flex flex-col items-center justify-center p-4 hidden">
+        <div class="bg-stone-900 border border-stone-700 p-4 rounded-2xl flex flex-col items-center gap-3 w-full max-w-lg shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div class="flex justify-between w-full border-b border-stone-800 pb-2">
+                <h3 class="text-sm font-bold text-stone-300 flex items-center gap-1.5">
+                    <i data-lucide="map" class="w-4 h-4 text-emerald-500"></i> 生存衛星地圖
+                </h3>
+                <button onclick="toggleMap()" class="text-stone-500 hover:text-stone-300 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- 地圖畫布容器 -->
+            <div class="relative bg-black rounded-lg border border-stone-950 p-1 flex items-center justify-center overflow-hidden">
+                <canvas id="mapCanvas" class="w-[280px] h-[280px] md:w-[400px] md:h-[400px]"></canvas>
+            </div>
+            <div class="text-[10px] text-stone-500 flex justify-between w-full">
+                <span>🔴 滑鼠左鍵點擊地圖可設置自訂紅色標記</span>
+                <span>🟢 綠點為玩家自身</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 訊息彈窗 (Modal) -->
+    <div id="modal-container" class="absolute inset-0 z-40 bg-black/80 flex items-center justify-center p-4 hidden">
+        <div class="bg-stone-900 border border-stone-700 p-5 rounded-2xl w-full max-w-xs text-center flex flex-col gap-3 shadow-2xl">
+            <h3 id="modal-title" class="font-black text-lg text-white">提示訊息</h3>
+            <p id="modal-desc" class="text-xs text-stone-400 leading-relaxed">內文描述說明</p>
+            <button onclick="closeModal()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2 rounded-xl transition mt-1">
+                我知道了
+            </button>
+        </div>

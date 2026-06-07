@@ -1,0 +1,100 @@
+            let cx = canvas.width / 2;
+            let cy = canvas.height / 2;
+            let dx = px - cx;
+            let dy = py - cy;
+            let hw = cx - padding;
+            let hh = cy - padding;
+
+            if (Math.abs(dx) <= hw && Math.abs(dy) <= hh) return { offscreen: false };
+
+            let scaleX = Math.abs(dx) > 0.001 ? hw / Math.abs(dx) : 9999;
+            let scaleY = Math.abs(dy) > 0.001 ? hh / Math.abs(dy) : 9999;
+            let scale = Math.min(scaleX, scaleY);
+
+            return { x: cx + dx * scale, y: cy + dy * scale, offscreen: true, angle: Math.atan2(dy, dx) };
+        }
+
+        function drawPointer(x, y, angle, color, label) {
+            ctx.save();
+            ctx.translate(x, y);
+            ctx.rotate(angle);
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(12, 0); ctx.lineTo(-8, 8); ctx.lineTo(-8, -8); ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 8; ctx.shadowColor = color;
+            ctx.strokeStyle = '#ffffff'; ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.restore();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(label, x, y - 12);
+        }
+
+        // --- 衛星地圖系統 ---
+        const mapCanvas = document.getElementById('mapCanvas');
+        const mctx = mapCanvas.getContext('2d');
+
+        function toggleMap() {
+            isMapOpen = !isMapOpen;
+            const overlay = document.getElementById('map-overlay');
+            if (isMapOpen) {
+                overlay.classList.remove('hidden');
+                drawMinimap();
+            } else {
+                overlay.classList.add('hidden');
+            }
+        }
+
+        // ★ 修改衛星雷達地圖：完全正方形，且觀測/坐標範圍鎖定在 3,000 px 規格內
+        function drawMinimap() {
+            mctx.fillStyle = '#0f172a';
+            mctx.fillRect(0, 0, mapCanvas.width, mapCanvas.height);
+
+            const MAP_RANGE = 3000; // 雷達地圖限額 3000 px
+            let scale = mapCanvas.width / MAP_RANGE;
+
+            // 繪製網格
+            mctx.strokeStyle = '#1e293b'; mctx.lineWidth = 1;
+            for (let i = 0; i <= MAP_RANGE; i += 500) {
+                mctx.beginPath(); mctx.moveTo(i*scale, 0); mctx.lineTo(i*scale, mapCanvas.height); mctx.stroke();
+                mctx.beginPath(); mctx.moveTo(0, i*scale); mctx.lineTo(mapCanvas.width, i*scale); mctx.stroke();
+            }
+
+            // 繪製物資實體
+            mapObjects.forEach(obj => {
+                // 如果超出 3000 px 的範圍則在地圖上裁剪不予顯示
+                if (obj.x > MAP_RANGE || obj.y > MAP_RANGE) return;
+
+                let size = 2;
+                if (obj.type === 'building') { mctx.fillStyle = '#475569'; size = 8; }
+                else if (obj.type === 'tree') mctx.fillStyle = '#15803d';
+                else if (obj.type === 'cave') { mctx.fillStyle = '#a855f7'; size = 10; } 
+                else if (obj.type === 'workbench') { mctx.fillStyle = '#3b82f6'; size = 5; }
+                else if (obj.type === 'shelter') { mctx.fillStyle = '#d97706'; size = 7; }
+                else return; 
+                
+                mctx.fillRect(obj.x * scale - size/2, obj.y * scale - size/2, size, size);
+            });
+
+            // 繪製自訂標記 (限額在 3000px 內才顯示)
+            if (game.customMarker && game.customMarker.x <= MAP_RANGE && game.customMarker.y <= MAP_RANGE) {
+                mctx.fillStyle = '#ef4444';
+                mctx.beginPath();
+                mctx.arc(game.customMarker.x * scale, game.customMarker.y * scale, 4, 0, Math.PI*2);
+                mctx.fill();
+            }
+
+            // 繪製玩家位置 (限額在 3000px 內才顯示)
+            if (game.player.x <= MAP_RANGE && game.player.y <= MAP_RANGE) {
+                mctx.fillStyle = '#22c55e';
+                mctx.beginPath();
+                mctx.arc(game.player.x * scale, game.player.y * scale, 5, 0, Math.PI*2);
+                mctx.fill();
+            }
+        }
+
+        mapCanvas.addEventListener('mousedown', e => {
+            let rect = mapCanvas.getBoundingClientRect();

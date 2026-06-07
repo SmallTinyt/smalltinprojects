@@ -1,0 +1,100 @@
+                tempLabel.innerText = "極寒 (-15°C)"; tempLabel.className = "font-bold text-sky-400 animate-pulse";
+                warningDiv.classList.remove('hidden');
+                let rawDamage = exactFreezeDamage * (1.0 - clothesProtection);
+                let finalDmg = Math.max(1, Math.round(rawDamage));
+                game.hp = Math.max(0, game.hp - finalDmg);
+                playSound('freeze');
+                exactFreezeDamage *= 1.1;
+                document.getElementById('freeze-dmg-show').innerText = Math.round(exactFreezeDamage);
+            } else {
+                tempLabel.innerText = isNight ? "涼爽 (10°C)" : "舒適 (24°C)";
+                tempLabel.className = "font-bold text-emerald-400";
+                warningDiv.classList.add('hidden');
+                exactFreezeDamage = 2.0;
+            }
+
+            if (game.hp <= 0) {
+                isGameRunning = false;
+                showModal("💀 你死去了", `你未能捱過末日考驗。存活了 ${game.day} 天。`);
+                startGame(false);
+            }
+            updateUI();
+        }
+
+        function performAction() {
+            if (!isGameRunning) return false;
+            
+            if (game.equippedWeapon !== 'none') {
+                fireBullet();
+                return true;
+            }
+
+            let nearestObj = null; let minDist = 75;
+            mapObjects.forEach(obj => {
+                let d = Math.hypot(game.player.x - obj.x, game.player.y - obj.y);
+                if (d < minDist) { nearestObj = obj; minDist = d; }
+            });
+
+            if (nearestObj) {
+                let currentTotal = getTotalItemsCount();
+                let backpackCap = getBackpackCapacity();
+                if (currentTotal >= backpackCap && (nearestObj.type === 'tree' || nearestObj.type === 'steel_pile' || nearestObj.type === 'leather_pile' || nearestObj.type === 'animal')) {
+                    showModal("🎒 背包已滿！", `你目前的物品數為 ${currentTotal}/${backpackCap}，無法繼續收集資源，請升級背包或消耗物資。`);
+                    return false;
+                }
+
+                if (nearestObj.type === 'tree') {
+                    playSound('chop');
+                    let power = game.equippedAxe ? game.equippedAxe.efficiency : 1;
+                    nearestObj.hp -= power;
+                    let got = Math.floor(2 + Math.random() * 3) * power;
+                    if (currentTotal + got > backpackCap) got = Math.max(0, backpackCap - currentTotal);
+                    game.resources.wood += got; logMsg(`🪓 砍樹，獲得木頭 x${got}`, "success");
+                    if (nearestObj.hp <= 0) {
+                        mapObjects = mapObjects.filter(o => o.id !== nearestObj.id);
+                        setTimeout(() => { mapObjects.push(createMapObject('tree', Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE)); }, 3000);
+                    }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'steel_pile') {
+                    playSound('hit');
+                    nearestObj.hp--;
+                    let got = Math.floor(1 + Math.random() * 2);
+                    if (currentTotal + got > backpackCap) got = Math.max(0, backpackCap - currentTotal);
+                    game.resources.steel += got; logMsg(`⛏️ 採集廢鋼堆，獲得鋼材 x${got}`, "success");
+                    if (nearestObj.hp <= 0) { mapObjects = mapObjects.filter(o => o.id !== nearestObj.id); }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'leather_pile') {
+                    playSound('hit');
+                    nearestObj.hp--;
+                    let got = Math.floor(1 + Math.random() * 3);
+                    if (currentTotal + got > backpackCap) got = Math.max(0, backpackCap - currentTotal);
+                    game.resources.leather += got; logMsg(`🧶 搜刮皮卷，獲得皮革 x${got}`, "success");
+                    if (nearestObj.hp <= 0) { mapObjects = mapObjects.filter(o => o.id !== nearestObj.id); }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'animal') {
+                    playSound('hit');
+                    nearestObj.hp--;
+                    if (nearestObj.hp <= 0) {
+                        let gotMeat = Math.floor(2 + Math.random() * 3);
+                        let gotLeather = Math.floor(1 + Math.random() * 2);
+                        
+                        if (currentTotal + gotMeat > backpackCap) gotMeat = Math.max(0, backpackCap - currentTotal);
+                        game.resources.rawMeat += gotMeat;
+                        currentTotal = getTotalItemsCount();
+                        
+                        if (currentTotal + gotLeather > backpackCap) gotLeather = Math.max(0, backpackCap - currentTotal);
+                        game.resources.leather += gotLeather;
+
+                        logMsg(`⚔️ 擊殺獵物，取得生肉 x${gotMeat}，皮革 x${gotLeather}！`, "success");
+                        mapObjects = mapObjects.filter(o => o.id !== nearestObj.id);
+                        setTimeout(() => { mapObjects.push(createMapObject('animal', Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE)); }, 5000);
+                    } else {
+                        logMsg("⚔️ 打擊獵物！獵物驚慌四散。", "info");
+                        nearestObj.animalWalkDir = Math.atan2(nearestObj.y - game.player.y, nearestObj.x - game.player.x);
+                        nearestObj.animalWalkTimer = 0;
+                    }
+                    updateUI(); return true;
+                }

@@ -1,0 +1,100 @@
+
+            <!-- 右側快速控制與存檔 -->
+            <div class="flex flex-col gap-2 pointer-events-auto">
+                <div class="bg-black/75 backdrop-blur-md p-2 md:p-3 rounded-xl border border-stone-700/80 flex gap-2">
+                    <button onclick="saveGame()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1.5 md:px-3 rounded text-[10px] md:text-xs transition flex items-center gap-1">
+                        <i data-lucide="save" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">儲存</span>
+                    </button>
+                    <button onclick="loadGame()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-2 py-1.5 md:px-3 rounded text-[10px] md:text-xs transition flex items-center gap-1">
+                        <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">讀檔</span>
+                    </button>
+                    <button onclick="toggleAudio()" id="audio-toggle-btn" class="bg-stone-700 hover:bg-stone-600 text-white p-1.5 rounded transition">
+                        <i data-lucide="volume-2" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>
+                    </button>
+                </div>
+                <div class="bg-black/75 backdrop-blur-md p-2 rounded-xl border border-stone-700/80 text-center text-[10px] text-stone-400">
+                    <div>按 <kbd class="bg-stone-800 px-1 rounded text-white font-mono">M</kbd> 地圖</div>
+                    <div>按 <kbd class="bg-stone-800 px-1 rounded text-white font-mono">E</kbd> 背包/互動</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 中間下方：凍傷威脅警告 -->
+        <div id="freeze-warning" class="self-center bg-red-950/90 border-2 border-red-500 text-red-200 px-4 py-2 rounded-xl text-center shadow-[0_0_20px_rgba(239,68,68,0.5)] font-black text-xs md:text-sm animate-bounce hidden">
+            ⚠️ 身體正在劇烈失溫！每秒扣除 <span id="freeze-dmg-show">2</span> 點生命！請儘速生火或建造並躲入庇護所！
+        </div>
+
+        <!-- 底部面板與操作 -->
+        <div class="flex justify-between items-end gap-4">
+            
+            <!-- 左下側多功能側面板 -->
+            <div class="bg-black/85 backdrop-blur-md p-4 rounded-2xl border border-stone-700/80 w-72 md:w-80 shadow-2xl pointer-events-auto flex flex-col gap-3 max-h-[320px] overflow-y-auto">
+                <!-- 標籤頁切換 -->
+                <div class="flex gap-1 border-b border-stone-800 pb-2">
+                    <button onclick="switchTab('inventory')" id="tab-inventory" class="flex-1 py-1 text-xs font-bold rounded text-amber-500 bg-stone-900 transition">
+                        物資
+                    </button>
+                    <button onclick="switchTab('shelter')" id="tab-shelter" class="flex-1 py-1 text-xs font-bold rounded text-stone-400 hover:text-stone-200 transition">
+                        庇護所
+                    </button>
+                </div>
+
+                <!-- 背包面板 -->
+                <div id="panel-inventory" class="space-y-4">
+                    <div class="flex justify-between items-center border-b border-stone-800 pb-2">
+                        <h3 class="text-sm font-bold text-stone-200">收集到的物資</h3>
+                        <span id="backpack-cap-text" class="text-[10px] bg-stone-800 text-stone-400 px-2 py-0.5 rounded">容量：0/250</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2" id="inventory-list">
+                        <!-- 動態生成資源卡片 -->
+                    </div>
+
+                    <!-- 穿戴裝備區 -->
+                    <div class="mt-4 border-t border-stone-800 pt-3">
+                        <h4 class="text-xs font-bold text-stone-400 mb-2">已穿戴與裝備</h4>
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="bg-stone-900/50 p-2 rounded border border-stone-800 flex items-center gap-2">
+                                <span class="text-xl">🪓</span>
+                                <div>
+                                    <p class="text-xs text-stone-300 font-bold truncate" id="equipped-axe">木斧 (品質:0)</p>
+                                    <p class="text-[9px] text-stone-500" id="axe-efficiency">採集效率: 1x</p>
+                                </div>
+                            </div>
+                            <div class="bg-stone-900/50 p-2 rounded border border-stone-800 flex items-center gap-2">
+                                <span class="text-xl">👕</span>
+                                <div>
+                                    <p class="text-xs text-stone-300 font-bold truncate" id="equipped-clothes">無衣物</p>
+                                    <p class="text-[9px] text-stone-500" id="clothes-warmth">防寒: 0%</p>
+                                </div>
+                            </div>
+                            <div class="bg-stone-900/50 p-2 rounded border border-stone-800 flex items-center gap-2 col-span-2">
+                                <span class="text-xl">🔫</span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-xs text-stone-300 font-bold truncate" id="equipped-weapon">當前手持: 採集工具/斧頭</p>
+                                    <p class="text-[9px] text-stone-500" id="equipped-weapon-ammo">子彈: --/--</p>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 武器切換區域 -->
+                        <div id="weapon-switcher-container" class="mt-2 flex gap-1 w-full">
+                            <!-- 動態生成快速切換按鈕 -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 庇護所與床鋪面板 -->
+                <div id="panel-shelter" class="space-y-4 hidden">
+                    <div class="bg-stone-900/60 p-3 rounded border border-stone-800">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span id="shelter-icon" class="text-2xl">⛺</span>
+                            <h3 class="text-xs font-bold text-white" id="shelter-title">庇護所 (未建造)</h3>
+                        </div>
+                        <p class="text-[10px] text-stone-400" id="shelter-desc">建造一個穩固的家，提供完全阻絕低溫功能，並提供夜間完全儲存/睡眠過夜點。</p>
+                        
+                        <!-- 施工倒數進度條 -->
+                        <div id="shelter-progress-container" class="mt-2 bg-black p-1.5 rounded border border-stone-800 hidden">
+                            <div class="w-full bg-stone-950 h-2 rounded overflow-hidden">
+                                <div id="shelter-progress-bar" class="bg-amber-500 h-full transition-all duration-300" style="width: 0%;"></div>
+                            </div>
+                            <div class="flex justify-between items-center text-[9px] text-stone-400 mt-1">
+                                <span>施工進度...</span>

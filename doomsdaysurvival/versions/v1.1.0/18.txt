@@ -1,0 +1,100 @@
+                        else if (hitObj.type === 'monster') {
+                            let gotGunpowder = Math.floor(2 + Math.random() * 3); 
+                            if (current + gotGunpowder > cap) gotGunpowder = Math.max(0, cap - current);
+                            game.resources.gunpowder += gotGunpowder;
+
+                            logMsg(`⚔️ 擊殺洞穴惡魔，獲得火藥 x${gotGunpowder}！`, "success");
+                            mapObjects = mapObjects.filter(o => o.id !== hitObj.id);
+                            setTimeout(() => { mapObjects.push(createMapObject('monster', (WORLD_SIZE - 500) + Math.random()*450, (WORLD_SIZE - 500) + Math.random()*450)); }, 8000);
+                        }
+                    }
+                    bullets.splice(i, 1);
+                    updateUI();
+                } else if (b.life <= 0) {
+                    bullets.splice(i, 1);
+                }
+            }
+
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.life--;
+                if (p.life <= 0) particles.splice(i, 1);
+            }
+
+            for (let i = floatTexts.length - 1; i >= 0; i--) {
+                let ft = floatTexts[i];
+                ft.y -= 1; ft.life--;
+                if (ft.life <= 0) floatTexts.splice(i, 1);
+            }
+        }
+
+        // --- 寒冷判定、時間更新與致命判定 ---
+        function updateGameTime(dt) {
+            // ★ 刪除乘以 0.75 的流速計算，將時間流速完全重置
+            game.timeOfDay += dt; 
+            
+            let monsterCount = mapObjects.filter(o => o.type === 'monster').length;
+            if (monsterCount < 6 && Math.random() < 0.03) {
+                mapObjects.push(createMapObject('monster', (WORLD_SIZE - 500) + Math.random()*450, (WORLD_SIZE - 500) + Math.random()*450));
+            }
+
+            if (game.timeOfDay >= 600) { 
+                game.timeOfDay = 0;
+                game.day++;
+                logMsg(`🌙 新的一天到來！第 ${game.day} 天。`, "info");
+                
+                game.hunger = Math.max(0, game.hunger - 15);
+                if (game.hunger <= 0) {
+                    game.hp = Math.max(0, game.hp - 20);
+                    logMsg("🔥 你飢寒交迫！因嚴重飢餓而虛脫扣血！", "danger");
+                }
+
+                if (game.shelter.upgrading) {
+                    game.shelter.daysRemaining--;
+                    if (game.shelter.daysRemaining <= 0) {
+                        game.shelter.upgrading = false;
+                        game.shelter.level = game.shelter.targetLevel;
+                        game.shelter.built = true;
+                        logMsg(`🎉 你的庇護所已被成功升級/建造完成至 LV.${game.shelter.level}！`, "success");
+                        showModal("🎉 升級完成", `你的庇護所已建造至 ${game.shelter.level} 等級！現在更溫暖抗寒了。`);
+                    }
+                }
+
+                if (game.mode !== 'endless' && game.day > parseInt(game.mode)) {
+                    isGameRunning = false;
+                    showModal("🏆 生存挑戰成功！", `你成功在末日極低溫世界中活過了 ${game.mode} 天！恭喜你！`);
+                    startGame(false);
+                }
+
+                updateUI();
+            }
+        }
+
+        function updateStatusBars(dt) {
+            let nearFurnace = false;
+            let nearWorkbench = false;
+            mapObjects.forEach(obj => {
+                if (obj.type === 'furnace' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 100) nearFurnace = true;
+                if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) nearWorkbench = true;
+            });
+
+            // 工作台接近自動彈出與遠離自動關閉 UI 機制
+            if (nearWorkbench) {
+                if (!game.wasNearWorkbench && !game.workbenchManuallyClosed) {
+                    openWorkbenchUI();
+                }
+            } else {
+                if (game.wasNearWorkbench) {
+                    closeWorkbenchUI();
+                }
+                game.workbenchManuallyClosed = false; 
+            }
+            game.wasNearWorkbench = nearWorkbench;
+
+            let isNight = game.timeOfDay >= 300;
+            let hasWarmth = nearFurnace || (game.shelter.built && game.shelter.level >= 0);
+            let clothesProtection = game.equippedClothes ? game.equippedClothes.warmth : 0.0;
+            const tempLabel = document.getElementById('temp-status');
+            const warningDiv = document.getElementById('freeze-warning');
+
+            if (isNight && !hasWarmth) {

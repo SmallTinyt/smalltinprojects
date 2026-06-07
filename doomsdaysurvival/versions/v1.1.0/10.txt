@@ -1,0 +1,100 @@
+        function drawRobloxPlayer(sx, sy, light) {
+            if (game.player.vx !== 0 || game.player.vy !== 0) walkCycle += 0.25; else walkCycle = 0;
+            let swing = Math.sin(walkCycle) * 15; let legC = '#1450b4', torsoC = game.equippedClothes ? '#1e3a8a' : '#dc641e', armC = '#f0c896';
+            
+            drawIsoBox(ctx, sx - 4, sy + swing/4, 4, 4, 10, legC, legC, legC);
+            drawIsoBox(ctx, sx + 4, sy - swing/4, 4, 4, 10, legC, legC, legC);
+            drawIsoBox(ctx, sx, sy - 8, 8, 12, 14, torsoC, torsoC, torsoC);
+            if (game.equippedWeapon !== 'none') {
+                drawIsoBox(ctx, sx - 7, sy - 14, 3, 12, 5, '#1e293b', '#1e293b', '#1e293b'); 
+            } else {
+                drawIsoBox(ctx, sx - 7, sy - 8 + swing/4, 3, 3, 12, armC, armC, armC);
+            }
+            drawIsoBox(ctx, sx + 7, sy - 8 - swing/4, 3, 3, 12, armC, armC, armC);
+            ctx.fillStyle = '#fce7f3';
+            ctx.beginPath(); ctx.arc(sx, sy - 28, 6, 0, Math.PI * 2); ctx.fill();
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(sx - 3, sy - 29, 2, 2); ctx.fillRect(sx + 1, sy - 29, 2, 2);
+        }
+
+        // --- 繪製黑暗與光源 ---
+        function drawDarknessAndLights(ambientLight) {
+            let darknessCanvas = document.createElement('canvas');
+            darknessCanvas.width = canvas.width;
+            darknessCanvas.height = canvas.height;
+            let dctx = darknessCanvas.getContext('2d');
+
+            dctx.fillStyle = `rgba(4, 4, 15, ${1.0 - ambientLight})`;
+            dctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let pScreen = worldToScreen(game.player.x, game.player.y);
+            let grad = dctx.createRadialGradient(pScreen.x, pScreen.y, 10, pScreen.x, pScreen.y, 120);
+            grad.addColorStop(0, 'rgba(255,255,255,1.0)');
+            grad.addColorStop(0.5, 'rgba(255,240,200,0.35)');
+            grad.addColorStop(1, 'rgba(0,0,0,0.0)');
+            dctx.globalCompositeOperation = 'destination-out';
+            dctx.fillStyle = grad;
+            dctx.beginPath(); dctx.arc(pScreen.x, pScreen.y, 120, 0, Math.PI * 2); dctx.fill();
+
+            mapObjects.forEach(obj => {
+                let dist = Math.hypot(game.player.x - obj.x, game.player.y - obj.y);
+                if (dist > 1200) return; 
+                
+                if (obj.type === 'furnace' || (obj.type === 'shelter' && obj.level >= 0)) {
+                    let scr = worldToScreen(obj.x, obj.y);
+                    let rad = obj.type === 'furnace' ? 180 : 250;
+                    let objGrad = dctx.createRadialGradient(scr.x, scr.y, 20, scr.x, scr.y, rad);
+                    objGrad.addColorStop(0, 'rgba(255,255,255,1.0)');
+                    objGrad.addColorStop(0.4, 'rgba(253,186,116,0.5)');
+                    objGrad.addColorStop(1, 'rgba(0,0,0,0.0)');
+                    dctx.fillStyle = objGrad;
+                    dctx.beginPath(); dctx.arc(scr.x, scr.y, rad, 0, Math.PI * 2); dctx.fill();
+                }
+            });
+
+            dctx.globalCompositeOperation = 'source-over';
+            ctx.drawImage(darknessCanvas, 0, 0);
+        }
+
+        // --- 核心渲染引擎 ---
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            let t = game.timeOfDay;
+            let ambientLight = 1.0;
+            if (t > 240 && t <= 300) { 
+                ambientLight = 1.0 - ((t - 240) / 60) * 0.75; 
+            } else if (t > 300 && t <= 540) { 
+                ambientLight = 0.25;
+            } else if (t > 540 && t <= 600) { 
+                ambientLight = 0.25 + ((t - 540) / 60) * 0.75; 
+            }
+
+            // 更改世界地面背景為 #676767 灰色 (並隨著環境光暗度進行運算，模擬日夜明暗)
+            let grayValue = Math.floor(103 * ambientLight);
+            ctx.fillStyle = `rgb(${grayValue}, ${grayValue}, ${grayValue})`;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let renderList = [];
+            
+            for (let x = Math.floor(game.player.x - 300); x < game.player.x + 300; x += 120) {
+                for (let y = Math.floor(game.player.y - 200); y < game.player.y + 200; y += 120) {
+                    let rx = x - (x % 120); let ry = y - (y % 120);
+                    if (rx > 0 && rx < WORLD_SIZE && ry > 0 && ry < WORLD_SIZE) {
+                        let pos = worldToScreen(rx, ry);
+                        drawGrass(pos.x, pos.y, ambientLight);
+                    }
+                }
+            }
+
+            mapObjects.forEach(obj => { renderList.push({ type: 'map_obj', data: obj, sortY: obj.y + obj.x }); });
+            renderList.push({ type: 'player', data: game.player, sortY: game.player.y + game.player.x });
+
+            renderList.sort((a, b) => a.sortY - b.sortY);
+
+            renderList.forEach(item => {
+                if (item.type === 'player') {
+                    let pScreen = worldToScreen(game.player.x, game.player.y);
+                    drawRobloxPlayer(pScreen.x, pScreen.y, ambientLight);
+                } else {
+                    let obj = item.data;

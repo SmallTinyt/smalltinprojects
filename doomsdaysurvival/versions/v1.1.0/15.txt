@@ -1,0 +1,100 @@
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // 手機虛擬搖桿
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickKnob = document.getElementById('joystick-knob');
+        let isJoystickActive = false;
+        let joystickStart = { x: 0, y: 0 };
+        let joystickVector = { x: 0, y: 0 };
+
+        joystickBase.addEventListener('touchstart', e => {
+            isJoystickActive = true;
+            const rect = joystickBase.getBoundingClientRect();
+            joystickStart.x = rect.left + rect.width / 2;
+            joystickStart.y = rect.top + rect.height / 2;
+        });
+
+        window.addEventListener('touchmove', e => {
+            if (!isJoystickActive) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - joystickStart.x;
+            const dy = touch.clientY - joystickStart.y;
+            const dist = Math.hypot(dx, dy);
+            const maxDist = 40;
+
+            let angle = Math.atan2(dy, dx);
+            let moveDist = Math.min(dist, maxDist);
+            
+            joystickKnob.style.transform = `translate(${moveDist * Math.cos(angle)}px, ${moveDist * Math.sin(angle)}px)`;
+            
+            joystickVector.x = Math.cos(angle) * (moveDist / maxDist);
+            joystickVector.y = Math.sin(angle) * (moveDist / maxDist);
+        });
+
+        window.addEventListener('touchend', () => {
+            isJoystickActive = false;
+            joystickKnob.style.transform = `translate(0px, 0px)`;
+            joystickVector = { x: 0, y: 0 };
+        });
+
+        // 手機/網頁滑鼠發射子彈火控系統
+        let isMouseDown = false;
+        let lastShootTime = 0;
+
+        canvas.addEventListener('mousedown', e => {
+            if (!isGameRunning || isMapOpen) return;
+            if (e.target !== canvas) return; 
+            if (game.equippedWeapon === 'none') {
+                performAction();
+                return;
+            }
+            
+            isMouseDown = true;
+            shootAtMouse(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isMouseDown && game.equippedWeapon === 'm4a1') {
+                shootAtMouse(e.clientX, e.clientY);
+            }
+        });
+
+        function shootAtMouse(clientX, clientY) {
+            let now = performance.now();
+            let rate = game.equippedWeapon === 'm4a1' ? 150 : 600; 
+            if (now - lastShootTime >= rate) {
+                let rect = canvas.getBoundingClientRect();
+                let mx = clientX - rect.left;
+                let my = clientY - rect.top;
+
+                let rx = mx - canvas.width / 2;
+                let ry = my - canvas.height / 2;
+                let dx = 0.5 * (rx / cos30 + ry / sin30);
+                let dy = 0.5 * (ry / sin30 - rx / cos30);
+
+                let targetX = game.player.x + dx;
+                let targetY = game.player.y + dy;
+
+                fireBullet(targetX, targetY);
+                lastShootTime = now;
+            }
+        }
+
+        function fireBullet(targetX, targetY) {
+            if (!isGameRunning || isMapOpen) return;
+
+            let ammoProp = game.equippedWeapon === 'm4a1' ? 'm4a1Ammo' : 'revolverAmmo';
+            if ((game.resources[ammoProp] || 0) <= 0) {
+                logMsg("🚫 沒有彈藥了！請打開工作台製作對應子彈。", "warning");
+                isMouseDown = false;
+                return;
+            }
+
+            game.resources[ammoProp]--;

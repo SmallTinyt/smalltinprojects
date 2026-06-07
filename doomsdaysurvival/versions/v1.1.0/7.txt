@@ -1,0 +1,100 @@
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function switchTab(tab) {
+            activeTab = tab;
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.classList.remove('text-amber-500', 'bg-stone-900');
+                el.classList.add('text-stone-400', 'hover:text-stone-200');
+            });
+            document.getElementById(`tab-${tab}`).classList.add('text-amber-500', 'bg-stone-900');
+            document.getElementById(`tab-${tab}`).classList.remove('text-stone-400', 'hover:text-stone-200');
+
+            document.querySelectorAll('[id^="panel-"]').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`panel-${tab}`).classList.remove('hidden');
+        }
+
+        function toggleInventory() {
+            // 在手機端快速開關物資欄
+        }
+
+        function saveGame() {
+            try {
+                const saveData = {
+                    game,
+                    mapObjects: mapObjects.map(obj => ({
+                        id: obj.id,
+                        type: obj.type,
+                        x: obj.x, y: obj.y, z: obj.z,
+                        size: obj.size, hp: obj.hp, maxHp: obj.maxHp,
+                        height: obj.height || 0, quality: obj.quality || 0,
+                        animalType: obj.animalType || null
+                    }))
+                };
+                localStorage.setItem('apocalypse_survival_save', JSON.stringify(saveData));
+                logMsg("進度已成功儲存至本地瀏覽器！", "success");
+                showModal("💾 存檔成功", "你的生存進度已儲存。");
+            } catch (e) {
+                logMsg("存檔失敗: " + e.message, "danger");
+            }
+        }
+
+        function loadGame() {
+            try {
+                const dataStr = localStorage.getItem('apocalypse_survival_save');
+                if (!dataStr) return;
+                const saveData = JSON.parse(dataStr);
+                
+                game = saveData.game;
+                if (!game.mode) game.mode = '365';
+                
+                mapObjects = [];
+                saveData.mapObjects.forEach(obj => {
+                    let newObj = createMapObject(obj.type, obj.x, obj.y, obj.z, obj.height);
+                    newObj.hp = obj.hp; newObj.maxHp = obj.maxHp; newObj.quality = obj.quality || 0;
+                    if(obj.animalType) newObj.animalType = obj.animalType;
+                    mapObjects.push(newObj);
+                });
+
+                logMsg("已載入儲存進度！", "success");
+                updateUI();
+            } catch (e) {
+                logMsg("讀檔失敗，存檔已損壞: " + e.message, "danger");
+            }
+        }
+
+        function startGame(loadSaved) {
+            initAudio();
+            document.getElementById('start-overlay').classList.add('hidden');
+            isGameRunning = true;
+
+            if (loadSaved) {
+                loadGame();
+            } else {
+                game.mode = selectedMode;
+                game.day = 1;
+                game.timeOfDay = 0;
+                game.hp = 100;
+                game.hunger = 100;
+                game.stamina = 500;
+                game.backpackLvl = 0;
+                game.equippedWeapon = 'none';
+                game.isWorkbenchOpen = false;
+                game.wasNearWorkbench = false;
+                game.workbenchManuallyClosed = false;
+                game.resources = { 
+                    wood: 30, steel: 20, leather: 10, rawMeat: 2, cookedMeat: 0, 
+                    gunpowder: 0, m4a1Count: 0, m4a1Ammo: 0, revolverCount: 0, revolverAmmo: 0 
+                };
+                game.workbenchLvl = 1;
+                game.equippedAxe = { name: "木製斧頭", quality: 0, efficiency: 1 };
+                game.equippedClothes = null;
+                game.equippedBed = { name: "乾草睡地", quality: 0, staminaRate: 5 };
+                game.shelter = { built: false, level: -1, upgrading: false, daysRemaining: 0, targetLevel: 0 };
+                game.customMarker = null;
+                game.player.x = 400;
+                game.player.y = 400;
+                
+                initMap();
+                let modeTxt = game.mode === 'endless' ? '無盡模式' : `${game.mode} 天`;
+                logMsg(`全新生存開始！當前目標：${modeTxt}。走近工作台即可自動打開製作面板！`, "info");

@@ -1,0 +1,100 @@
+            for (let res in recipe.cost) { game.resources[res] -= recipe.cost[res]; }
+
+            if (recipeId === 'stone_axe') { game.equippedAxe = { name: "石製斧頭", quality: 1, efficiency: 2 }; }
+            else if (recipeId === 'steel_axe') { game.equippedAxe = { name: "精鋼手斧", quality: 2, efficiency: 3 }; }
+            else if (recipeId === 'clothes_1') { game.equippedClothes = { name: "一般毛衣", warmth: 0.25 }; }
+            else if (recipeId === 'clothes_2') { game.equippedClothes = { name: "防寒軍大衣", warmth: 0.60 }; }
+            else if (recipeId === 'bed_1') { game.equippedBed = { name: "暖木吊床", quality: 1, staminaRate: 10 }; }
+            else if (recipeId === 'bed_2') { game.equippedBed = { name: "精工軟彈簧床", quality: 2, staminaRate: 20 }; }
+            else if (recipeId === 'backpack_1') { game.backpackLvl = 1; }
+            else if (recipeId === 'backpack_2') { game.backpackLvl = 2; }
+            else if (recipeId === 'backpack_3') { game.backpackLvl = 3; }
+            else if (recipeId === 'm4a1') { game.resources.m4a1Count = (game.resources.m4a1Count || 0) + 1; }
+            else if (recipeId === 'm4a1_ammo') { game.resources.m4a1Ammo = (game.resources.m4a1Ammo || 0) + 30; }
+            else if (recipeId === 'revolver') { game.resources.revolverCount = (game.resources.revolverCount || 0) + 1; }
+            else if (recipeId === 'revolver_ammo') { game.resources.revolverAmmo = (game.resources.revolverAmmo || 0) + 10; }
+            else if (recipeId === 'furnace') {
+                mapObjects.push(createMapObject('furnace', game.player.x + 30, game.player.y + 30));
+                logMsg("🔥 已在地上架設了野外保暖熔爐！", "success");
+            }
+
+            playSound('craft'); logMsg(`🎉 成功合成 ${recipe.name}!`, "success"); 
+            updateWorkbenchOverlayUI(); // 即時重繪工作台詳情
+            updateUI();
+        }
+
+        function eatMeat(type) {
+            if (type === 'raw') {
+                if (game.resources.rawMeat > 0) {
+                    game.resources.rawMeat--;
+                    game.hunger = Math.min(100, game.hunger + 10);
+                    game.hp = Math.max(5, game.hp - 10);
+                    logMsg("🥩 吞下了生肉！口感極差，恢復微量飢餓並扣減10生命值。", "danger");
+                }
+            } else {
+                if (game.resources.cookedMeat > 0) {
+                    game.resources.cookedMeat--;
+                    game.hunger = Math.min(100, game.hunger + 40);
+                    game.hp = Math.min(100, game.hp + 5);
+                    logMsg("🍗 吃了美味熟肉，感覺精力充沛！飢餓值大幅恢復。", "success");
+                }
+            }
+            updateUI();
+        }
+
+        // --- 全局 UI 資料同步 ---
+        function updateUI() {
+            if (game.resources.gunpowder === undefined) game.resources.gunpowder = 0;
+            if (game.resources.m4a1Ammo === undefined) game.resources.m4a1Ammo = 0;
+            if (game.resources.revolverAmmo === undefined) game.resources.revolverAmmo = 0;
+            if (game.resources.m4a1Count === undefined) game.resources.m4a1Count = 0;
+            if (game.resources.revolverCount === undefined) game.resources.revolverCount = 0;
+            if (game.backpackLvl === undefined) game.backpackLvl = 0;
+            if (game.equippedWeapon === undefined) game.equippedWeapon = 'none';
+
+            document.getElementById('hp-bar').style.width = `${game.hp}%`;
+            document.getElementById('hp-text').innerText = `${game.hp}/100`;
+
+            document.getElementById('hunger-bar').style.width = `${game.hunger}%`;
+            document.getElementById('hunger-text').innerText = `${game.hunger}/100`;
+
+            document.getElementById('stamina-bar').style.width = `${(game.stamina / 500) * 100}%`;
+            document.getElementById('stamina-text').innerText = `${game.stamina}/500`;
+
+            document.getElementById('day-counter').innerText = game.day;
+            
+            document.getElementById('time-bar').style.width = `${(game.timeOfDay / 600) * 100}%`;
+            let remainingMins = Math.max(0, Math.floor(300 - (game.timeOfDay % 300)));
+            let zoneLabel = game.timeOfDay >= 300 ? `黑夜 (餘: ${remainingMins}秒)` : `白天 (餘: ${remainingMins}秒)`;
+            document.getElementById('time-label').innerText = zoneLabel;
+
+            const list = document.getElementById('inventory-list');
+            let cap = getBackpackCapacity();
+            let total = getTotalItemsCount();
+            
+            document.getElementById('backpack-cap-text').innerText = `容量：${total}/${cap}`;
+            
+            list.innerHTML = `
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">🪵 木頭</span> <span class="font-black text-amber-500">${game.resources.wood}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">⚙️ 鋼材</span> <span class="font-black text-blue-400">${game.resources.steel}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">🧶 皮革</span> <span class="font-black text-amber-300">${game.resources.leather}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">💣 火藥</span> <span class="font-black text-red-400">${game.resources.gunpowder}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs col-span-2">
+                    <span class="text-stone-400">🎒 背包容量等級</span> <span class="font-black text-emerald-400">Lv.${game.backpackLvl} (${cap} 限額)</span>
+                </div>
+            `;
+
+            document.getElementById('cnt-rawmeat').innerText = game.resources.rawMeat;
+            document.getElementById('cnt-cookedmeat').innerText = game.resources.cookedMeat;
+
+            // 裝備卡
+            document.getElementById('equipped-axe').innerText = game.equippedAxe.name;
+            document.getElementById('axe-efficiency').innerText = `採集效率: ${game.equippedAxe.efficiency}x`;

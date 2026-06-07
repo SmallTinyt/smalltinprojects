@@ -1,0 +1,100 @@
+            let clickX = e.clientX - rect.left;
+            let clickY = e.clientY - rect.top;
+            const MAP_RANGE = 3000;
+            let scale = MAP_RANGE / mapCanvas.width;
+            
+            game.customMarker = { x: clickX * scale, y: clickY * scale };
+            logMsg(`📌 設定了自訂地圖目標在: (${Math.round(game.customMarker.x)}, ${Math.round(game.customMarker.y)})`, "info");
+            drawMinimap();
+        });
+
+        // --- ★ 全局 UI 控制綁定 (確保解決 onclick 點選失效問題) ---
+        window.selectRecipe = function(id) {
+            selectedRecipeId = id;
+            updateWorkbenchOverlayUI();
+        };
+
+        window.openWorkbenchUI = openWorkbenchUI;
+        window.closeWorkbenchUI = closeWorkbenchUI;
+        window.upgradeWorkbench = upgradeWorkbench;
+        window.handleShelterAction = handleShelterAction;
+        window.eatMeat = eatMeat;
+        window.equipWeapon = equipWeapon;
+        window.startGame = startGame;
+        window.saveGame = saveGame;
+        window.loadGame = loadGame;
+        window.toggleAudio = toggleAudio;
+        window.toggleMap = toggleMap;
+        window.closeModal = closeModal;
+        window.performAction = performAction;
+        window.craftItem = craftItem;
+
+        function openWorkbenchUI() {
+            if (isMapOpen) return;
+            game.isWorkbenchOpen = true;
+            selectedRecipeId = null; 
+            document.getElementById('workbench-overlay').classList.remove('hidden');
+            updateWorkbenchOverlayUI();
+            playSound('chime');
+        }
+
+        function closeWorkbenchUI() {
+            game.isWorkbenchOpen = false;
+            document.getElementById('workbench-overlay').classList.add('hidden');
+        }
+
+        function updateWorkbenchOverlayUI() {
+            document.getElementById('wb-overlay-level').innerText = game.workbenchLvl;
+            
+            const btnUpgrade = document.getElementById('btn-upgrade-workbench-overlay');
+            if (game.workbenchLvl === 1) {
+                btnUpgrade.innerText = "升級 (木:50 鋼:30)";
+                btnUpgrade.removeAttribute('disabled');
+            } else if (game.workbenchLvl === 2) {
+                btnUpgrade.innerText = "升級 (木:100 鋼:80)";
+                btnUpgrade.removeAttribute('disabled');
+            } else {
+                btnUpgrade.innerText = "已達最高級(3)";
+                btnUpgrade.setAttribute('disabled', 'true');
+            }
+
+            // 動態渲染左側配方列表 (修復並綁定全域 selectRecipe)
+            const recipeList = document.getElementById('wb-recipe-list');
+            recipeList.innerHTML = '';
+            RECIPES.forEach(recipe => {
+                let locked = game.workbenchLvl < recipe.minLvl;
+                let activeClass = selectedRecipeId === recipe.id ? 'border-amber-500 bg-stone-850 shadow-md ring-1 ring-amber-500/50' : 'border-stone-850 bg-stone-900/60';
+                let icon = getRecipeEmoji(recipe.id);
+                
+                recipeList.innerHTML += `
+                    <div onclick="window.selectRecipe('${recipe.id}')" class="p-3 rounded-xl border ${activeClass} ${locked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:border-stone-700 hover:bg-stone-800/40'} transition flex items-center justify-between gap-3">
+                        <div class="flex items-center gap-2.5 overflow-hidden">
+                            <span class="text-2xl">${icon}</span>
+                            <div class="truncate">
+                                <h4 class="text-xs font-bold text-white">${recipe.name}</h4>
+                                <p class="text-[9px] text-stone-500 mt-0.5">${recipe.desc}</p>
+                            </div>
+                        </div>
+                        ${recipe.minLvl > 1 ? `<span class="text-[9px] bg-indigo-950 text-indigo-400 px-1 py-0.5 rounded shrink-0">LV.${recipe.minLvl}</span>` : ''}
+                    </div>`;
+            });
+
+            // 動態渲染右側確認製作頁面
+            const detailPane = document.getElementById('wb-detail-pane');
+            if (!selectedRecipeId) {
+                detailPane.innerHTML = `
+                    <div class="flex-1 flex flex-col items-center justify-center text-stone-500 text-xs">
+                        <span class="text-4xl mb-3">👈</span>
+                        <span>請點選左側配方</span>
+                        <span class="text-[10px] mt-1 text-stone-600">以開啟確認製作頁面</span>
+                    </div>`;
+                return;
+            }
+
+            const recipe = RECIPES.find(r => r.id === selectedRecipeId);
+            let locked = game.workbenchLvl < recipe.minLvl;
+            let icon = getRecipeEmoji(recipe.id);
+            
+            let canCraft = true;
+            let costHtml = [];
+            for (let res in recipe.cost) {

@@ -1,0 +1,76 @@
+            document.getElementById('equipped-clothes').innerText = game.equippedClothes ? game.equippedClothes.name : '無衣物';
+            document.getElementById('clothes-warmth').innerText = `防寒: ${game.equippedClothes ? game.equippedClothes.warmth*100 : 0}%`;
+            document.getElementById('equipped-bed').innerText = `目前：${game.equippedBed.name} (精力效率: ${game.equippedBed.staminaRate}x)`;
+
+            // 手持與副手武器/子彈提示
+            const eqWeaponText = document.getElementById('equipped-weapon');
+            const eqWeaponAmmo = document.getElementById('equipped-weapon-ammo');
+            if (game.equippedWeapon === 'none') {
+                eqWeaponText.innerText = "當前手持: 採集工具/斧頭";
+                eqWeaponAmmo.innerText = "點擊地圖資源點進行砍伐與採集";
+            } else if (game.equippedWeapon === 'm4a1') {
+                eqWeaponText.innerText = "當前手持: M4A1 突擊步槍";
+                eqWeaponAmmo.innerText = `剩餘子彈: ${game.resources.m4a1Ammo} 發 (按住點擊全自動開火)`;
+            } else if (game.equippedWeapon === 'revolver') {
+                eqWeaponText.innerText = "當前手持: .357 左輪手槍";
+                eqWeaponAmmo.innerText = `剩餘子彈: ${game.resources.revolverAmmo} 發 (點擊單發重火力開火)`;
+            }
+
+            // 快速武器切換鈕
+            const switcher = document.getElementById('weapon-switcher-container');
+            if (switcher) {
+                let btnsHTML = `<button onclick="window.equipWeapon('none')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'none' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">手工具</button>`;
+                if (game.resources.m4a1Count > 0) {
+                    btnsHTML += `<button onclick="window.equipWeapon('m4a1')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'm4a1' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">M4A1 (${game.resources.m4a1Ammo})</button>`;
+                }
+                if (game.resources.revolverCount > 0) {
+                    btnsHTML += `<button onclick="window.equipWeapon('revolver')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'revolver' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">.357 (${game.resources.revolverAmmo})</button>`;
+                }
+                switcher.innerHTML = btnsHTML;
+            }
+
+            const shelterTitle = document.getElementById('shelter-title'), shelterDesc = document.getElementById('shelter-desc'), shelterBtn = document.getElementById('btn-upgrade-shelter');
+            if (game.shelter.level === -1 && !game.shelter.upgrading) {
+                document.getElementById('shelter-icon').innerText = "⛺";
+                shelterTitle.innerText = "庇護所 (未建造)";
+                shelterDesc.innerText = "建造以完全阻絕極寒！需：木頭 x30, 鋼鐵 x20";
+                shelterBtn.innerText = "建造 0 級庇護所"; shelterBtn.removeAttribute('disabled');
+                document.getElementById('shelter-progress-container').classList.add('hidden');
+            } else if (game.shelter.upgrading) {
+                shelterTitle.innerText = `庇護所 施工中... ➔ LV.${game.shelter.targetLevel}`;
+                shelterBtn.setAttribute('disabled', 'true'); shelterBtn.innerText = "施工中...";
+                document.getElementById('shelter-progress-container').classList.remove('hidden');
+                let t = game.shelter.targetLevel; let total = t===1?1:(t===2?3:(t===3?5:10));
+                document.getElementById('shelter-progress-bar').style.width = `${((total - game.shelter.daysRemaining) / total) * 100}%`;
+                document.getElementById('shelter-timer').innerText = `剩餘: ${game.shelter.daysRemaining} 天`;
+            } else {
+                document.getElementById('shelter-icon').innerText = game.shelter.level >= 1 ? "🏡" : "⛺";
+                shelterTitle.innerText = `庇護所 (LV.${game.shelter.level})`; document.getElementById('shelter-progress-container').classList.add('hidden');
+                shelterBtn.removeAttribute('disabled');
+                let next = game.shelter.level + 1; let cw = 30 * Math.pow(2, next), cs = 20 * Math.pow(2, next);
+                shelterDesc.innerText = `升至 LV.${next} 需：木頭 x${cw}, 鋼鐵 x${cs}`; shelterBtn.innerText = `升級至 ${next} 級`;
+            }
+
+            // 同步更新工作台專屬 UI (若工作台開啟中)
+            if (game.isWorkbenchOpen) {
+                updateWorkbenchOverlayUI();
+            }
+        }
+
+        function resizeCanvas() {
+            const targetRatio = 16 / 9;
+            let w = window.innerWidth;
+            let h = window.innerHeight;
+            
+            if (w / h > targetRatio) {
+                canvas.height = h;
+                canvas.width = h * targetRatio;
+            } else {
+                canvas.width = w;
+                canvas.height = w / targetRatio;
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+    </script>
+</body>
+</html>
