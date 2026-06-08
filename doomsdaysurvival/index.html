@@ -31,10 +31,30 @@
             border-radius: 3px;
         }
         /* 模式按鈕啟用狀態 */
-        .mode-btn.active {
+        
+.mode-btn.active {
             background-color: #d97706;
             color: white;
         }
+.workbench-item{
+border:1px solid #444;
+border-radius:12px;
+padding:10px;
+min-height:140px;
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+text-align:center;
+transition:.2s;
+}
+.workbench-item:hover{transform:scale(1.03);border-color:#f59e0b;}
+.workbench-item.locked{opacity:.35;}
+#workbench-overlay,
+#workbench-overlay * {
+    pointer-events: auto !important;
+}
+
     </style>
 </head>
 <body class="text-stone-100 h-screen w-screen relative select-none">
@@ -102,13 +122,13 @@
             <!-- 右側快速控制與存檔 -->
             <div class="flex flex-col gap-2 pointer-events-auto">
                 <div class="bg-black/75 backdrop-blur-md p-2 md:p-3 rounded-xl border border-stone-700/80 flex gap-2">
-                    <button onclick="saveGame()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1.5 md:px-3 rounded text-[10px] md:text-xs transition flex items-center gap-1">
+                    <button onmousedown="saveGame()" class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1.5 md:px-3 rounded text-[10px] md:text-xs transition flex items-center gap-1">
                         <i data-lucide="save" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">儲存</span>
                     </button>
-                    <button onclick="loadGame()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-2 py-1.5 md:px-3 rounded text-[10px] md:text-xs transition flex items-center gap-1">
+                    <button onmousedown="loadGame()" class="bg-green-600 hover:bg-green-700 text-white font-bold px-2 py-1.5 md:px-3 rounded text-[10px] md:text-xs transition flex items-center gap-1">
                         <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> <span class="hidden md:inline">讀檔</span>
                     </button>
-                    <button onclick="toggleAudio()" id="audio-toggle-btn" class="bg-stone-700 hover:bg-stone-600 text-white p-1.5 rounded transition">
+                    <button onmousedown="toggleAudio()" id="audio-toggle-btn" class="bg-stone-700 hover:bg-stone-600 text-white p-1.5 rounded transition">
                         <i data-lucide="volume-2" class="w-3.5 h-3.5 md:w-4 md:h-4"></i>
                     </button>
                 </div>
@@ -131,10 +151,10 @@
             <div class="bg-black/85 backdrop-blur-md p-4 rounded-2xl border border-stone-700/80 w-72 md:w-80 shadow-2xl pointer-events-auto flex flex-col gap-3 max-h-[320px] overflow-y-auto">
                 <!-- 標籤頁切換 -->
                 <div class="flex gap-1 border-b border-stone-800 pb-2">
-                    <button onclick="switchTab('inventory')" id="tab-inventory" class="flex-1 py-1 text-xs font-bold rounded text-amber-500 bg-stone-900 transition">
+                    <button onmousedown="switchTab('inventory')" id="tab-inventory" class="flex-1 py-1 text-xs font-bold rounded text-amber-500 bg-stone-900 transition">
                         物資
                     </button>
-                    <button onclick="switchTab('shelter')" id="tab-shelter" class="flex-1 py-1 text-xs font-bold rounded text-stone-400 hover:text-stone-200 transition">
+                    <button onmousedown="switchTab('shelter')" id="tab-shelter" class="flex-1 py-1 text-xs font-bold rounded text-stone-400 hover:text-stone-200 transition">
                         庇護所
                     </button>
                 </div>
@@ -202,7 +222,7 @@
                             </div>
                         </div>
 
-                        <button id="btn-upgrade-shelter" onclick="handleShelterAction()" class="w-full mt-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-stone-800 text-white font-bold text-xs py-2 rounded transition">
+                        <button id="btn-upgrade-shelter" onmousedown="handleShelterAction()" class="w-full mt-2.5 bg-amber-600 hover:bg-amber-500 disabled:bg-stone-800 text-white font-bold text-xs py-2 rounded transition">
                             建造 (木:30 鋼:20)
                         </button>
                     </div>
@@ -226,7 +246,7 @@
                     <div id="joystick-knob" class="w-10 h-10 bg-stone-500/80 rounded-full border border-stone-400 pointer-events-none transition-transform duration-75"></div>
                 </div>
                 <!-- 互動大按鈕 -->
-                <button onclick="performAction()" class="w-16 h-16 bg-amber-600 active:bg-amber-700 border-2 border-amber-400 rounded-full flex flex-col items-center justify-center shadow-lg font-black text-xs text-white">
+                <button onmousedown="performAction()" class="w-16 h-16 bg-amber-600 active:bg-amber-700 border-2 border-amber-400 rounded-full flex flex-col items-center justify-center shadow-lg font-black text-xs text-white">
                     <span>ACTION</span>
                     <span class="text-[9px] font-normal text-amber-200">互動/火控/採集</span>
                 </button>
@@ -238,7 +258,7 @@
     <div id="workbench-overlay" class="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 hidden pointer-events-auto backdrop-blur-sm">
         <div class="bg-stone-900 border border-stone-700 rounded-2xl w-full max-w-2xl overflow-hidden relative shadow-2xl flex flex-col h-[520px]">
             <!-- 紅色關閉 X 按鈕 -->
-            <button onclick="game.workbenchManuallyClosed = true; closeWorkbenchUI();" class="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full transition z-50">
+            <button onmousedown="game.workbenchManuallyClosed = true; closeWorkbenchUI();" class="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full transition z-50">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
             
@@ -248,14 +268,14 @@
                     <span class="text-2xl">🔧</span>
                     <h3 class="font-black text-white text-base">工作台 (LV.<span id="wb-overlay-level">1</span>)</h3>
                 </div>
-                <button onclick="upgradeWorkbench()" id="btn-upgrade-workbench-overlay" class="bg-amber-600 hover:bg-amber-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition mr-8 shadow-lg shadow-amber-900/20">
+                <button onmousedown="upgradeWorkbench()" id="btn-upgrade-workbench-overlay" class="bg-amber-600 hover:bg-amber-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition mr-8 shadow-lg shadow-amber-900/20">
                     升級 (木:50 鋼:30)
                 </button>
             </div>
             
             <!-- 下方主區：置中列表 -->
             <div class="flex-1 overflow-y-auto p-4 flex flex-col items-center bg-stone-950/20">
-                <div class="w-full max-w-md space-y-3 pb-6" id="wb-recipe-list">
+                <div class="w-full max-w-5xl grid grid-cols-3 md:grid-cols-4 gap-3 pb-6" id="wb-recipe-list">
                     <!-- 動態渲染配方列表 (點擊跳出確認彈窗) -->
                 </div>
             </div>
@@ -276,7 +296,7 @@
                 <h3 class="text-sm font-bold text-stone-300 flex items-center gap-1.5">
                     <i data-lucide="map" class="w-4 h-4 text-emerald-500"></i> 生存衛星地圖
                 </h3>
-                <button onclick="toggleMap()" class="text-stone-500 hover:text-stone-300 transition">
+                <button onmousedown="toggleMap()" class="text-stone-500 hover:text-stone-300 transition">
                     <i data-lucide="x" class="w-5 h-5"></i>
                 </button>
             </div>
@@ -296,11 +316,14 @@
         <div class="bg-stone-900 border border-stone-700 p-5 rounded-2xl w-full max-w-xs text-center flex flex-col gap-3 shadow-2xl">
             <h3 id="modal-title" class="font-black text-lg text-white">提示訊息</h3>
             <p id="modal-desc" class="text-xs text-stone-400 leading-relaxed">內文描述說明</p>
-            <button onclick="closeModal()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2 rounded-xl transition mt-1">
+            <button onmousedown="closeModal()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2 rounded-xl transition mt-1">
                 我知道了
             </button>
         </div>
     </div>
+
+    
+    <div id="insufficient-materials" class="absolute top-16 left-1/2 -translate-x-1/2 z-[70] text-red-500 font-black text-2xl hidden pointer-events-none">材料不足</div>
 
     <!-- 快速通知日誌框 -->
     <div class="absolute bottom-4 left-4 z-15 w-64 md:w-80 pointer-events-auto flex flex-col gap-1">
@@ -314,8 +337,8 @@
                 </div>
             </div>
             <div class="flex gap-1.5 shrink-0">
-                <button onclick="eatMeat('raw')" class="bg-rose-950 hover:bg-rose-900 text-rose-300 text-[10px] px-2 py-1 rounded border border-rose-800 transition">吃生肉</button>
-                <button onclick="eatMeat('cooked')" class="bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-[10px] px-2 py-1 rounded border border-amber-800 transition">吃熟肉</button>
+                <button onmousedown="eatMeat('raw')" class="bg-rose-950 hover:bg-rose-900 text-rose-300 text-[10px] px-2 py-1 rounded border border-rose-800 transition">吃生肉</button>
+                <button onmousedown="eatMeat('cooked')" class="bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-[10px] px-2 py-1 rounded border border-amber-800 transition">吃熟肉</button>
             </div>
         </div>
 
@@ -345,10 +368,10 @@
         </div>
 
         <div class="space-y-3 w-64">
-            <button onclick="startGame(false)" class="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-white font-bold py-3 px-6 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.5)] text-sm transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+            <button onmousedown="startGame(false)" class="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-white font-bold py-3 px-6 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.5)] text-sm transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
                 <i data-lucide="play" class="w-4 h-4"></i> 開始全新生存
             </button>
-            <button id="btn-load-start" onclick="startGame(true)" class="w-full bg-stone-800 hover:bg-stone-700 disabled:opacity-40 disabled:hover:bg-stone-800 text-stone-300 font-bold py-2.5 px-6 rounded-lg text-xs transition flex items-center justify-center gap-2">
+            <button id="btn-load-start" onmousedown="startGame(true)" class="w-full bg-stone-800 hover:bg-stone-700 disabled:opacity-40 disabled:hover:bg-stone-800 text-stone-300 font-bold py-2.5 px-6 rounded-lg text-xs transition flex items-center justify-center gap-2">
                 <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> 繼續上次進度
             </button>
         </div>
@@ -430,6 +453,7 @@
             if (lvl === 1) return 500;
             if (lvl === 2) return 750;
             if (lvl === 3) return 1000;
+            if (lvl === 50) return 9999; // 作弊用無限背包
             return 250; 
         }
 
@@ -600,7 +624,22 @@
             box.scrollTop = box.scrollHeight;
         }
 
-        function switchTab(tab) {
+        
+        function showInsufficientMaterials() {
+            const el = document.getElementById('insufficient-materials');
+            if(!el) return;
+            el.classList.remove('hidden');
+            clearTimeout(window.insufficientMatTimer);
+            window.insufficientMatTimer = setTimeout(()=>el.classList.add('hidden'),1500);
+        }
+
+
+function recipeIcon(type){
+const m={tool:'🪓',weapon:'⚔️',building:'🏗️',clothes:'👕',bed:'🛏️',backpack:'🎒',gun:'🔫',ammo:'📦'};
+return m[type]||'📦';
+}
+
+function switchTab(tab) {
             activeTab = tab;
             document.querySelectorAll('[id^="tab-"]').forEach(el => {
                 el.classList.remove('text-amber-500', 'bg-stone-900');
@@ -1207,7 +1246,7 @@
             drawMinimap();
         });
 
-        // --- ★ 全局 UI 控制綁定 (確保解決 onclick 點選失效問題) ---
+        // --- ★ 全局 UI 控制綁定 (確保解決 onmousedown 點選失效問題) ---
         window.confirmCraft = function(id) {
             const recipe = RECIPES.find(r => r.id === id);
             if (game.workbenchLvl < recipe.minLvl) {
@@ -1250,9 +1289,9 @@
                     </div>
                 </div>
                 <div class="flex border-t border-stone-800">
-                    <button onclick="document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 text-stone-400 hover:text-white hover:bg-stone-800 transition text-xs font-bold">取消</button>
+                    <button onmousedown="document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 text-stone-400 hover:text-white hover:bg-stone-800 transition text-xs font-bold">取消</button>
                     ${canCraft 
-                        ? `<button onclick="window.craftItem('${recipe.id}'); document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white transition text-xs font-bold">確認製作</button>`
+                        ? `<button onmousedown="window.craftItem('${recipe.id}'); document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white transition text-xs font-bold">確認製作</button>`
                         : `<button disabled class="flex-1 py-3 bg-stone-800 text-stone-600 transition text-xs font-bold cursor-not-allowed">材料不足</button>`
                     }
                 </div>
@@ -1289,47 +1328,138 @@
         }
 
         function updateWorkbenchOverlayUI() {
-            document.getElementById('wb-overlay-level').innerText = game.workbenchLvl;
-            
-            const btnUpgrade = document.getElementById('btn-upgrade-workbench-overlay');
-            if (game.workbenchLvl === 1) {
-                btnUpgrade.innerText = "升級 (木:50 鋼:30)";
-                btnUpgrade.removeAttribute('disabled');
-            } else if (game.workbenchLvl === 2) {
-                btnUpgrade.innerText = "升級 (木:100 鋼:80)";
-                btnUpgrade.removeAttribute('disabled');
-            } else {
-                btnUpgrade.innerText = "已達最高級(3)";
-                btnUpgrade.setAttribute('disabled', 'true');
-            }
 
-            // 動態渲染置中配方列表
-            const recipeList = document.getElementById('wb-recipe-list');
+            document.getElementById('wb-overlay-level').innerText =
+                game.workbenchLvl;
+
+            const recipeList =
+                document.getElementById('wb-recipe-list');
+
+            recipeList.className =
+                "w-full max-w-6xl mx-auto grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-6";
+
             recipeList.innerHTML = '';
+
             RECIPES.forEach(recipe => {
-                let locked = game.workbenchLvl < recipe.minLvl;
-                let icon = getRecipeEmoji(recipe.id);
-                
+
+                const locked =
+                    game.workbenchLvl < recipe.minLvl;
+
                 let canCraft = true;
+
                 for (let res in recipe.cost) {
-                    if ((game.resources[res] || 0) < recipe.cost[res]) canCraft = false;
+                    if ((game.resources[res] || 0) < recipe.cost[res]) {
+                        canCraft = false;
+                    }
                 }
-                
+
+                let costs = '';
+
+                for (let res in recipe.cost) {
+
+                    costs += `
+                        <div class="text-[10px] text-stone-400">
+                            ${getResourceDisplayName(res)}
+                            ×${recipe.cost[res]}
+                        </div>
+                    `;
+                }
+
+                let icon = getRecipeEmoji(recipe.id);
+
                 recipeList.innerHTML += `
-                    <div onclick="window.confirmCraft('${recipe.id}')" class="p-3 rounded-xl border border-stone-800 bg-stone-900/60 ${locked ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer hover:border-amber-500 hover:bg-stone-800/80'} transition flex items-center justify-between gap-3">
-                        <div class="flex items-center gap-3 overflow-hidden">
-                            <span class="text-3xl">${icon}</span>
-                            <div class="truncate text-left">
-                                <h4 class="text-sm font-bold text-white">${recipe.name}</h4>
-                                <p class="text-[10px] text-stone-500 mt-0.5">${recipe.desc}</p>
-                            </div>
+
+                <div title="${recipe.desc}" data-recipe="${locked ? '' : recipe.id}"
+                    class="
+                        relative
+                        h-44
+                        bg-stone-900
+                        border
+                        rounded-lg
+                        p-2
+                        flex
+                        flex-col
+                        items-center
+                        justify-center
+                        text-center
+
+                        ${
+                            locked
+                            ? 'opacity-50'
+                            : 'cursor-pointer hover:border-amber-500'
+                        }
+                    "
+
+                >
+
+                    <div class="text-4xl">
+                        ${icon}
+                    </div>
+
+                    <div class="font-bold text-xs mt-2">
+                        ${recipe.name}
+                    </div>
+
+                    <div class="text-[10px] text-stone-500">
+                        LV.${recipe.minLvl}
+                    </div>
+
+                    <div class="mt-2">
+                        ${costs}
+                    </div>
+
+                    ${
+                        locked
+                        ?
+                        `
+                        <div
+                            class="
+                                absolute
+                                inset-0
+                                bg-black/70
+                                flex
+                                items-center
+                                justify-center
+                                text-red-400
+                                font-black
+                            ">
+                            未解鎖
                         </div>
-                        <div class="flex flex-col items-end shrink-0 gap-1">
-                            ${recipe.minLvl > 1 ? `<span class="text-[9px] bg-indigo-950 text-indigo-400 px-1 py-0.5 rounded">LV.${recipe.minLvl}</span>` : ''}
-                            ${!locked ? (canCraft ? `<span class="text-[10px] text-emerald-400 font-bold">可製作</span>` : `<span class="text-[10px] text-red-400 font-bold">材料不足</span>`) : ''}
+                        `
+                        :
+                        ''
+                    }
+
+                    ${
+                        !locked && !canCraft
+                        ?
+                        `
+                        <div
+                            class="
+                                absolute
+                                bottom-1
+                                text-red-400
+                                text-[10px]
+                                font-bold
+                            ">
+                            材料不足
                         </div>
-                    </div>`;
+                        `
+                        :
+                        ''
+                    }
+
+                </div>
+                `;
             });
+            recipeList.onmousedown = function(e) {
+                const card = e.target.closest('[data-recipe]');
+                if (!card) return;
+                const recipeId = card.dataset.recipe;
+                if (!recipeId) return;
+                console.log("recipe clicked", recipeId);
+                craftItem(recipeId);
+            };
         }
 
         function getRecipeEmoji(id) {
@@ -1893,6 +2023,10 @@
                     updateUI(); return true;
                 }
                 else if (nearestObj.type === 'bed') {
+                    if (game.timeOfDay < 300) {
+                        showModal("🌞 還不能睡覺", "只有晚上才能睡覺。");
+                        return true;
+                    }
                     logMsg("💤 躺在床上睡覺...", "info");
                     game.stamina = 500;
                     game.hp = Math.min(100, game.hp + 20);
@@ -1969,7 +2103,7 @@
                 if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) nearWorkbench = true;
             });
 
-            if (!nearWorkbench) { showModal("遠離工作台", "請靠近工作台旁才能合成。"); return; }
+            //if (!nearWorkbench) { showModal("遠離工作台", "請靠近工作台旁才能合成。"); return; }
             if (game.workbenchLvl < recipe.minLvl) { logMsg(`工作台等級不足，需要 LV.${recipe.minLvl}`, "warning"); return; }
 
             let cap = getBackpackCapacity();
@@ -2112,12 +2246,12 @@
             // 快速武器切換鈕
             const switcher = document.getElementById('weapon-switcher-container');
             if (switcher) {
-                let btnsHTML = `<button onclick="window.equipWeapon('none')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'none' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">手工具</button>`;
+                let btnsHTML = `<button onmousedown="window.equipWeapon('none')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'none' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">手工具</button>`;
                 if (game.resources.m4a1Count > 0) {
-                    btnsHTML += `<button onclick="window.equipWeapon('m4a1')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'm4a1' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">M4A1 (${game.resources.m4a1Ammo})</button>`;
+                    btnsHTML += `<button onmousedown="window.equipWeapon('m4a1')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'm4a1' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">M4A1 (${game.resources.m4a1Ammo})</button>`;
                 }
                 if (game.resources.revolverCount > 0) {
-                    btnsHTML += `<button onclick="window.equipWeapon('revolver')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'revolver' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">.357 (${game.resources.revolverAmmo})</button>`;
+                    btnsHTML += `<button onmousedown="window.equipWeapon('revolver')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'revolver' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">.357 (${game.resources.revolverAmmo})</button>`;
                 }
                 switcher.innerHTML = btnsHTML;
             }
@@ -2164,6 +2298,10 @@
             }
         }
         window.addEventListener('resize', resizeCanvas);
+        document.querySelectorAll('#workbench-overlay *')
+        .forEach(el => {
+            el.style.pointerEvents = 'auto';
+        });
     </script>
 </body>
 </html>
