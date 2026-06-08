@@ -1,0 +1,250 @@
+                    <span class="text-[9px] font-normal text-amber-200">互動/火控/採集</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ★ 工作台全螢幕彈窗介面 (走近自動開、遠離/按X/按E鍵關閉) -->
+    <div id="workbench-overlay" class="absolute inset-0 z-30 bg-black/80 flex items-center justify-center p-4 hidden pointer-events-auto backdrop-blur-sm">
+        <div class="bg-stone-900 border border-stone-700 rounded-2xl w-full max-w-2xl overflow-hidden relative shadow-2xl flex flex-col h-[520px]">
+            <!-- 紅色關閉 X 按鈕 -->
+            <button onmousedown="game.workbenchManuallyClosed = true; closeWorkbenchUI();" class="absolute top-4 right-4 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full transition z-50">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            
+            <!-- 上標題欄與升級按鈕 -->
+            <div class="border-b border-stone-800 p-4 flex justify-between items-center bg-stone-950/60 shrink-0">
+                <div class="flex items-center gap-2">
+                    <span class="text-2xl">🔧</span>
+                    <h3 class="font-black text-white text-base">工作台 (LV.<span id="wb-overlay-level">1</span>)</h3>
+                </div>
+                <button onmousedown="upgradeWorkbench()" id="btn-upgrade-workbench-overlay" class="bg-amber-600 hover:bg-amber-700 disabled:bg-stone-800 disabled:text-stone-600 text-white font-bold text-xs px-3.5 py-1.5 rounded-xl transition mr-8 shadow-lg shadow-amber-900/20">
+                    升級 (木:50 鋼:30)
+                </button>
+            </div>
+            
+            <!-- 下方主區：置中列表 -->
+            <div class="flex-1 overflow-y-auto p-4 flex flex-col items-center bg-stone-950/20">
+                <div class="w-full max-w-5xl grid grid-cols-3 md:grid-cols-4 gap-3 pb-6" id="wb-recipe-list">
+                    <!-- 動態渲染配方列表 (點擊跳出確認彈窗) -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ★ 確認購買/製作彈窗 -->
+    <div id="craft-confirm-modal" class="absolute inset-0 z-[60] bg-black/80 flex items-center justify-center p-4 hidden pointer-events-auto backdrop-blur-sm">
+        <div id="craft-confirm-content" class="bg-stone-900 border border-stone-700 rounded-2xl w-full max-w-sm overflow-hidden shadow-2xl flex flex-col">
+            <!-- 內容由 JS 動態填入 -->
+        </div>
+    </div>
+
+    <!-- 地圖覆蓋模態框 -->
+    <div id="map-overlay" class="absolute inset-0 z-20 bg-stone-950/90 flex flex-col items-center justify-center p-4 hidden">
+        <div class="bg-stone-900 border border-stone-700 p-4 rounded-2xl flex flex-col items-center gap-3 w-full max-w-lg shadow-[0_0_50px_rgba(0,0,0,0.8)]">
+            <div class="flex justify-between w-full border-b border-stone-800 pb-2">
+                <h3 class="text-sm font-bold text-stone-300 flex items-center gap-1.5">
+                    <i data-lucide="map" class="w-4 h-4 text-emerald-500"></i> 生存衛星地圖
+                </h3>
+                <button onmousedown="toggleMap()" class="text-stone-500 hover:text-stone-300 transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+            <!-- 地圖畫布容器 -->
+            <div class="relative bg-black rounded-lg border border-stone-950 p-1 flex items-center justify-center overflow-hidden">
+                <canvas id="mapCanvas" class="w-[280px] h-[280px] md:w-[400px] md:h-[400px]"></canvas>
+            </div>
+            <div class="text-[10px] text-stone-500 flex justify-between w-full">
+                <span>🔴 滑鼠左鍵點擊地圖可設置自訂紅色標記</span>
+                <span>🟢 綠點為玩家自身</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- 訊息彈窗 (Modal) -->
+    <div id="modal-container" class="absolute inset-0 z-40 bg-black/80 flex items-center justify-center p-4 hidden">
+        <div class="bg-stone-900 border border-stone-700 p-5 rounded-2xl w-full max-w-xs text-center flex flex-col gap-3 shadow-2xl">
+            <h3 id="modal-title" class="font-black text-lg text-white">提示訊息</h3>
+            <p id="modal-desc" class="text-xs text-stone-400 leading-relaxed">內文描述說明</p>
+            <button onmousedown="closeModal()" class="bg-amber-600 hover:bg-amber-500 text-white font-bold text-xs py-2 rounded-xl transition mt-1">
+                我知道了
+            </button>
+        </div>
+    </div>
+
+    
+    <div id="insufficient-materials" class="absolute top-16 left-1/2 -translate-x-1/2 z-[70] text-red-500 font-black text-2xl hidden pointer-events-none">材料不足</div>
+
+    <!-- 快速通知日誌框 -->
+    <div class="absolute bottom-4 left-4 z-15 w-64 md:w-80 pointer-events-auto flex flex-col gap-1">
+        <!-- 快速吃肉選項 -->
+        <div class="bg-black/80 backdrop-blur-md p-2 rounded-xl border border-stone-800/80 flex items-center justify-between gap-2 shadow-lg mb-1 pointer-events-auto">
+            <div class="flex items-center gap-2 overflow-hidden">
+                <span class="text-xl">🥩</span>
+                <div class="text-[10px] overflow-hidden">
+                    <div class="text-stone-300 font-bold truncate">生肉:<span id="cnt-rawmeat">0</span> 熟肉:<span id="cnt-cookedmeat">0</span></div>
+                    <p class="text-[8px] text-stone-400 hidden md:block">熟肉可恢復 40% 飢餓，生肉恢復 10% 飢餓並扣血</p>
+                </div>
+            </div>
+            <div class="flex gap-1.5 shrink-0">
+                <button onmousedown="eatMeat('raw')" class="bg-rose-950 hover:bg-rose-900 text-rose-300 text-[10px] px-2 py-1 rounded border border-rose-800 transition">吃生肉</button>
+                <button onmousedown="eatMeat('cooked')" class="bg-amber-900/80 hover:bg-amber-800 text-amber-200 text-[10px] px-2 py-1 rounded border border-amber-800 transition">吃熟肉</button>
+            </div>
+        </div>
+
+        <!-- 系統日誌訊息 -->
+        <div id="log-box" class="h-20 bg-stone-950 p-2 rounded border border-stone-900 text-[11px] overflow-y-auto font-mono text-stone-400 space-y-0.5">
+            <div>[系統] 遊戲已載入，準備迎接末日的挑戰。</div>
+        </div>
+    </div>
+
+    <!-- 遊戲結束/開始 覆蓋面板 -->
+    <div id="start-overlay" class="absolute inset-0 z-50 bg-stone-950/95 flex flex-col items-center justify-center p-6 text-center">
+        <h1 class="text-3xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-red-600 via-amber-500 to-yellow-500 mb-2 tracking-widest" style="font-family: 'ZCOOL KuaiLe', sans-serif;">
+            末日都市：極限生存 2.5D
+        </h1>
+        <p class="text-stone-400 text-xs md:text-sm max-w-md mb-6 leading-relaxed">
+            你被困在一個資源匱乏、充滿極低溫威脅的末日郊區。你需要砍伐樹木、收集鋼材與獸皮、建造並升級你強大的避寒庇護所，努力生存下去。
+        </p>
+
+        <!-- 模式設定 -->
+        <div class="bg-stone-900/80 border border-stone-800 p-4 rounded-xl max-w-sm w-full mb-6">
+            <p class="text-stone-300 text-sm font-bold mb-3">選擇生存目標模式：</p>
+            <div class="flex gap-2 justify-center" id="mode-selector">
+                <button class="mode-btn active px-4 py-2 bg-stone-800 border border-stone-600 rounded text-stone-300 text-sm font-bold transition flex-1" data-mode="100">100 天</button>
+                <button class="mode-btn px-4 py-2 bg-stone-800 border border-stone-600 rounded text-stone-300 text-sm font-bold transition flex-1" data-mode="365">365 天</button>
+                <button class="mode-btn px-4 py-2 bg-stone-800 border border-stone-600 rounded text-stone-300 text-sm font-bold transition flex-1" data-mode="endless">無盡模式</button>
+            </div>
+        </div>
+
+        <div class="space-y-3 w-64">
+            <button onmousedown="startGame(false)" class="w-full bg-gradient-to-r from-amber-600 to-yellow-500 hover:from-amber-500 hover:to-yellow-400 text-white font-bold py-3 px-6 rounded-lg shadow-[0_0_15px_rgba(245,158,11,0.5)] text-sm transition transform hover:-translate-y-0.5 active:translate-y-0 flex items-center justify-center gap-2">
+                <i data-lucide="play" class="w-4 h-4"></i> 開始全新生存
+            </button>
+            <button id="btn-load-start" onmousedown="startGame(true)" class="w-full bg-stone-800 hover:bg-stone-700 disabled:opacity-40 disabled:hover:bg-stone-800 text-stone-300 font-bold py-2.5 px-6 rounded-lg text-xs transition flex items-center justify-center gap-2">
+                <i data-lucide="folder-open" class="w-3.5 h-3.5"></i> 繼續上次進度
+            </button>
+        </div>
+
+        <div class="mt-8 text-stone-600 text-[10px]">
+            © v1.0.1 2.5D 高效物理與光影渲染生存沙盒遊戲
+        </div>
+    </div>
+
+    <!-- 腳本區域 -->
+    <script>
+        // --- 核心變數設定 ---
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // ★ 地圖物理世界大小擴大到 10,000 px
+        const WORLD_SIZE = 10000; 
+        
+        let isGameRunning = false;
+        let isMapOpen = false;
+        let lastTime = 0;
+        let activeTab = 'inventory';
+        let selectedMode = '100'; // 100 天
+        let mapObjects = [];
+        let bullets = [];
+        let stepCountReset = 0;
+        let exactFreezeDamage = 2.0;
+
+        // 核心遊戲狀態
+        let game = {
+            day: 1,
+            timeOfDay: 0, // 0.0 ~ 600.0 (一秒約 1 單位. 300秒白天/300秒黑夜)
+            mode: '100',
+            hp: 100,
+            hunger: 100,
+            stamina: 500,
+            backpackLvl: 0, // 背包等級，預設為 0
+            equippedWeapon: 'none', // 'none', 'm4a1', 'revolver'
+            isWorkbenchOpen: false, // 是否開啟工作台 UI
+            wasNearWorkbench: false, // 上一訊框是否在工作台附近
+            workbenchManuallyClosed: false, // 玩家是否手動關閉 (按E/點X) 
+            resources: {
+                wood: 30,
+                steel: 20,
+                leather: 10,
+                rawMeat: 2,
+                cookedMeat: 0,
+                gunpowder: 0,       
+                m4a1Count: 0,       
+                m4a1Ammo: 0,        
+                revolverCount: 0,   
+                revolverAmmo: 0     
+            },
+            workbenchLvl: 1,
+            equippedAxe: { name: "木製斧頭", quality: 0, efficiency: 1 },
+            equippedClothes: null,
+            equippedBed: { name: "乾草睡地", quality: 0, staminaRate: 5 },
+            shelter: {
+                built: false,
+                level: -1,
+                upgrading: false,
+                daysRemaining: 0,
+                targetLevel: 0
+            },
+            player: {
+                x: 300,
+                y: 300,
+                vx: 0,
+                vy: 0,
+                speed: 3.5,
+                stepsCount: 0,
+                facing: 'SE'
+            }
+        };
+
+        // 背包限額輔助函式
+        function getBackpackCapacity() {
+            let lvl = game.backpackLvl || 0;
+            if (lvl === 1) return 500;
+            if (lvl === 2) return 750;
+            if (lvl === 3) return 1000;
+            if (lvl === 50) return 9999; // 作弊用無限背包
+            return 250; 
+        }
+
+        function getTotalItemsCount() {
+            return (game.resources.wood || 0) +
+                   (game.resources.steel || 0) +
+                   (game.resources.leather || 0) +
+                   (game.resources.rawMeat || 0) +
+                   (game.resources.cookedMeat || 0) +
+                   (game.resources.gunpowder || 0) +
+                   (game.resources.m4a1Ammo || 0) +
+                   (game.resources.revolverAmmo || 0);
+        }
+
+        const RECIPES = [
+            { id: 'stone_axe', name: '石製斧頭', type: 'tool', desc: '大幅增加木頭採集效率', cost: { wood: 15, steel: 5 }, minLvl: 1 },
+            { id: 'stone_sword', name: '石製鋼劍', type: 'weapon', desc: '高效擊殺動物以獲取肉塊', cost: { wood: 10, steel: 15 }, minLvl: 1 },
+            { id: 'furnace', name: '野外熔爐', type: 'building', desc: '可煮熟肉類，且在附近提供完全保暖效果', cost: { wood: 10, steel: 15 }, minLvl: 1 },
+            { id: 'clothes_1', name: '一般毛衣', type: 'clothes', desc: '增加 25% 寒冷抗性', cost: { leather: 20 }, minLvl: 1 },
+            { id: 'bed_1', name: '暖木吊床', type: 'bed', desc: '精力恢復速率提升 (10x)', cost: { wood: 40, leather: 10 }, minLvl: 1 },
+            { id: 'backpack_1', name: '戰術背包 Lv.1', type: 'backpack', desc: '提升背包總容量至 500 件物品', cost: { wood: 5, leather: 15 }, minLvl: 1 },
+
+            { id: 'steel_axe', name: '精鋼手斧', type: 'tool', desc: '極高木頭採集效率 (效率 3x)', cost: { wood: 30, steel: 25 }, minLvl: 2 },
+            { id: 'clothes_2', name: '防寒軍大衣', type: 'clothes', desc: '增加 60% 寒冷抗性', cost: { leather: 40, steel: 10 }, minLvl: 2 },
+            { id: 'bed_2', name: '精工軟彈簧床', type: 'bed', desc: '精力恢復速率極致提升 (20x)', cost: { wood: 60, leather: 30, steel: 20 }, minLvl: 2 },
+            { id: 'backpack_2', name: '荒野探險背包 Lv.2', type: 'backpack', desc: '提升背包總容量至 750 件物品', cost: { steel: 10, leather: 25 }, minLvl: 2 },
+
+            { id: 'backpack_3', name: '特戰軍用背包 Lv.3', type: 'backpack', desc: '提升背包總容量至 1000 件物品', cost: { steel: 20, leather: 40 }, minLvl: 3 },
+            { id: 'm4a1', name: 'M4A1 突擊步槍', type: 'gun', desc: '全自動武器，射速極快 (傷害 25 / 爆頭 35)', cost: { steel: 10, wood: 15 }, minLvl: 3 },
+            { id: 'm4a1_ammo', name: 'M4A1 彈藥盒 (30發)', type: 'ammo', desc: '步槍子彈盒。需消耗鋼鐵與火藥製作', cost: { steel: 10, gunpowder: 10 }, minLvl: 3 },
+            { id: 'revolver', name: '.357 左輪手槍', type: 'gun', desc: '高單發傷害致命手槍 (傷害 55 / 爆頭 150)', cost: { steel: 5, wood: 8 }, minLvl: 3 },
+            { id: 'revolver_ammo', name: '.357 彈藥盒 (10發)', type: 'ammo', desc: '手槍子彈盒。需消耗鋼鐵與火藥製作', cost: { steel: 5, gunpowder: 5 }, minLvl: 3 }
+        ];
+
+        // 模式選擇
+        document.querySelectorAll('#mode-selector button').forEach(btn => {
+            btn.addEventListener('click', e => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                e.target.classList.add('active');
+                selectedMode = e.target.getAttribute('data-mode');
+            });
+        });
+
+        // --- 音效管理器 (Web Audio API) ---

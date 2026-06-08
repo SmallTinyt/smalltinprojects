@@ -1,0 +1,250 @@
+                if (!document.getElementById('craft-confirm-modal').classList.contains('hidden')) {
+                    document.getElementById('craft-confirm-modal').classList.add('hidden');
+                } else if (game.isWorkbenchOpen) {
+                    game.workbenchManuallyClosed = true; 
+                    closeWorkbenchUI();
+                } else {
+                    let near = false;
+                    mapObjects.forEach(obj => {
+                        if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) {
+                            near = true;
+                        }
+                    });
+                    if (near) {
+                        game.workbenchManuallyClosed = false;
+                        openWorkbenchUI();
+                    } else {
+                        performAction();
+                    }
+                }
+            }
+            if (e.key.toLowerCase() === 'm') {
+                e.preventDefault();
+                toggleMap();
+            }
+        });
+        window.addEventListener('keyup', e => {
+            keys[e.key.toLowerCase()] = false;
+        });
+
+        // 手機虛擬搖桿
+        const joystickBase = document.getElementById('joystick-base');
+        const joystickKnob = document.getElementById('joystick-knob');
+        let isJoystickActive = false;
+        let joystickStart = { x: 0, y: 0 };
+        let joystickVector = { x: 0, y: 0 };
+
+        joystickBase.addEventListener('touchstart', e => {
+            isJoystickActive = true;
+            const rect = joystickBase.getBoundingClientRect();
+            joystickStart.x = rect.left + rect.width / 2;
+            joystickStart.y = rect.top + rect.height / 2;
+        });
+
+        window.addEventListener('touchmove', e => {
+            if (!isJoystickActive) return;
+            const touch = e.touches[0];
+            const dx = touch.clientX - joystickStart.x;
+            const dy = touch.clientY - joystickStart.y;
+            const dist = Math.hypot(dx, dy);
+            const maxDist = 40;
+
+            let angle = Math.atan2(dy, dx);
+            let moveDist = Math.min(dist, maxDist);
+            
+            joystickKnob.style.transform = `translate(${moveDist * Math.cos(angle)}px, ${moveDist * Math.sin(angle)}px)`;
+            
+            joystickVector.x = Math.cos(angle) * (moveDist / maxDist);
+            joystickVector.y = Math.sin(angle) * (moveDist / maxDist);
+        });
+
+        window.addEventListener('touchend', () => {
+            isJoystickActive = false;
+            joystickKnob.style.transform = `translate(0px, 0px)`;
+            joystickVector = { x: 0, y: 0 };
+        });
+
+        // 手機/網頁滑鼠發射子彈火控系統
+        let isMouseDown = false;
+        let lastShootTime = 0;
+
+        canvas.addEventListener('mousedown', e => {
+            if (!isGameRunning || isMapOpen) return;
+            if (e.target !== canvas) return; 
+            if (game.equippedWeapon === 'none') {
+                performAction();
+                return;
+            }
+            
+            isMouseDown = true;
+            shootAtMouse(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('mouseup', () => {
+            isMouseDown = false;
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            if (isMouseDown && game.equippedWeapon === 'm4a1') {
+                shootAtMouse(e.clientX, e.clientY);
+            }
+        });
+
+        function shootAtMouse(clientX, clientY) {
+            let now = performance.now();
+            let rate = game.equippedWeapon === 'm4a1' ? 150 : 600; 
+            if (now - lastShootTime >= rate) {
+                let rect = canvas.getBoundingClientRect();
+                let mx = clientX - rect.left;
+                let my = clientY - rect.top;
+
+                let rx = mx - canvas.width / 2;
+                let ry = my - canvas.height / 2;
+                let dx = 0.5 * (rx / cos30 + ry / sin30);
+                let dy = 0.5 * (ry / sin30 - rx / cos30);
+
+                let targetX = game.player.x + dx;
+                let targetY = game.player.y + dy;
+
+                fireBullet(targetX, targetY);
+                lastShootTime = now;
+            }
+        }
+
+        function fireBullet(targetX, targetY) {
+            if (!isGameRunning || isMapOpen) return;
+
+            let ammoProp = game.equippedWeapon === 'm4a1' ? 'm4a1Ammo' : 'revolverAmmo';
+            if ((game.resources[ammoProp] || 0) <= 0) {
+                logMsg("🚫 沒有彈藥了！請打開工作台製作對應子彈。", "warning");
+                isMouseDown = false;
+                return;
+            }
+
+            game.resources[ammoProp]--;
+
+            let angle;
+            if (targetX !== undefined && targetY !== undefined) {
+                angle = Math.atan2(targetY - game.player.y, targetX - game.player.x);
+            } else {
+                if (game.player.facing === 'NW') angle = -3 * Math.PI / 4;
+                else if (game.player.facing === 'NE') angle = -Math.PI / 4;
+                else if (game.player.facing === 'SW') angle = 3 * Math.PI / 4;
+                else angle = Math.PI / 4;
+            }
+
+            bullets.push({
+                x: game.player.x,
+                y: game.player.y,
+                vx: Math.cos(angle) * 16,
+                vy: Math.sin(angle) * 16,
+                type: game.equippedWeapon,
+                life: 50 
+            });
+
+            playGunSound(game.equippedWeapon);
+            updateUI();
+        }
+
+        // 隨機生成飄字特效
+        let floatTexts = [];
+        function showFloatText(x, y, text, color) {
+            floatTexts.push({ x: x, y: y, text: text, color: color, life: 60, maxLife: 60 });
+        }
+
+        function createParticles(x, y, color, count) {
+            for(let i=0; i<count; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    life: Math.random() * 20 + 10,
+                    color: color,
+                    size: Math.random() * 4 + 2
+                });
+            }
+        }
+        let particles = [];
+
+        // --- 核心更新循環與物理碰撞 ---
+        function gameLoop(now) {
+            let dt = (now - lastTime) / 1000;
+            if (dt > 0.1) dt = 0.1;
+            lastTime = now;
+
+            if (isGameRunning && !isMapOpen) {
+                updatePhysics(dt);
+                updateGameTime(dt);
+                updateStatusBars(dt);
+                render();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        function updatePhysics(dt) {
+            let mx = 0, my = 0;
+            if (keys['w'] || keys['arrowup']) { my = -1; game.player.facing = 'NW'; }
+            if (keys['s'] || keys['arrowdown']) { my = 1; game.player.facing = 'SE'; }
+            if (keys['a'] || keys['arrowleft']) { mx = -1; game.player.facing = 'SW'; }
+            if (keys['d'] || keys['arrowright']) { mx = 1; game.player.facing = 'NE'; }
+
+            if (isJoystickActive) {
+                mx = joystickVector.x; my = joystickVector.y;
+                if (Math.abs(mx) > Math.abs(my)) game.player.facing = mx > 0 ? 'NE' : 'SW';
+                else game.player.facing = my > 0 ? 'SE' : 'NW';
+            }
+
+            if (mx !== 0 && my !== 0) { const len = Math.hypot(mx, my); mx /= len; my /= len; }
+
+            let speed = game.player.speed;
+            let oldX = game.player.x;
+            let oldY = game.player.y;
+
+            game.player.vx = mx * speed;
+            game.player.vy = my * speed;
+
+            game.player.x += game.player.vx;
+            game.player.y += game.player.vy;
+
+            mapObjects.forEach(obj => {
+                if (obj.type === 'building' || obj.type === 'shelter' || obj.type === 'cave') {
+                    if (Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < obj.size * 0.8) {
+                        game.player.x = oldX; game.player.y = oldY;
+                    }
+                }
+            });
+
+            game.player.x = Math.max(20, Math.min(WORLD_SIZE - 20, game.player.x));
+            game.player.y = Math.max(20, Math.min(WORLD_SIZE - 20, game.player.y));
+
+            let distMoved = Math.hypot(game.player.x - oldX, game.player.y - oldY);
+            if (distMoved > 0.05) {
+                stepCountReset += distMoved;
+                if (stepCountReset >= 16) {
+                    game.player.stepsCount++; stepCountReset = 0;
+                    if (game.player.stepsCount >= 10) {
+                        game.stamina = Math.max(0, game.stamina - 1);
+                        game.player.stepsCount = 0; updateUI();
+                    }
+                }
+            }
+
+            mapObjects.forEach(obj => {
+                if (obj.type === 'animal') {
+                    obj.animalWalkTimer += dt;
+                    if (obj.animalWalkTimer > 2.5) { obj.animalWalkDir = Math.random() * Math.PI * 2; obj.animalWalkTimer = 0; }
+                    
+                    if (Math.random() > 0.4) {
+                        let ax = Math.cos(obj.animalWalkDir) * 1.0;
+                        let ay = Math.sin(obj.animalWalkDir) * 1.0;
+                        obj.x = Math.max(20, Math.min(WORLD_SIZE - 20, obj.x + ax));
+                        obj.y = Math.max(20, Math.min(WORLD_SIZE - 20, obj.y + ay));
+                    }
+                } 
+                else if (obj.type === 'monster') {
+                    let distToPlayer = Math.hypot(game.player.x - obj.x, game.player.y - obj.y);
+                    if (distToPlayer < 400) { 
+                        let angle = Math.atan2(game.player.y - obj.y, game.player.x - obj.x);
+                        obj.x += Math.cos(angle) * 1.6; 
+                        obj.y += Math.sin(angle) * 1.6;

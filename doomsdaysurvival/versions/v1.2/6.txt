@@ -1,0 +1,250 @@
+        window.confirmCraft = function(id) {
+            const recipe = RECIPES.find(r => r.id === id);
+            if (game.workbenchLvl < recipe.minLvl) {
+                logMsg(`工作台等級不足，需要 LV.${recipe.minLvl}`, "warning");
+                return;
+            }
+            
+            let icon = getRecipeEmoji(recipe.id);
+            let canCraft = true;
+            let costHtml = [];
+            for (let res in recipe.cost) {
+                let required = recipe.cost[res];
+                let has = game.resources[res] || 0;
+                if (has < required) canCraft = false;
+                let resName = getResourceDisplayName(res);
+                costHtml.push(`
+                    <div class="flex justify-between items-center bg-stone-950/40 p-2.5 rounded-lg border border-stone-800 text-xs">
+                        <span class="text-stone-400">${resName}</span>
+                        <span class="font-black ${has >= required ? 'text-emerald-400' : 'text-red-400'}">${has}/${required}</span>
+                    </div>`);
+            }
+
+            const confirmContent = document.getElementById('craft-confirm-content');
+            confirmContent.innerHTML = `
+                <div class="p-5 flex flex-col gap-4">
+                    <div class="flex items-center gap-4 border-b border-stone-800 pb-3">
+                        <div class="w-16 h-16 bg-stone-950 rounded-2xl flex items-center justify-center border border-stone-850 shadow-inner shrink-0">
+                            <span class="text-4xl">${icon}</span>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-base font-black text-white">${recipe.name}</h4>
+                            <p class="text-[10px] text-stone-400 mt-1 leading-relaxed">${recipe.desc}</p>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h5 class="text-[10px] font-bold text-stone-500 uppercase tracking-wider">確認合成所需材料</h5>
+                        <div class="grid grid-cols-1 gap-1.5">
+                            ${costHtml.join('')}
+                        </div>
+                    </div>
+                </div>
+                <div class="flex border-t border-stone-800">
+                    <button onmousedown="document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 text-stone-400 hover:text-white hover:bg-stone-800 transition text-xs font-bold">取消</button>
+                    ${canCraft 
+                        ? `<button onmousedown="window.craftItem('${recipe.id}'); document.getElementById('craft-confirm-modal').classList.add('hidden')" class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white transition text-xs font-bold">確認製作</button>`
+                        : `<button disabled class="flex-1 py-3 bg-stone-800 text-stone-600 transition text-xs font-bold cursor-not-allowed">材料不足</button>`
+                    }
+                </div>
+            `;
+            document.getElementById('craft-confirm-modal').classList.remove('hidden');
+        };
+
+        window.openWorkbenchUI = openWorkbenchUI;
+        window.closeWorkbenchUI = closeWorkbenchUI;
+        window.upgradeWorkbench = upgradeWorkbench;
+        window.handleShelterAction = handleShelterAction;
+        window.eatMeat = eatMeat;
+        window.equipWeapon = equipWeapon;
+        window.startGame = startGame;
+        window.saveGame = saveGame;
+        window.loadGame = loadGame;
+        window.toggleAudio = toggleAudio;
+        window.toggleMap = toggleMap;
+        window.closeModal = closeModal;
+        window.performAction = performAction;
+        window.craftItem = craftItem;
+
+        function openWorkbenchUI() {
+            if (isMapOpen) return;
+            game.isWorkbenchOpen = true;
+            document.getElementById('workbench-overlay').classList.remove('hidden');
+            updateWorkbenchOverlayUI();
+            playSound('chime');
+        }
+
+        function closeWorkbenchUI() {
+            game.isWorkbenchOpen = false;
+            document.getElementById('workbench-overlay').classList.add('hidden');
+        }
+
+        function updateWorkbenchOverlayUI() {
+
+            document.getElementById('wb-overlay-level').innerText =
+                game.workbenchLvl;
+
+            const recipeList =
+                document.getElementById('wb-recipe-list');
+
+            recipeList.className =
+                "w-full max-w-6xl mx-auto grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 pb-6";
+
+            recipeList.innerHTML = '';
+
+            RECIPES.forEach(recipe => {
+
+                const locked =
+                    game.workbenchLvl < recipe.minLvl;
+
+                let canCraft = true;
+
+                for (let res in recipe.cost) {
+                    if ((game.resources[res] || 0) < recipe.cost[res]) {
+                        canCraft = false;
+                    }
+                }
+
+                let costs = '';
+
+                for (let res in recipe.cost) {
+
+                    costs += `
+                        <div class="text-[10px] text-stone-400">
+                            ${getResourceDisplayName(res)}
+                            ×${recipe.cost[res]}
+                        </div>
+                    `;
+                }
+
+                let icon = getRecipeEmoji(recipe.id);
+
+                recipeList.innerHTML += `
+
+                <div title="${recipe.desc}" data-recipe="${locked ? '' : recipe.id}"
+                    class="
+                        relative
+                        h-44
+                        bg-stone-900
+                        border
+                        rounded-lg
+                        p-2
+                        flex
+                        flex-col
+                        items-center
+                        justify-center
+                        text-center
+
+                        ${
+                            locked
+                            ? 'opacity-50'
+                            : 'cursor-pointer hover:border-amber-500'
+                        }
+                    "
+
+                >
+
+                    <div class="text-4xl">
+                        ${icon}
+                    </div>
+
+                    <div class="font-bold text-xs mt-2">
+                        ${recipe.name}
+                    </div>
+
+                    <div class="text-[10px] text-stone-500">
+                        LV.${recipe.minLvl}
+                    </div>
+
+                    <div class="mt-2">
+                        ${costs}
+                    </div>
+
+                    ${
+                        locked
+                        ?
+                        `
+                        <div
+                            class="
+                                absolute
+                                inset-0
+                                bg-black/70
+                                flex
+                                items-center
+                                justify-center
+                                text-red-400
+                                font-black
+                            ">
+                            未解鎖
+                        </div>
+                        `
+                        :
+                        ''
+                    }
+
+                    ${
+                        !locked && !canCraft
+                        ?
+                        `
+                        <div
+                            class="
+                                absolute
+                                bottom-1
+                                text-red-400
+                                text-[10px]
+                                font-bold
+                            ">
+                            材料不足
+                        </div>
+                        `
+                        :
+                        ''
+                    }
+
+                </div>
+                `;
+            });
+            recipeList.onmousedown = function(e) {
+                const card = e.target.closest('[data-recipe]');
+                if (!card) return;
+                const recipeId = card.dataset.recipe;
+                if (!recipeId) return;
+                console.log("recipe clicked", recipeId);
+                craftItem(recipeId);
+            };
+        }
+
+        function getRecipeEmoji(id) {
+            if (id === 'stone_axe') return '🪓';
+            if (id === 'stone_sword') return '⚔️';
+            if (id === 'furnace') return '🔥';
+            if (id === 'clothes_1') return '👕';
+            if (id === 'bed_1') return '🛏️';
+            if (id === 'backpack_1') return '🎒';
+            if (id === 'steel_axe') return '🪓';
+            if (id === 'clothes_2') return '🧥';
+            if (id === 'bed_2') return '🛌';
+            if (id === 'backpack_2') return '🎒';
+            if (id === 'backpack_3') return '🎒';
+            if (id === 'm4a1') return '🔫';
+            if (id === 'm4a1_ammo') return '📦';
+            if (id === 'revolver') return '🔫';
+            if (id === 'revolver_ammo') return '📦';
+            return '🔧';
+        }
+
+        function getResourceDisplayName(res) {
+            if (res === 'wood') return '🪵 木頭';
+            if (res === 'steel') return '⚙️ 鋼材';
+            if (res === 'leather') return '🧶 皮革';
+            if (res === 'gunpowder') return '💣 火藥';
+            return res;
+        }
+
+        // --- 輸入監聽鍵盤與搖桿控制 ---
+        let keys = {};
+        window.addEventListener('keydown', e => {
+            keys[e.key.toLowerCase()] = true;
+            
+            if (e.key.toLowerCase() === 'e') {
+                e.preventDefault();
+                // 檢查是否彈窗打開中，如果是，則優先關閉彈窗

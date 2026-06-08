@@ -1,0 +1,250 @@
+                }
+                else if (nearestObj.type === 'animal') {
+                    playSound('hit');
+                    nearestObj.hp--;
+                    if (nearestObj.hp <= 0) {
+                        let gotMeat = Math.floor(2 + Math.random() * 3);
+                        let gotLeather = Math.floor(1 + Math.random() * 2);
+                        
+                        if (currentTotal + gotMeat > backpackCap) gotMeat = Math.max(0, backpackCap - currentTotal);
+                        game.resources.rawMeat += gotMeat;
+                        currentTotal = getTotalItemsCount();
+                        
+                        if (currentTotal + gotLeather > backpackCap) gotLeather = Math.max(0, backpackCap - currentTotal);
+                        game.resources.leather += gotLeather;
+
+                        logMsg(`⚔️ 擊殺獵物，取得生肉 x${gotMeat}，皮革 x${gotLeather}！`, "success");
+                        mapObjects = mapObjects.filter(o => o.id !== nearestObj.id);
+                        setTimeout(() => { mapObjects.push(createMapObject('animal', Math.random()*WORLD_SIZE, Math.random()*WORLD_SIZE)); }, 5000);
+                    } else {
+                        logMsg("⚔️ 打擊獵物！獵物驚慌四散。", "info");
+                        nearestObj.animalWalkDir = Math.atan2(nearestObj.y - game.player.y, nearestObj.x - game.player.x);
+                        nearestObj.animalWalkTimer = 0;
+                    }
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'bed') {
+                    if (game.timeOfDay < 300) {
+                        showModal("🌞 還不能睡覺", "只有晚上才能睡覺。");
+                        return true;
+                    }
+                    logMsg("💤 躺在床上睡覺...", "info");
+                    game.stamina = 500;
+                    game.hp = Math.min(100, game.hp + 20);
+                    game.timeOfDay = 0; 
+                    game.day++;
+                    logMsg(`☀️ 睡醒了！新的一天。天數: ${game.day}`, "success");
+                    saveGame();
+                    showModal("💤 睡覺成功", `你安穩地度過了黑夜！進度已儲存。`); playSound('chime');
+                    updateUI(); return true;
+                }
+                else if (nearestObj.type === 'furnace') {
+                    if (game.resources.rawMeat > 0) {
+                        game.resources.rawMeat--; game.resources.cookedMeat++;
+                        logMsg("🔥 熔爐烤熟生肉，獲得熟肉 x1", "success"); playSound('craft');
+                    } else { logMsg("沒有生肉可以烹飪。", "info"); }
+                    updateUI(); return true;
+                }
+            }
+            return false; 
+        }
+
+        function upgradeWorkbench() {
+            if (game.workbenchLvl === 1) {
+                if (game.resources.wood >= 50 && game.resources.steel >= 30) {
+                    game.resources.wood -= 50; game.resources.steel -= 30; game.workbenchLvl++;
+                    playSound('craft'); logMsg(`🔧 工作台升級到 LV.${game.workbenchLvl}！`, "success"); 
+                    updateWorkbenchOverlayUI(); updateUI();
+                } else { logMsg("升級不足！需木頭x50, 鋼鐵x30", "warning"); }
+            } else if (game.workbenchLvl === 2) {
+                if (game.resources.wood >= 100 && game.resources.steel >= 80) {
+                    game.resources.wood -= 100; game.resources.steel -= 80; game.workbenchLvl++;
+                    playSound('craft'); logMsg(`🔧 工作台升級到 LV.${game.workbenchLvl}！`, "success"); 
+                    updateWorkbenchOverlayUI(); updateUI();
+                } else { logMsg("升級不足！需木頭x100, 鋼鐵x80", "warning"); }
+            } else {
+                logMsg("工作台已達到最高等級 (LV.3)！", "info");
+            }
+        }
+
+        function handleShelterAction() {
+            let nextLvl = game.shelter.level + 1;
+            let costWood = 30 * (nextLvl > 0 ? Math.pow(2, nextLvl) : 1);
+            let costSteel = 20 * (nextLvl > 0 ? Math.pow(2, nextLvl) : 1);
+
+            if (nextLvl === 0) { costWood = 30; costSteel = 20; }
+
+            if (game.resources.wood < costWood || game.resources.steel < costSteel) {
+                logMsg(`資源不足以建造/升級庇護所！`, "danger"); return;
+            }
+
+            game.resources.wood -= costWood;
+            game.resources.steel -= costSteel;
+
+            let daysToTake = nextLvl === 1 ? 1 : (nextLvl === 2 ? 3 : (nextLvl === 3 ? 5 : (nextLvl === 4 ? 10 : 1)));
+            game.shelter.upgrading = true; game.shelter.daysRemaining = daysToTake; game.shelter.targetLevel = nextLvl;
+
+            if (nextLvl === 0) {
+                let newShelter = createMapObject('shelter', game.player.x + 40, game.player.y - 40, 0);
+                newShelter.level = 0; mapObjects.push(newShelter);
+            }
+            logMsg(`🔨 施工建造/升級！預計 ${daysToTake} 天。`, "success"); playSound('craft'); updateUI();
+        }
+
+        function equipWeapon(type) {
+            game.equippedWeapon = type;
+            logMsg(`🔫 當前持槍裝備切換為：${type === 'none' ? '採集工具/斧頭' : type === 'm4a1' ? 'M4A1 突擊步槍' : '.357 左輪手槍'}`);
+            updateUI();
+        }
+
+        function craftItem(recipeId) {
+            const recipe = RECIPES.find(r => r.id === recipeId);
+            let nearWorkbench = false;
+            mapObjects.forEach(obj => {
+                if (obj.type === 'workbench' && Math.hypot(game.player.x - obj.x, game.player.y - obj.y) < 70) nearWorkbench = true;
+            });
+
+            //if (!nearWorkbench) { showModal("遠離工作台", "請靠近工作台旁才能合成。"); return; }
+            if (game.workbenchLvl < recipe.minLvl) { logMsg(`工作台等級不足，需要 LV.${recipe.minLvl}`, "warning"); return; }
+
+            let cap = getBackpackCapacity();
+            let current = getTotalItemsCount();
+            
+            let totalCostItems = 0;
+            for (let r in recipe.cost) { totalCostItems += recipe.cost[r]; }
+            let netGainItems = 0;
+            if (recipeId === 'm4a1_ammo') netGainItems = 30;
+            else if (recipeId === 'revolver_ammo') netGainItems = 10;
+            
+            if (current - totalCostItems + netGainItems > cap) {
+                showModal("🎒 背包空間不足！", `合成此物品將使得物資超出背包上限。現有容量：${current}/${cap}`);
+                return;
+            }
+
+            for (let res in recipe.cost) {
+                if (game.resources[res] < recipe.cost[res]) {
+                    logMsg(`合成材料不足！`, "danger"); return;
+                }
+            }
+            for (let res in recipe.cost) { game.resources[res] -= recipe.cost[res]; }
+
+            if (recipeId === 'stone_axe') { game.equippedAxe = { name: "石製斧頭", quality: 1, efficiency: 2 }; }
+            else if (recipeId === 'steel_axe') { game.equippedAxe = { name: "精鋼手斧", quality: 2, efficiency: 3 }; }
+            else if (recipeId === 'clothes_1') { game.equippedClothes = { name: "一般毛衣", warmth: 0.25 }; }
+            else if (recipeId === 'clothes_2') { game.equippedClothes = { name: "防寒軍大衣", warmth: 0.60 }; }
+            else if (recipeId === 'bed_1') { game.equippedBed = { name: "暖木吊床", quality: 1, staminaRate: 10 }; }
+            else if (recipeId === 'bed_2') { game.equippedBed = { name: "精工軟彈簧床", quality: 2, staminaRate: 20 }; }
+            else if (recipeId === 'backpack_1') { game.backpackLvl = 1; }
+            else if (recipeId === 'backpack_2') { game.backpackLvl = 2; }
+            else if (recipeId === 'backpack_3') { game.backpackLvl = 3; }
+            else if (recipeId === 'm4a1') { game.resources.m4a1Count = (game.resources.m4a1Count || 0) + 1; }
+            else if (recipeId === 'm4a1_ammo') { game.resources.m4a1Ammo = (game.resources.m4a1Ammo || 0) + 30; }
+            else if (recipeId === 'revolver') { game.resources.revolverCount = (game.resources.revolverCount || 0) + 1; }
+            else if (recipeId === 'revolver_ammo') { game.resources.revolverAmmo = (game.resources.revolverAmmo || 0) + 10; }
+            else if (recipeId === 'furnace') {
+                mapObjects.push(createMapObject('furnace', game.player.x + 30, game.player.y + 30));
+                logMsg("🔥 已在地上架設了野外保暖熔爐！", "success");
+            }
+
+            playSound('craft'); logMsg(`🎉 成功合成 ${recipe.name}!`, "success"); 
+            updateWorkbenchOverlayUI(); // 即時重繪工作台確保狀態更新
+            updateUI();
+        }
+
+        function eatMeat(type) {
+            if (type === 'raw') {
+                if (game.resources.rawMeat > 0) {
+                    game.resources.rawMeat--;
+                    game.hunger = Math.min(100, game.hunger + 10);
+                    game.hp = Math.max(5, game.hp - 10);
+                    logMsg("🥩 吞下了生肉！口感極差，恢復微量飢餓並扣減10生命值。", "danger");
+                }
+            } else {
+                if (game.resources.cookedMeat > 0) {
+                    game.resources.cookedMeat--;
+                    game.hunger = Math.min(100, game.hunger + 40);
+                    game.hp = Math.min(100, game.hp + 5);
+                    logMsg("🍗 吃了美味熟肉，感覺精力充沛！飢餓值大幅恢復。", "success");
+                }
+            }
+            updateUI();
+        }
+
+        // --- 全局 UI 資料同步 ---
+        function updateUI() {
+            if (game.resources.gunpowder === undefined) game.resources.gunpowder = 0;
+            if (game.resources.m4a1Ammo === undefined) game.resources.m4a1Ammo = 0;
+            if (game.resources.revolverAmmo === undefined) game.resources.revolverAmmo = 0;
+            if (game.resources.m4a1Count === undefined) game.resources.m4a1Count = 0;
+            if (game.resources.revolverCount === undefined) game.resources.revolverCount = 0;
+            if (game.backpackLvl === undefined) game.backpackLvl = 0;
+            if (game.equippedWeapon === undefined) game.equippedWeapon = 'none';
+
+            document.getElementById('hp-bar').style.width = `${game.hp}%`;
+            document.getElementById('hp-text').innerText = `${game.hp}/100`;
+
+            document.getElementById('hunger-bar').style.width = `${game.hunger}%`;
+            document.getElementById('hunger-text').innerText = `${game.hunger}/100`;
+
+            document.getElementById('stamina-bar').style.width = `${(game.stamina / 500) * 100}%`;
+            document.getElementById('stamina-text').innerText = `${game.stamina}/500`;
+
+            document.getElementById('day-counter').innerText = game.day;
+            
+            document.getElementById('time-bar').style.width = `${(game.timeOfDay / 600) * 100}%`;
+            let remainingMins = Math.max(0, Math.floor(300 - (game.timeOfDay % 300)));
+            let zoneLabel = game.timeOfDay >= 300 ? `黑夜 (餘: ${remainingMins}秒)` : `白天 (餘: ${remainingMins}秒)`;
+            document.getElementById('time-label').innerText = zoneLabel;
+
+            const list = document.getElementById('inventory-list');
+            let cap = getBackpackCapacity();
+            let total = getTotalItemsCount();
+            
+            document.getElementById('backpack-cap-text').innerText = `容量：${total}/${cap}`;
+            
+            list.innerHTML = `
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">🪵 木頭</span> <span class="font-black text-amber-500">${game.resources.wood}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">⚙️ 鋼材</span> <span class="font-black text-blue-400">${game.resources.steel}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">🧶 皮革</span> <span class="font-black text-amber-300">${game.resources.leather}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs">
+                    <span class="text-stone-400">💣 火藥</span> <span class="font-black text-red-400">${game.resources.gunpowder}</span>
+                </div>
+                <div class="bg-stone-900/40 p-2.5 rounded border border-stone-800 flex justify-between items-center text-xs col-span-2">
+                    <span class="text-stone-400">🎒 背包容量等級</span> <span class="font-black text-emerald-400">Lv.${game.backpackLvl} (${cap} 限額)</span>
+                </div>
+            `;
+
+            document.getElementById('cnt-rawmeat').innerText = game.resources.rawMeat;
+            document.getElementById('cnt-cookedmeat').innerText = game.resources.cookedMeat;
+
+            // 裝備卡
+            document.getElementById('equipped-axe').innerText = game.equippedAxe.name;
+            document.getElementById('axe-efficiency').innerText = `採集效率: ${game.equippedAxe.efficiency}x`;
+            document.getElementById('equipped-clothes').innerText = game.equippedClothes ? game.equippedClothes.name : '無衣物';
+            document.getElementById('clothes-warmth').innerText = `防寒: ${game.equippedClothes ? game.equippedClothes.warmth*100 : 0}%`;
+            document.getElementById('equipped-bed').innerText = `目前：${game.equippedBed.name} (精力效率: ${game.equippedBed.staminaRate}x)`;
+
+            // 手持與副手武器/子彈提示
+            const eqWeaponText = document.getElementById('equipped-weapon');
+            const eqWeaponAmmo = document.getElementById('equipped-weapon-ammo');
+            if (game.equippedWeapon === 'none') {
+                eqWeaponText.innerText = "當前手持: 採集工具/斧頭";
+                eqWeaponAmmo.innerText = "點擊地圖資源點進行砍伐與採集";
+            } else if (game.equippedWeapon === 'm4a1') {
+                eqWeaponText.innerText = "當前手持: M4A1 突擊步槍";
+                eqWeaponAmmo.innerText = `剩餘子彈: ${game.resources.m4a1Ammo} 發 (按住點擊全自動開火)`;
+            } else if (game.equippedWeapon === 'revolver') {
+                eqWeaponText.innerText = "當前手持: .357 左輪手槍";
+                eqWeaponAmmo.innerText = `剩餘子彈: ${game.resources.revolverAmmo} 發 (點擊單發重火力開火)`;
+            }
+
+            // 快速武器切換鈕
+            const switcher = document.getElementById('weapon-switcher-container');
+            if (switcher) {
+                let btnsHTML = `<button onmousedown="window.equipWeapon('none')" class="flex-1 py-1.5 text-[10px] rounded font-black transition ${game.equippedWeapon === 'none' ? 'bg-amber-600 text-white' : 'bg-stone-800 text-stone-400 hover:text-white'}">手工具</button>`;
