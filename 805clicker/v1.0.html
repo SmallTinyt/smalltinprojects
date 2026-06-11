@@ -78,24 +78,6 @@
         .golden-cookie {
             animation: golden-glow 4s ease-in-out infinite;
         }
-        /* 重生樹閃爍星光 */
-        @keyframes star-pulse {
-            0%, 100% { transform: scale(1); box-shadow: 0 0 8px rgba(168, 85, 247, 0.5); }
-            50% { transform: scale(1.12); box-shadow: 0 0 20px rgba(168, 85, 247, 0.95); }
-        }
-        .star-node {
-            animation: star-pulse 3s ease-in-out infinite;
-        }
-        .rainbow-glow {
-            background: linear-gradient(90deg, #ff007f, #7f00ff, #00f0ff, #ff007f);
-            background-size: 400% 400%;
-            animation: rainbow-anim 8s ease infinite;
-        }
-        @keyframes rainbow-anim {
-            0% { background-position: 0% 50% }
-            50% { background-position: 100% 50% }
-            100% { background-position: 0% 50% }
-        }
     </style>
 </head>
 <body class="text-slate-100 overflow-hidden h-screen w-screen flex flex-col">
@@ -105,7 +87,7 @@
         <div class="flex items-center space-x-3">
             <div>
                 <h1 class="font-black text-lg tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-200">
-                    805 Clicker v1.5.0
+                    805 Clicker v1.1.0
                 </h1>
             </div>
         </div>
@@ -211,7 +193,7 @@
                     </div>
                 </div>
 
-                <!-- 轉世重生系統與重生星樹按鈕區塊 -->
+                <!-- 轉世重生系統區塊 -->
                 <div class="bg-slate-900/80 rounded-2xl p-4 border border-indigo-950/60 shadow-inner mt-4">
                     <h2 class="text-sm font-black text-pink-400 mb-3 flex items-center gap-2">
                         🌌 重生殿堂 (Rebirth Temple)
@@ -236,11 +218,8 @@
                                 下一個代幣需再累積: <span id="nextTokenCost" class="text-amber-400/80">1.00 Trillion</span> 餅乾
                             </div>
                         </div>
-                        <button onclick="triggerRebirth()" id="rebirthBtn" class="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-40 disabled:pointer-events-none text-white rounded-xl text-xs font-black shadow-lg shadow-purple-900/30 transition-all mb-1.5">
+                        <button onclick="triggerRebirth()" id="rebirthBtn" class="w-full py-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 disabled:opacity-40 disabled:pointer-events-none text-white rounded-xl text-xs font-black shadow-lg shadow-purple-900/30 transition-all">
                             🌌 執行轉世重生 (重置進度)
-                        </button>
-                        <button onclick="openRebirthTree()" class="w-full py-2 bg-gradient-to-r from-indigo-700 via-purple-600 to-pink-700 hover:from-indigo-600 hover:to-pink-600 text-white rounded-xl text-xs font-black shadow-lg shadow-indigo-900/40 border border-purple-400/30 transition-all flex items-center justify-center gap-1">
-                            ✨ 展開重生星樹 (Rebirth Tree)
                         </button>
                     </div>
                 </div>
@@ -339,76 +318,15 @@
 
             <!-- 點擊研發 (手動升級列表) -->
             <div id="shop-manual-container" class="space-y-3 flex-1 overflow-y-auto no-scrollbar">
-                <!-- 由 JavaScript 動態生成 30 項升級之 15 項手動升級 -->
+                <!-- 由 JavaScript 動態生成 10 項升級 -->
             </div>
 
             <!-- 自動生產設施 (被動升級列表) -->
             <div id="shop-passive-container" class="space-y-3 flex-1 overflow-y-auto no-scrollbar hidden">
-                <!-- 由 JavaScript 動態生成 30 項升級之 15 項被動設施 -->
+                <!-- 由 JavaScript 動態生成 10 項被動設施 -->
             </div>
         </div>
 
-    </div>
-
-    <!-- 重生樹 (Rebirth Tree) 全螢幕面板 -->
-    <div id="rebirthTreeModal" class="fixed inset-0 bg-slate-950/95 backdrop-blur-md z-40 flex flex-col hidden select-none">
-        <!-- 重生樹頂部控制列 -->
-        <div class="flex-none bg-slate-900/90 border-b border-indigo-500/20 px-6 py-4 flex justify-between items-center shadow-lg">
-            <div>
-                <h3 class="text-xl font-black text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-fuchsia-400 to-pink-400">
-                    🌌 轉世重生星樹 (Rebirth Constellation Tree)
-                </h3>
-                <p class="text-xs text-slate-400 mt-0.5">消耗轉世代幣解鎖恆星，永久加冕宇宙產能！拖曳畫面或滾動可瀏覽完整星空。</p>
-            </div>
-            <div class="flex items-center space-x-4">
-                <div class="bg-purple-950/60 border border-purple-500/40 px-4 py-2 rounded-xl flex items-center gap-2">
-                    <span class="text-sm font-bold text-purple-300">可用轉世代幣:</span>
-                    <span id="treeTokenDisplay" class="text-base font-black text-amber-300">0</span>
-                </div>
-                <button onclick="closeRebirthTree()" class="bg-rose-600 hover:bg-rose-500 text-white px-4 py-2 rounded-xl text-xs font-black shadow-lg transition-all">
-                    關閉星空
-                </button>
-            </div>
-        </div>
-
-        <!-- 星樹拖曳探索區 -->
-        <div class="flex-1 overflow-hidden relative cursor-grab active:cursor-grabbing bg-[radial-gradient(ellipse_at_center,_#0a071b_0%,_#020205_100%)]" id="treeDragViewport">
-            <!-- 網格背景與太空背景星雲 -->
-            <div class="absolute inset-0 opacity-10 bg-[linear-gradient(to_right,#6366f1_1px,transparent_1px),linear-gradient(to_bottom,#6366f1_1px,transparent_1px)] bg-[size:50px_50px]"></div>
-            
-            <!-- 實體星空繪製圖層 -->
-            <div id="treeMapContainer" class="absolute left-0 top-0 w-[2000px] h-[1200px] origin-top-left transition-transform duration-100">
-                <!-- 連線專用 SVG 畫布 -->
-                <svg id="treeSvgCanvas" class="absolute inset-0 pointer-events-none w-full h-full z-0"></svg>
-                
-                <!-- 節點動態生成圖層 -->
-                <div id="treeNodesContainer" class="absolute inset-0 z-10 pointer-events-none"></div>
-            </div>
-        </div>
-        
-        <!-- 重生樹底部星系卡片說明 -->
-        <div class="flex-none bg-slate-900/90 border-t border-indigo-500/20 p-4 flex gap-4 overflow-x-auto no-scrollbar">
-            <div class="flex-1 bg-indigo-950/30 border border-indigo-500/20 p-3 rounded-xl text-xs min-w-[200px]">
-                <h4 class="font-black text-blue-400">🌟 天界指針星系</h4>
-                <p class="text-slate-400 mt-1">主宰點擊威力，使指針獲得神聖神經反應加成。</p>
-            </div>
-            <div class="flex-1 bg-indigo-950/30 border border-indigo-500/20 p-3 rounded-xl text-xs min-w-[200px]">
-                <h4 class="font-black text-emerald-400">🌟 永恆守護星系</h4>
-                <p class="text-slate-400 mt-1">自動產線升值，釋放阿嬤、農場和時光機的無限被動流動性。</p>
-            </div>
-            <div class="flex-1 bg-indigo-950/30 border border-indigo-500/20 p-3 rounded-xl text-xs min-w-[200px]">
-                <h4 class="font-black text-amber-400">🌟 黃金律令星系</h4>
-                <p class="text-slate-400 mt-1">增加黃金餅乾的出沒極限，爆發更龐大的奇蹟回饋。</p>
-            </div>
-            <div class="flex-1 bg-indigo-950/30 border border-indigo-500/20 p-3 rounded-xl text-xs min-w-[200px]">
-                <h4 class="font-black text-purple-400">🌟 轉世秘儀星系</h4>
-                <p class="text-slate-400 mt-1">減少下個轉世代幣耗能，或加冕代幣全局增益效率。</p>
-            </div>
-            <div class="flex-1 bg-indigo-950/30 border border-indigo-500/20 p-3 rounded-xl text-xs min-w-[200px]">
-                <h4 class="font-black text-pink-400">🌟 神聖同學星系</h4>
-                <p class="text-slate-400 mt-1">深度對應裝備貼圖，激活角色特權技能，釋放神話實力。</p>
-            </div>
-        </div>
     </div>
 
     <!-- 外掛與測試沙盒 -->
@@ -418,20 +336,23 @@
             <h3 class="text-lg font-black text-blue-400 mb-2 flex items-center gap-2">
                 🛠️ 外掛 / 測試沙盒
             </h3>
-            <p class="text-xs text-slate-400 mb-4">輸入密碼 SmallTin 解鎖本面板！灌入大量點數快速驗證重生樹及 5 項轉世限定升級！</p>
+            <p class="text-xs text-slate-400 mb-4">點選下方按鈕直接灌入點數，快速觀賞在對應里程碑時主按鈕變更或測試「轉世重生系統」！</p>
             
             <div class="space-y-3">
                 <button onclick="addCheatPoints(10000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
                     獲得 $10,000 (解鎖 洛水淒淒)
                 </button>
+                <button onclick="addCheatPoints(100000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
+                    獲得 $100,000 (解鎖 DJ)
+                </button>
+                <button onclick="addCheatPoints(1000000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
+                    獲得 $1,000,000 (解鎖 沅沅)
+                </button>
                 <button onclick="addCheatPoints(10000000)" class="w-full py-2 bg-indigo-950 hover:bg-indigo-900 border border-indigo-700 rounded-xl text-xs font-bold text-slate-200">
                     獲得 $10,000,000 (解鎖 Genius)
                 </button>
                 <button onclick="addCheatPoints(1000000000000)" class="w-full py-2 bg-pink-600/20 hover:bg-pink-600/30 border border-pink-500/40 rounded-xl text-xs font-bold text-pink-200">
-                    獲得 $1.00 Trillion (首個轉世代幣門檻)
-                </button>
-                <button onclick="addCheatPoints(100000000000000)" class="w-full py-2 bg-purple-600/20 hover:bg-purple-600/30 border border-purple-500/40 rounded-xl text-xs font-bold text-purple-200">
-                    獲得 $100.00 Trillion (測試多重轉世與代幣)
+                    獲得 $1.00 Trillion (測試轉世代幣)
                 </button>
                 <div class="grid grid-cols-2 gap-2 mt-4">
                     <button onclick="multiplyCheatPoints(10)" class="py-2 bg-blue-500 text-slate-950 rounded-xl text-xs font-black shadow-lg">
@@ -445,12 +366,12 @@
         </div>
     </div>
 
-    <!-- 自訂安全確認重設對話框 -->
+    <!-- 自訂安全確認重設對話框 (不使用 window.confirm) -->
     <div id="confirmResetPanel" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-50 flex items-center justify-center hidden">
         <div class="bg-slate-900 border-2 border-rose-500 w-80 rounded-2xl p-6 shadow-2xl text-center">
             <span class="text-4xl">⚠️</span>
             <h3 class="text-lg font-black text-rose-400 mt-2 mb-1">確定要重新開始嗎？</h3>
-            <p class="text-xs text-slate-400 mb-6">這將會清除您目前擁有的所有餅乾、產能以及已解鎖的頭像材質與重生星樹數據！</p>
+            <p class="text-xs text-slate-400 mb-6">這將會清除您目前擁有的所有餅乾、產能以及已解鎖的頭像材質存檔！</p>
             <div class="flex gap-3 justify-center">
                 <button onclick="closeConfirmReset()" class="flex-1 py-2 bg-slate-850 hover:bg-slate-800 text-slate-300 rounded-xl text-xs font-bold transition-all">
                     取消
@@ -488,50 +409,34 @@
             totalEarned: 0,
             clickPower: 1,
             cps: 0,
-            activeSkin: 'backyard',
+            activeSkin: 'backyard', // 初始預設材質一開始就是 backyard.png
             soundEnabled: true,
-            rebirthTokens: 0, 
-            lifetimeCookies: 0, 
-            rebirthCount: 0, // 重生次數
-
-            // 儲存 60 個重生樹節點的購買狀態 (true 為已購買)
-            heavenlyUpgrades: {}, 
+            rebirthTokens: 0, // 轉世重生代幣
+            lifetimeCookies: 0, // 歷史累積總獲得餅乾量
             
-            // 商店項目與定價 (擴充至 30 項，點擊/被動各 15 項)
+            // 商店項目與定價 (兩種升級皆擴充至 10 項)
             upgrades: {
-                // 15 個點擊強化升級 (其中 13~15 為轉世限定解鎖)
-                click_01: { count: 0, baseCost: 15, currentCost: 15, power: 1, rebornRequired: false },
-                click_02: { count: 0, baseCost: 400, currentCost: 400, power: 10, rebornRequired: false },
-                click_03: { count: 0, baseCost: 5000, currentCost: 5000, power: 150, rebornRequired: false },
-                click_04: { count: 0, baseCost: 75000, currentCost: 75000, power: 2500, rebornRequired: false },
-                click_05: { count: 0, baseCost: 1200000, currentCost: 1200000, power: 40000, rebornRequired: false },
-                click_06: { count: 0, baseCost: 25000000, currentCost: 25000000, power: 750000, rebornRequired: false },
-                click_07: { count: 0, baseCost: 600000000, currentCost: 600000000, power: 12000000, rebornRequired: false },
-                click_08: { count: 0, baseCost: 15000000000, currentCost: 15000000000, power: 250000000, rebornRequired: false },
-                click_09: { count: 0, baseCost: 450000000000, currentCost: 450000000000, power: 6000000000, rebornRequired: false },
-                click_10: { count: 0, baseCost: 12000000000000, currentCost: 12000000000000, power: 150000000000, rebornRequired: false },
-                click_11: { count: 0, baseCost: 350000000000000, currentCost: 350000000000000, power: 4500000000000, rebornRequired: false },
-                click_12: { count: 0, baseCost: 9500000000000000, currentCost: 9500000000000000, power: 120000000000000, rebornRequired: false },
-                click_13: { count: 0, baseCost: 250000000000000000, currentCost: 250000000000000000, power: 3500000000000000, rebornRequired: true }, // 重生限定 1
-                click_14: { count: 0, baseCost: 7500000000000000000, currentCost: 7500000000000000000, power: 95000000000000000, rebornRequired: true }, // 重生限定 2
-                click_15: { count: 0, baseCost: 200000000000000000000, currentCost: 200000000000000000000, power: 2500000000000000000, rebornRequired: true }, // 重生限定 3
+                click_01: { count: 0, baseCost: 15, currentCost: 15, power: 1 },
+                click_02: { count: 0, baseCost: 400, currentCost: 400, power: 10 },
+                click_03: { count: 0, baseCost: 5000, currentCost: 5000, power: 150 },
+                click_04: { count: 0, baseCost: 75000, currentCost: 75000, power: 2500 },
+                click_05: { count: 0, baseCost: 1200000, currentCost: 1200000, power: 40000 },
+                click_06: { count: 0, baseCost: 25000000, currentCost: 25000000, power: 750000 },
+                click_07: { count: 0, baseCost: 600000000, currentCost: 600000000, power: 12000000 },
+                click_08: { count: 0, baseCost: 15000000000, currentCost: 15000000000, power: 250000000 },
+                click_09: { count: 0, baseCost: 450000000000, currentCost: 450000000000, power: 6000000000 },
+                click_10: { count: 0, baseCost: 12000000000000, currentCost: 12000000000000, power: 150000000000 },
                 
-                // 15 個自動生產升級 (其中 14~15 為轉世限定解鎖)
-                passive_01: { count: 0, baseCost: 100, currentCost: 100, cps: 1, rebornRequired: false },
-                passive_02: { count: 0, baseCost: 1200, currentCost: 1200, cps: 12, rebornRequired: false },
-                passive_03: { count: 0, baseCost: 15000, currentCost: 15000, cps: 110, rebornRequired: false },
-                passive_04: { count: 0, baseCost: 180000, currentCost: 180000, cps: 1200, rebornRequired: false },
-                passive_05: { count: 0, baseCost: 2500000, currentCost: 2500000, cps: 15000, rebornRequired: false },
-                passive_06: { count: 0, baseCost: 40000000, currentCost: 40000000, cps: 180000, rebornRequired: false },
-                passive_07: { count: 0, baseCost: 750000000, currentCost: 750000000, cps: 2200000, rebornRequired: false },
-                passive_08: { count: 0, baseCost: 15000000000, currentCost: 15000000000, cps: 35000000, rebornRequired: false },
-                passive_09: { count: 0, baseCost: 350000000000, currentCost: 350000000000, cps: 650000000, rebornRequired: false },
-                passive_10: { count: 0, baseCost: 9500000000000, currentCost: 9500000000000, cps: 12000000000, rebornRequired: false },
-                passive_11: { count: 0, baseCost: 250000000000000, currentCost: 250000000000000, cps: 300000000000, rebornRequired: false },
-                passive_12: { count: 0, baseCost: 7500000000000000, currentCost: 7500000000000000, cps: 9500000000000, rebornRequired: false },
-                passive_13: { count: 0, baseCost: 200000000000000000, currentCost: 200000000000000000, cps: 250000000000000, rebornRequired: false },
-                passive_14: { count: 0, baseCost: 5500000000000000000, currentCost: 5500000000000000000, cps: 7000000000000000, rebornRequired: true }, // 重生限定 4
-                passive_15: { count: 0, baseCost: 150000000000000000000, currentCost: 150000000000000000000, cps: 180000000000000000, rebornRequired: true } // 重生限定 5
+                passive_01: { count: 0, baseCost: 100, currentCost: 100, cps: 1 },
+                passive_02: { count: 0, baseCost: 1200, currentCost: 1200, cps: 12 },
+                passive_03: { count: 0, baseCost: 15000, currentCost: 15000, cps: 110 },
+                passive_04: { count: 0, baseCost: 180000, currentCost: 180000, cps: 1200 },
+                passive_05: { count: 0, baseCost: 2500000, currentCost: 2500000, cps: 15000 },
+                passive_06: { count: 0, baseCost: 40000000, currentCost: 40000000, cps: 180000 },
+                passive_07: { count: 0, baseCost: 750000000, currentCost: 750000000, cps: 2200000 },
+                passive_08: { count: 0, baseCost: 15000000000, currentCost: 15000000000, cps: 35000000 },
+                passive_09: { count: 0, baseCost: 350000000000, currentCost: 350000000000, cps: 650000000 },
+                passive_10: { count: 0, baseCost: 9500000000000, currentCost: 9500000000000, cps: 12000000000 }
             },
             
             // 經典里程碑解鎖定義
@@ -556,11 +461,6 @@
             click_08: { name: "星際引力指針", desc: "手動點擊威力 +250 Million", icon: "🪐" },
             click_09: { name: "反物質虛空指針", desc: "手動點擊威力 +6 Billion", icon: "☄️" },
             click_10: { name: "奇點創世指針", desc: "手動點擊威力 +150 Billion", icon: "👑" },
-            click_11: { name: "維度重塑滑鼠", desc: "手動點擊威力 +4.5 Trillion", icon: "🧿" },
-            click_12: { name: "太初意志指針", desc: "手動點擊威力 +120 Trillion", icon: "🕉️" },
-            click_13: { name: "✨ 聖光主宰指針", desc: "手動點擊威力 +3.5 Quadillion", icon: "⚜️" },
-            click_14: { name: "✨ 虛空真主指針", desc: "手動點擊威力 +95 Quadillion", icon: "🔱" },
-            click_15: { name: "✨ 創世主權指針", desc: "手動點擊威力 +2.5 Quintillion", icon: "💎" },
 
             passive_01: { name: "自動點擊指針", desc: "秒產 CPS +1", icon: "⚡" },
             passive_02: { name: "經典藍衣阿嬤", desc: "秒產 CPS +12", icon: "👵" },
@@ -571,12 +471,7 @@
             passive_07: { name: "藍衣超導實驗室", desc: "秒產 CPS +2.2 Million", icon: "🧪" },
             passive_08: { name: "跨時空傳送門", desc: "秒產 CPS +35 Million", icon: "🚪" },
             passive_09: { name: "藍衣時空時光機", desc: "秒產 CPS +650 Million", icon: "⏰" },
-            passive_10: { name: "藍衣反物質縮放器", desc: "秒產 CPS +12 Billion", icon: "🧬" },
-            passive_11: { name: "平行維度複製儀", desc: "秒產 CPS +300 Billion", icon: "🕋" },
-            passive_12: { name: "太弦弦能核融合", desc: "秒產 CPS +9.5 Trillion", icon: "🧫" },
-            passive_13: { name: "暗黑奇點重力塔", desc: "秒產 CPS +250 Trillion", icon: "🗼" },
-            passive_14: { name: "✨ 藍衣天界聖母廟", desc: "秒產 CPS +7.0 Quadillion", icon: "🛕" },
-            passive_15: { name: "✨ 宇宙原初高能井", desc: "秒產 CPS +180 Quadillion", icon: "⛲" }
+            passive_10: { name: "藍衣反物質縮放器", desc: "秒產 CPS +12 Billion", icon: "🧬" }
         };
 
         // 材質對應路徑表格
@@ -586,80 +481,8 @@
             stretch: "80528.png",
             sleep: "80525.png",
             shock: "IMG_20251203_200910.png",
-            cookie: '' 
+            cookie: '' // 空值代表主餅乾使用原本的 SVG 設計
         };
-
-        // 重生樹 60 節點資料生成器 (5 大星系分支，各 12 個節點)
-        const treePaths = [
-            { id: 'pathA', name: '天界指針', color: '#60a5fa', descClass: 'text-blue-400' },
-            { id: 'pathB', name: '永恆守護', color: '#34d399', descClass: 'text-emerald-400' },
-            { id: 'pathC', name: '黃金律令', color: '#fbbf24', descClass: 'text-amber-400' },
-            { id: 'pathD', name: '轉世秘儀', color: '#c084fc', descClass: 'text-purple-400' },
-            { id: 'pathE', name: '神聖同學', color: '#f472b6', descClass: 'text-pink-400' }
-        ];
-
-        // 動態生成 60 個重生星樹升級的細節資訊與前置連線
-        let rebirthTreeUpgrades = {};
-
-        // 手動定義與初始化 60 個重生樹節點
-        function buildRebirthTreeDatabase() {
-            rebirthTreeUpgrades = {};
-            const prefixNames = {
-                pathA: ['星芒', '烈陽', '銀河', '光年', '虛空', '奇異', '黑洞', '神指', '維度', '原力', '太初', '主宰'],
-                pathB: ['守望', '護佑', '豐產', '深礦', '精工', '古神', '磁暴', '穿越', '時光', '暗能', '超弦', '聖光'],
-                pathC: ['幸運', '神蹟', '雙子', '連袂', '甘霖', '福澤', '金輝', '聚寶', '星隕', '萬華', '乾坤', '天恩'],
-                pathD: ['洗禮', '轉世', '昇華', '蛻變', '加冕', '魂歸', '靈能', '超脫', '涅槃', '永生', '因果', '至高'],
-                pathE: ['Eric祝福', 'DJ律動', '跑者呼吸', '沅沅沉睡', '口罩庇佑', '驚愕警示', '學霸思維', '同學熱忱', '經典留影', '年華定格', '同窗星軌', '神聖合照']
-            };
-
-            const upgradeTypes = {
-                pathA: 'click_mult',   // 點擊威力百分比提升
-                pathB: 'cps_mult',     // CPS 被動產量百分比提升
-                pathC: 'gold_buff',    // 黃金餅乾出沒與加成百分比提升
-                pathD: 'prestige_buff',// 代幣全局加成
-                pathE: 'skin_boost'    // 與裝備同學材質相關的獨家特權
-            };
-
-            treePaths.forEach((path, trackIdx) => {
-                const names = prefixNames[path.id];
-                const type = upgradeTypes[path.id];
-                
-                for (let i = 0; i < 12; i++) {
-                    const nodeKey = `${path.id}_node_${String(i+1).padStart(2, '0')}`;
-                    const tokenCost = Math.floor(1 * Math.pow(1.8, i)); // 陡峭且具挑戰性的代幣價格
-                    
-                    // 設定連線與前置節點 (第 1, 2, 3 個節點一開始就可用，後續需要前置)
-                    let parent = null;
-                    let isInitiallyAvailable = false;
-                    
-                    if (i < 3) {
-                        isInitiallyAvailable = true; // 5 Paths * 3 Nodes = 前 15 個一開始直接解鎖
-                    } else {
-                        // 4 連 1, 5 連 2, 6 連 3... 7 連 4...
-                        parent = `${path.id}_node_${String(i - 2).padStart(2, '0')}`;
-                    }
-
-                    // 第 12 個節點（即最後一個）需要重生過至少一次才可啟動
-                    const needRebirth = (i === 11);
-
-                    rebirthTreeUpgrades[nodeKey] = {
-                        key: nodeKey,
-                        name: `${names[i]}🌟節點`,
-                        pathId: path.id,
-                        cost: tokenCost,
-                        type: type,
-                        value: (i + 1) * 0.15, // 每個加成數值
-                        desc: `使 [${path.name}] 的加成百分比提升 +${Math.round((i + 1) * 15)}%${needRebirth ? ' (🔒 需執行過一次重生)' : ''}`,
-                        parent: parent,
-                        isInitiallyAvailable: isInitiallyAvailable,
-                        needRebirth: needRebirth,
-                        // 座標分布，以便於在 2000x1200 畫布上完美展示
-                        x: 120 + (i * 155),
-                        y: 110 + (trackIdx * 190) + (i % 2 === 0 ? 30 : -30)
-                    };
-                }
-            });
-        }
 
         // ------------------ Web Audio 合成音效 ------------------
         let audioCtx = null;
@@ -678,6 +501,7 @@
                 osc.type = type;
                 osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
                 
+                // Clicks sound: frequency decay
                 if (freq < 400) {
                     osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + duration);
                 }
@@ -717,11 +541,12 @@
         }
 
         // ------------------ 轉世重生核心數學計算 ------------------
-        // 代幣比前面難拿 1.05 倍 (首個 1 Trillion = 10^12)
+        // 計算累積一定 cookies 所能對應的轉世代幣
         function getTokensForCookies(cookies) {
-            if (cookies < 1e12) return 0;
-            // 遞增難度 1.05x 公式
-            return Math.floor(Math.log(1 + (cookies * 0.05) / 1e12) / Math.log(1.05));
+            if (cookies < 1e12) return 0; // 第一個重生代幣需要 1.00 Trillion
+            // 每個重生代幣難拿 1.05 倍
+            // 累計公式: 2e13 * (1.05^K - 1) = cookies => K = ln(1 + cookies / 2e13) / ln(1.05)
+            return Math.floor(Math.log(1 + cookies / 2e13) / Math.log(1.05));
         }
 
         // 取得當前此輪結算能額外獲得的重生代幣數量
@@ -740,13 +565,12 @@
             // 永久累加重生代幣與生涯總餅乾
             gameState.rebirthTokens = (gameState.rebirthTokens || 0) + claimable;
             gameState.lifetimeCookies = (gameState.lifetimeCookies || 0) + gameState.cookies;
-            gameState.rebirthCount = (gameState.rebirthCount || 0) + 1; // 增加重生次數
 
             // 轉世重置變數
             gameState.cookies = 0;
-            gameState.totalEarned = 0; 
+            gameState.totalEarned = 0; // 重置此輪產量
             
-            // 重置一般升級
+            // 重置商店升級購買數
             Object.keys(gameState.upgrades).forEach(key => {
                 gameState.upgrades[key].count = 0;
             });
@@ -754,27 +578,24 @@
             recalculateUpgradeCosts();
             recalculateProductivity();
             
-            playSynthesizedSound(880, 'sine', 0.6); 
+            playSynthesizedSound(880, 'sine', 0.6); // 播放莊嚴重生音效
             updateUI();
             saveGame();
 
-            // 觸發重新渲染商店（以便渲染新解鎖的一般升級）
-            initShopDOM();
-
-            triggerToastBanner(`🌌 轉世成功！獲得了 ${claimable} 個重生代幣！解鎖轉世限定一般升級與重生樹限制！`);
+            triggerToastBanner(`🌌 轉世成功！獲得了 ${claimable} 個重生代幣！`);
         }
 
         // ------------------ 存檔與重設系統 ------------------
         function saveGame() {
-            localStorage.setItem('cookie_clicker_blueshirt_save_v1_5', JSON.stringify(gameState));
+            localStorage.setItem('cookie_clicker_blueshirt_save_v2', JSON.stringify(gameState));
         }
 
         function loadGame() {
-            const saved = localStorage.getItem('cookie_clicker_blueshirt_save_v1_5');
+            const saved = localStorage.getItem('cookie_clicker_blueshirt_save_v2');
             if (saved) {
                 try {
                     const parsed = JSON.parse(saved);
-                    // 深度合併
+                    // 深度合併，確保升級與重生項目都有正確初始化
                     gameState = { ...gameState, ...parsed };
                     recalculateUpgradeCosts();
                 } catch (e) {
@@ -790,6 +611,7 @@
             });
         }
 
+        // 自訂確認視窗流程
         function openConfirmReset() {
             document.getElementById('confirmResetPanel').classList.remove('hidden');
         }
@@ -799,7 +621,7 @@
         }
 
         function confirmResetAction() {
-            localStorage.removeItem('cookie_clicker_blueshirt_save_v1_5');
+            localStorage.removeItem('cookie_clicker_blueshirt_save_v2');
             location.reload();
         }
 
@@ -813,26 +635,15 @@
 
             Object.keys(upgradeDetails).forEach(key => {
                 const info = upgradeDetails[key];
-                const spec = gameState.upgrades[key];
                 const isPassive = key.startsWith('passive_');
                 const targetContainer = isPassive ? passiveContainer : manualContainer;
                 
-                // 檢查是否是轉世限定升級，如果是且玩家從未重生過，則不予渲染
-                if (spec.rebornRequired && (gameState.rebirthCount || 0) < 1) {
-                    return; 
-                }
-
-                const cardClass = spec.rebornRequired 
-                    ? 'rainbow-glow border-rose-500/80 shadow-[0_0_15px_rgba(244,63,94,0.3)]' 
-                    : 'bg-slate-900/90 border-indigo-950/50';
-
                 const btnColor = isPassive 
                     ? 'group-hover:bg-emerald-500 group-hover:text-slate-950 text-emerald-300 bg-emerald-500/20 border-emerald-500/30' 
                     : 'group-hover:bg-blue-500 group-hover:text-white text-blue-300 bg-blue-500/20 border-blue-500/30';
                 
                 const btnHtml = `
-                    <button onclick="buyUpgrade('${key}')" id="item-${key}" class="w-full ${cardClass} hover:bg-slate-850/80 disabled:opacity-40 text-left p-3 rounded-xl border transition-all flex justify-between items-center group relative overflow-hidden">
-                        ${spec.rebornRequired ? '<div class="absolute top-0 right-0 bg-rose-600 text-white text-[8px] font-black px-1.5 py-0.5 rounded-bl-lg">✨ 轉世限定</div>' : ''}
+                    <button onclick="buyUpgrade('${key}')" id="item-${key}" class="w-full bg-slate-900/90 hover:bg-slate-850 disabled:opacity-40 text-left p-3 rounded-xl border border-indigo-950/50 transition-all flex justify-between items-center group">
                         <div class="flex-1 pr-2 w-0 overflow-hidden">
                             <div class="flex items-center gap-2.5">
                                 <span class="text-xl shrink-0">${info.icon}</span>
@@ -843,7 +654,7 @@
                             </div>
                         </div>
                         <div class="text-right flex-none">
-                            <div class="text-[10px] font-bold text-slate-400">擁有: <span id="count-${key}" class="text-slate-200 font-bold">0</span></div>
+                            <div class="text-[10px] font-bold text-slate-500">擁有: <span id="count-${key}" class="text-slate-300">0</span></div>
                             <div class="${btnColor} px-2 py-1 rounded-lg text-xs font-black mt-1 border transition-all">
                                 💰 <span id="cost-${key}">0</span>
                             </div>
@@ -884,17 +695,7 @@
 
             // 更新轉世重生介面
             const tokenCount = gameState.rebirthTokens || 0;
-            
-            // 計算重生樹購買的 prestige_buff 對代幣加成的放大
-            let prestigeBonusFactor = 1;
-            Object.keys(gameState.heavenlyUpgrades).forEach(nodeKey => {
-                const node = rebirthTreeUpgrades[nodeKey];
-                if (node && node.type === 'prestige_buff') {
-                    prestigeBonusFactor += node.value;
-                }
-            });
-
-            const bonusPercent = Math.floor(tokenCount * 10 * prestigeBonusFactor);
+            const bonusPercent = Math.floor(tokenCount * 10);
             document.getElementById('rebirthTokens').innerText = tokenCount;
             document.getElementById('rebirthBonus').innerText = `+${bonusPercent}%`;
 
@@ -904,9 +705,7 @@
             // 計算下個代幣所需的剩餘餅乾
             const currentTotalEarned = (gameState.lifetimeCookies || 0) + gameState.cookies;
             const currentTotalTokens = getTokensForCookies(currentTotalEarned);
-            
-            // 公式: 總累積需要 = 1e12 * (1.05^(N+1) - 1) / 0.05
-            const nextCumulativeTarget = 1e12 * (Math.pow(1.05, currentTotalTokens + 1) - 1) / 0.05;
+            const nextCumulativeTarget = 2e13 * (Math.pow(1.05, currentTotalTokens + 1) - 1);
             const cookiesNeeded = Math.max(0, nextCumulativeTarget - currentTotalEarned);
             document.getElementById('nextTokenCost').innerText = formatVal(cookiesNeeded);
 
@@ -1072,16 +871,7 @@
         // ------------------ 隨機黃金餅乾 ------------------
         let goldenCookieActive = false;
         setInterval(() => {
-            // 根據重生樹 Gold_buff 調整黃金餅乾生成機率
-            let goldProb = 0.15;
-            Object.keys(gameState.heavenlyUpgrades).forEach(nodeKey => {
-                const node = rebirthTreeUpgrades[nodeKey];
-                if (node && node.type === 'gold_buff') {
-                    goldProb += node.value * 0.05;
-                }
-            });
-
-            if (goldenCookieActive || Math.random() > goldProb) return;
+            if (goldenCookieActive || Math.random() > 0.15) return;
             
             goldenCookieActive = true;
             const container = document.getElementById('goldenCookieLayer');
@@ -1108,16 +898,7 @@
 
             goldenCookie.addEventListener('click', (e) => {
                 e.stopPropagation();
-                // 根據重生樹 gold_buff 加成獎勵
-                let goldRewardMult = 1;
-                Object.keys(gameState.heavenlyUpgrades).forEach(nodeKey => {
-                    const node = rebirthTreeUpgrades[nodeKey];
-                    if (node && node.type === 'gold_buff') {
-                        goldRewardMult += node.value;
-                    }
-                });
-
-                const awardAmount = Math.max(gameState.cps * 120, 150) * goldRewardMult;
+                const awardAmount = Math.max(gameState.cps * 120, 150);
                 gameState.cookies += awardAmount;
                 gameState.totalEarned += awardAmount;
 
@@ -1157,60 +938,28 @@
             }
         }
 
-        // 全面整合：常規升級、重生代幣、重生樹 (天界、永恆、神聖同學) 加成計算
         function recalculateProductivity() {
-            // 1. 手動點擊底數與自動秒產 (CPS) 底數
-            let baseClickPower = 1;
+            // 點擊威力
+            let power = 1;
             Object.keys(gameState.upgrades).forEach(key => {
                 if (key.startsWith('click_')) {
-                    baseClickPower += gameState.upgrades[key].count * gameState.upgrades[key].power;
+                    power += gameState.upgrades[key].count * gameState.upgrades[key].power;
                 }
             });
 
-            let baseCps = 0;
+            // 被動 CPS (秒產)
+            let currentCps = 0;
             Object.keys(gameState.upgrades).forEach(key => {
                 if (key.startsWith('passive_')) {
-                    baseCps += gameState.upgrades[key].count * gameState.upgrades[key].cps;
+                    currentCps += gameState.upgrades[key].count * gameState.upgrades[key].cps;
                 }
             });
 
-            // 2. 累加重生樹百分比倍率
-            let treeClickMult = 1;
-            let treeCpsMult = 1;
-            let skinBoostMult = 1;
+            // 轉世重生加成 (每個代幣 +10% 產能)
+            const rebirthMult = 1 + ((gameState.rebirthTokens || 0) * 0.10);
 
-            Object.keys(gameState.heavenlyUpgrades).forEach(nodeKey => {
-                const node = rebirthTreeUpgrades[nodeKey];
-                if (node) {
-                    if (node.type === 'click_mult') {
-                        treeClickMult += node.value;
-                    } else if (node.type === 'cps_mult') {
-                        treeCpsMult += node.value;
-                    } else if (node.type === 'skin_boost') {
-                        // 神聖同學星系: 根據當前裝備的材質頭像給予高額全產能乘數
-                        if (gameState.activeSkin !== 'backyard' && gameState.activeSkin !== 'cookie') {
-                            skinBoostMult += node.value * 0.5; // 每解鎖一個神聖同學節點，配備非預設頭像加成 +7.5% 起
-                        }
-                    }
-                }
-            });
-
-            // 3. 轉世重生基本加成 (每個代幣 +10% 產能)
-            // 整合重生樹 PathD (轉世秘儀) 的加成放大
-            let prestigeBonusFactor = 1;
-            Object.keys(gameState.heavenlyUpgrades).forEach(nodeKey => {
-                const node = rebirthTreeUpgrades[nodeKey];
-                if (node && node.type === 'prestige_buff') {
-                    prestigeBonusFactor += node.value;
-                }
-            });
-
-            const tokenCount = gameState.rebirthTokens || 0;
-            const rebirthMult = 1 + (tokenCount * 0.10 * prestigeBonusFactor);
-
-            // 4. 最終乘積
-            gameState.clickPower = Math.floor(baseClickPower * treeClickMult * rebirthMult * skinBoostMult);
-            gameState.cps = baseCps * treeCpsMult * rebirthMult * skinBoostMult;
+            gameState.clickPower = Math.floor(power * rebirthMult);
+            gameState.cps = currentCps * rebirthMult;
         }
 
         // ------------------ 被動時鐘計數器 (100ms 間隔流暢渲染) ------------------
@@ -1321,14 +1070,9 @@
         function clearCheat() {
             gameState.cookies = 0;
             gameState.totalEarned = 0;
-            gameState.rebirthTokens = 0;
-            gameState.lifetimeCookies = 0;
-            gameState.rebirthCount = 0;
-            gameState.heavenlyUpgrades = {};
             updateUI();
             saveGame();
-            initShopDOM();
-            triggerToastBanner("🛠️ 分數及重生樹數據已全數清空！");
+            triggerToastBanner("🛠️ 分數已全數清空！");
         }
 
         const soundToggleBtn = document.getElementById('soundToggle');
@@ -1343,223 +1087,9 @@
             saveGame();
         });
 
-        // ------------------ 重生星樹面板控制與動態渲染 ------------------
-        const rebirthTreeModal = document.getElementById('rebirthTreeModal');
-        const treeDragViewport = document.getElementById('treeDragViewport');
-        const treeMapContainer = document.getElementById('treeMapContainer');
-        const treeSvgCanvas = document.getElementById('treeSvgCanvas');
-        const treeNodesContainer = document.getElementById('treeNodesContainer');
-
-        let isDraggingTree = false;
-        let startX, startY, scrollLeft, scrollTop;
-
-        // 開啟重生樹
-        function openRebirthTree() {
-            rebirthTreeModal.classList.remove('hidden');
-            document.getElementById('treeTokenDisplay').innerText = gameState.rebirthTokens || 0;
-            
-            // 重置拖曳中心位置至起點
-            treeMapContainer.style.transform = `translate(-50px, -50px)`;
-            
-            renderRebirthTreeNodes();
-            drawTreeConnections();
-            playSynthesizedSound(523.25, 'sine', 0.35); // 播放高雅 C5 音效
-        }
-
-        function closeRebirthTree() {
-            rebirthTreeModal.classList.add('hidden');
-            recalculateProductivity();
-            updateUI();
-        }
-
-        // 拖曳探索星空面板
-        treeDragViewport.addEventListener('mousedown', (e) => {
-            isDraggingTree = true;
-            treeDragViewport.classList.remove('cursor-grab');
-            treeDragViewport.classList.add('cursor-grabbing');
-            
-            startX = e.clientX;
-            startY = e.clientY;
-            
-            // 讀取當前的 CSS translate 數值
-            const transform = window.getComputedStyle(treeMapContainer).transform;
-            if (transform !== 'none') {
-                const matrix = new DOMMatrix(transform);
-                scrollLeft = matrix.m41;
-                scrollTop = matrix.m42;
-            } else {
-                scrollLeft = 0;
-                scrollTop = 0;
-            }
-        });
-
-        window.addEventListener('mouseup', () => {
-            if (isDraggingTree) {
-                isDraggingTree = false;
-                treeDragViewport.classList.remove('cursor-grabbing');
-                treeDragViewport.classList.add('cursor-grab');
-            }
-        });
-
-        window.addEventListener('mousemove', (e) => {
-            if (!isDraggingTree) return;
-            const dx = e.clientX - startX;
-            const dy = e.clientY - startY;
-            
-            // 邊界控制
-            let newX = scrollLeft + dx;
-            let newY = scrollTop + dy;
-            
-            newX = Math.max(-1000, Math.min(100, newX));
-            newY = Math.max(-600, Math.min(100, newY));
-            
-            treeMapContainer.style.transform = `translate(${newX}px, ${newY}px)`;
-            e.preventDefault();
-        });
-
-        // 渲染重生樹上的 60 個恆星節點
-        function renderRebirthTreeNodes() {
-            treeNodesContainer.innerHTML = '';
-            
-            Object.keys(rebirthTreeUpgrades).forEach(key => {
-                const node = rebirthTreeUpgrades[key];
-                
-                // 檢查節點解鎖與可用狀態
-                let isUnlocked = gameState.heavenlyUpgrades[key] ? true : false;
-                let isAvailable = false;
-                
-                if (node.isInitiallyAvailable) {
-                    isAvailable = true; // 15個起步節點直接可用
-                } else if (node.parent && gameState.heavenlyUpgrades[node.parent]) {
-                    isAvailable = true; // 前置已購買
-                }
-
-                // 檢查第 12 個重生樹限定升級條件
-                let isRebirthLocked = false;
-                if (node.needRebirth && (gameState.rebirthCount || 0) < 1) {
-                    isAvailable = false;
-                    isRebirthLocked = true;
-                }
-
-                // 依據節點狀態設定發光與框線
-                let nodeClass = '';
-                let nodeStyle = `left: ${node.x}px; top: ${node.y}px; border-color: ${rebirthTreeUpgrades[key].color};`;
-                
-                if (isUnlocked) {
-                    // 已解鎖恆星
-                    nodeClass = 'bg-amber-400 border-yellow-200 text-slate-950 font-black scale-110 shadow-[0_0_20px_#fbbf24]';
-                    nodeStyle += `background-color: ${rebirthTreeUpgrades[key].color};`;
-                } else if (isAvailable) {
-                    // 點亮待解鎖
-                    nodeClass = 'bg-slate-900 text-slate-300 hover:scale-105 border-dashed star-node cursor-pointer border-2';
-                } else {
-                    // 鎖定狀態
-                    nodeClass = 'bg-slate-950/90 text-slate-600 border-slate-800 cursor-not-allowed opacity-40';
-                }
-
-                const nodeHtml = `
-                    <div onclick="clickTreeNode('${key}', ${isAvailable}, ${isUnlocked}, ${isRebirthLocked})" 
-                         style="${nodeStyle}" 
-                         class="absolute w-14 h-14 rounded-full flex flex-col items-center justify-center text-center border-4 select-none pointer-events-auto transition-all ${nodeClass}">
-                        <span class="text-[14px] leading-none mb-0.5">${isUnlocked ? '⭐' : isRebirthLocked ? '🔒' : '☄️'}</span>
-                        <span class="text-[8px] leading-tight font-black">${node.name.replace('🌟節點','')}</span>
-                    </div>
-                `;
-                treeNodesContainer.insertAdjacentHTML('beforeend', nodeHtml);
-            });
-        }
-
-        // 繪製重生樹 SVG 霓虹線條
-        function drawTreeConnections() {
-            treeSvgCanvas.innerHTML = '';
-            
-            Object.keys(rebirthTreeUpgrades).forEach(key => {
-                const node = rebirthTreeUpgrades[key];
-                if (node.parent) {
-                    const parentNode = rebirthTreeUpgrades[node.parent];
-                    if (parentNode) {
-                        const x1 = parentNode.x + 28; // 中心點補償
-                        const y1 = parentNode.y + 28;
-                        const x2 = node.x + 28;
-                        const y2 = node.y + 28;
-
-                        const parentUnlocked = gameState.heavenlyUpgrades[parentNode.key];
-                        const childUnlocked = gameState.heavenlyUpgrades[node.key];
-
-                        let strokeColor = '#334155'; // 未開通為暗灰色
-                        let strokeWidth = 2;
-                        let glowFilter = '';
-
-                        if (parentUnlocked && childUnlocked) {
-                            strokeColor = node.color; // 已開通則發光亮起
-                            strokeWidth = 3.5;
-                        } else if (parentUnlocked) {
-                            strokeColor = '#a78bfa'; // 可購買過渡期
-                            strokeWidth = 2.5;
-                        }
-
-                        const lineHtml = `
-                            <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" 
-                                  stroke="${strokeColor}" 
-                                  stroke-width="${strokeWidth}" 
-                                  stroke-dasharray="${childUnlocked ? 'none' : '4,4'}"
-                                  style="transition: all 0.3s;" />
-                        `;
-                        treeSvgCanvas.insertAdjacentHTML('beforeend', lineHtml);
-                    }
-                }
-            });
-        }
-
-        // 點擊重生樹節點進行交易
-        function clickTreeNode(nodeKey, isAvailable, isUnlocked, isRebirthLocked) {
-            const node = rebirthTreeUpgrades[nodeKey];
-            if (!node) return;
-
-            if (isUnlocked) {
-                triggerToastBanner(`✨ [${node.name}] 已開通！屬性: ${node.desc}`);
-                playSynthesizedSound(600, 'sine', 0.1);
-                return;
-            }
-
-            if (isRebirthLocked) {
-                triggerToastBanner(`🔒 最終章星系主宰 node [${node.name}] 必須至少轉世重生過一次才能啟動！`);
-                playSynthesizedSound(100, 'sawtooth', 0.3);
-                return;
-            }
-
-            if (!isAvailable) {
-                triggerToastBanner(`🔒 該星系恆星尚未亮起！請先開通前置恆星：[${rebirthTreeUpgrades[node.parent]?.name || '未知前置'}]`);
-                playSynthesizedSound(120, 'sawtooth', 0.2);
-                return;
-            }
-
-            const currentTokens = gameState.rebirthTokens || 0;
-            if (currentTokens >= node.cost) {
-                // 扣除重生代幣並開通節點
-                gameState.rebirthTokens = currentTokens - node.cost;
-                gameState.heavenlyUpgrades[nodeKey] = true;
-
-                recalculateProductivity();
-                saveGame();
-
-                document.getElementById('treeTokenDisplay').innerText = gameState.rebirthTokens;
-                
-                renderRebirthTreeNodes();
-                drawTreeConnections();
-
-                triggerToastBanner(`🌌 開通恆星 [${node.name}]！${node.desc}`);
-                playSynthesizedSound(783.99, 'sine', 0.25); // 播放 G5 喜悅音效
-            } else {
-                triggerToastBanner(`❌ 轉世代幣不足！需要 ${node.cost} 代幣，您僅擁有 ${currentTokens}。`);
-                playSynthesizedSound(150, 'sawtooth', 0.25);
-            }
-        }
-
         // ------------------ 啟動初始化 ------------------
         window.onload = function() {
-            buildRebirthTreeDatabase(); // 構建 60 節點星盤
-            initShopDOM(); 
+            initShopDOM(); // 初始化動態生成 10+10 項商店列表
             loadGame();
             recalculateProductivity();
             updateUI();
