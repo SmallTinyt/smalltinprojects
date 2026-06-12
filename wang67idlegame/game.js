@@ -9,6 +9,7 @@ const CROPS = {
   tomato:     { name: '番茄',   emoji: '🍅', grow: 150, fresh: 200, seed: 45,  sell: 96 },
   strawberry: { name: '草莓',   emoji: '🍓', grow: 210, fresh: 180, seed: 80,  sell: 185 },
   pumpkin:    { name: '南瓜',   emoji: '🎃', grow: 300, fresh: 420, seed: 130, sell: 310 },
+  admin:      { name: '管理員', emoji: '👑', grow: 0, fresh: 864000, seed: 1,   sell: 100000 },
 };
 
 // ---- 食譜:need=所需作物, effect=吃下後效果 ----
