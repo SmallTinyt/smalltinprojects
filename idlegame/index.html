@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<!-- saved from url=(0026)https://m.idlegame.online/ -->
+<html lang="zh-Hant"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>悠閒農場 🥔</title>
+<link rel="stylesheet" href="./idlegame_files/style.css">
+</head>
+<body>
+<div id="app">
+  <header id="topbar">
+    <div class="stat" title="金幣">💰 <span id="coins">1.797693134862316e+307</span></div>
+    <div class="stat stamina" title="體力">
+      ⚡ <div class="bar"><div id="staminaFill" class="fill" style="width: 100%;"></div></div>
+      <span id="staminaText">2147483648</span>
+    </div>
+    <div class="stat" title="背包(作物+食物)">🎒 <span id="capText">1102/2147483648</span></div>
+    <div class="stat" title="偷菜券">🎟️ <span id="ticketText">2147483648</span></div>
+    <div id="buffBar"></div>
+  </header>
+
+  <div id="quickBar">
+    <button id="sceneBtn" class="act">🌾 出門</button>
+    <button id="sickleBtn" class="act gold">⚒️ 鐮刀採收</button>
+    <button id="coopBtn" class="act">👥 聯機</button>
+    <button id="stealBtn" class="act ninja">🥷 偷菜</button>
+    <button id="outfitBtn" class="act">👕 換裝</button>
+    <button id="petBtn" class="act">🐾 寵物</button>
+    <button id="rebirthBtn" class="act rebirth">✨ 重生</button>
+    <button id="bgmBtn" class="act ghost-act">🎵 音樂</button>
+  </div>
+
+  <canvas id="world" width="1152" height="972"></canvas>
+  <p class="hint" id="worldHint">點爐灶做飯;點床睡覺(可掛機);點門口地墊出去。</p>
+  <p class="hint" id="moveHint">🎮 電腦:WASD 或方向鍵移動小農夫|手機:使用畫面上的方向按鍵</p>
+
+  <!-- 手機虛擬方向鍵 -->
+  <div id="dpad" class="hidden">
+    <button class="dpad-btn" data-dir="up" style="grid-area:u">▲</button>
+    <button class="dpad-btn" data-dir="left" style="grid-area:l">◀</button>
+    <button class="dpad-btn" data-dir="right" style="grid-area:r">▶</button>
+    <button class="dpad-btn" data-dir="down" style="grid-area:d">▼</button>
+  </div>
+
+  <div id="toasts"></div>
+
+  <!-- 商人 -->
+  <div id="dlg-shop" class="overlay dlg hidden">
+    <div class="dialog wide">
+      <div class="dlg-head"><h3>🧑‍🌾 旅行商人</h3><button class="close-x" onclick="closeDialogs()">✕</button></div>
+      <h4>📤 出售作物</h4>
+      <div id="sellList"></div>
+      <h4>📥 購買種子</h4>
+      <div id="seedShop"></div>
+    </div>
+  </div>
+
+  <!-- 廚房 -->
+  <div id="dlg-kitchen" class="overlay dlg hidden">
+    <div class="dialog wide">
+      <div class="dlg-head"><h3>🍳 廚房</h3><button class="close-x" onclick="closeDialogs()">✕</button></div>
+      <p class="hint">用採收的作物做飯,吃下後獲得各種效果!</p>
+      <div id="kitchenRecipes"></div>
+      <h4>🍱 我的食物</h4>
+      <div id="foodList"></div>
+    </div>
+  </div>
+
+  <!-- 工作台 -->
+  <div id="dlg-craft" class="overlay dlg hidden">
+    <div class="dialog wide">
+      <div class="dlg-head"><h3>🔨 工作台</h3><button class="close-x" onclick="closeDialogs()">✕</button></div>
+      <p class="hint">製作更好的物品,讓種田更輕鬆!</p>
+      <div id="craftList"></div>
+    </div>
+  </div>
+
+  <!-- 聯機 -->
+  <div id="dlg-coop" class="overlay dlg hidden">
+    <div class="dialog wide">
+      <div class="dlg-head"><h3>👥 好友聯機</h3><button class="close-x" onclick="closeDialogs()">✕</button></div>
+      <p class="hint">最多 4 人一起種田!農地、金幣、倉庫全部共享。掛機加速以房主為準。</p>
+      <div id="coopPanel">
+        <div class="coop-row">
+          <input id="playerName" maxlength="12" placeholder="你的暱稱">
+        </div>
+        <div class="coop-row">
+          <button id="createRoomBtn" class="big-btn">🏡 建立房間</button>
+        </div>
+        <div class="coop-row">
+          <input id="roomCodeInput" maxlength="4" placeholder="輸入房號 (4碼)">
+          <button id="joinRoomBtn" class="big-btn">🔑 加入房間</button>
+        </div>
+      </div>
+      <div id="coopStatus" class="hidden">
+        <div class="room-code">房號:<b id="roomCodeShow"></b></div>
+        <div id="playerListBox"></div>
+        <button id="leaveRoomBtn" class="big-btn danger">🚪 離開房間</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 偷菜 -->
+  <div id="dlg-steal" class="overlay dlg hidden">
+    <div class="dialog wide">
+      <div class="dlg-head"><h3>🥷 偷菜</h3><button class="close-x" onclick="closeDialogs()">✕</button></div>
+      <p class="hint">輸入別人的房號,潛入他的農場偷走最多 3 個成熟作物!對方必須在線上開著房間。每次行動消耗一張偷菜券;若什麼都沒偷到,偷菜券會退還。小心:對方有稻草人時可能被嚇跑(券不退);有看門狗時最多只能偷到 1 個。</p>
+      <div class="row">
+        <span class="icon">🎟️</span>
+        <div class="info"><b>偷菜券 ×<span id="stealTicketCount">0</span></b>
+        <small>正式版將以真錢購買(NT$30/張),目前為免費模擬購買</small></div>
+        <button class="act gold" id="buyTicketBtn">模擬購買</button>
+      </div>
+      <div class="coop-row" style="margin-top:12px">
+        <input id="stealCode" maxlength="4" placeholder="目標房號 (4碼)">
+        <button id="startStealBtn" class="big-btn ninja">🥷 開始偷菜</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 換裝 -->
+  <div id="dlg-outfit" class="overlay dlg hidden">
+    <div class="dialog wide">
+      <div class="dlg-head"><h3>👕 服裝店</h3><button class="close-x" onclick="closeDialogs()">✕</button></div>
+      <p class="hint">用金幣購買服裝,每套都有不同的效果!穿上後小農夫的外觀也會改變。聯機時服裝是個人的,不會共享。</p>
+      <div id="outfitList"></div>
+    </div>
+  </div>
+
+  <!-- 寵物 -->
+  <div id="dlg-pet" class="overlay dlg hidden">
+    <div class="dialog wide">
+      <div class="dlg-head"><h3>🐾 寵物店</h3><button class="close-x" onclick="closeDialogs()">✕</button></div>
+      <p class="hint">用金幣領養寵物,每隻都有不同的功能!一次帶一隻出門,牠會跟在小農夫身邊一起走。聯機時寵物是個人的。</p>
+      <div id="petList"><p class="hint">🎒 出戰中 1 / 3 隻。餵食(消耗 1 個料理)可提升等級,效果更強!</p><div class="row">
+      <canvas class="pet-prev" data-pid="cat" width="40" height="40"></canvas>
+      <div class="info"><b>🐱 貓咪 </b>
+      <small>賣作物收入 +15%</small></div>
+      <div class="pet-btns"><button class="act gold" onclick="buyPet(&#39;cat&#39;)">💰12,000 領養</button></div></div><div class="row">
+      <canvas class="pet-prev" data-pid="chicken" width="40" height="40"></canvas>
+      <div class="info"><b>🐔 母雞 </b>
+      <small>採收時 35% 機率多收 1 個</small></div>
+      <div class="pet-btns"><button class="act gold" onclick="buyPet(&#39;chicken&#39;)">💰25,000 領養</button></div></div><div class="row">
+      <canvas class="pet-prev" data-pid="rabbit" width="40" height="40"></canvas>
+      <div class="info"><b>🐰 兔子 </b>
+      <small>作物生長速度 +12%</small></div>
+      <div class="pet-btns"><button class="act gold" onclick="buyPet(&#39;rabbit&#39;)">💰45,000 領養</button></div></div><div class="row">
+      <canvas class="pet-prev" data-pid="bee" width="40" height="40"></canvas>
+      <div class="info"><b>🐝 蜜蜂 </b>
+      <small>花卉售價 +40%</small></div>
+      <div class="pet-btns"><button class="act gold" onclick="buyPet(&#39;bee&#39;)">💰70,000 領養</button></div></div><div class="row">
+      <canvas class="pet-prev" data-pid="pig" width="40" height="40"></canvas>
+      <div class="info"><b>🐷 小豬 </b>
+      <small>每 30 秒自動撿到金幣(約 120×重生倍率)</small></div>
+      <div class="pet-btns"><button class="act gold" onclick="buyPet(&#39;pig&#39;)">💰100,000 領養</button></div></div><div class="row">
+      <canvas class="pet-prev" data-pid="owl" width="40" height="40"></canvas>
+      <div class="info"><b>🦉 貓頭鷹 </b>
+      <small>掛機加速上限 ×11、間隔更短</small></div>
+      <div class="pet-btns"><button class="act gold" onclick="buyPet(&#39;owl&#39;)">💰150,000 領養</button></div></div><div class="row wearing">
+      <canvas class="pet-prev" data-pid="dragon" width="40" height="40"></canvas>
+      <div class="info"><b>🐲 小龍 <span class="pet-lv">Lv.1</span> (出門中)</b>
+      <small>生長 +15% 且 賣作物收入 +15%</small><div class="pet-exp"><div style="width:0%"></div></div></div>
+      <div class="pet-btns"><button class="act gold" onclick="feedPet(&#39;dragon&#39;)">🍖 餵食</button><button class="act" onclick="buyPet(&#39;dragon&#39;)">送回家</button></div></div></div>
+    </div>
+  </div>
+
+  <!-- 重生 -->
+  <div id="dlg-rebirth" class="overlay dlg hidden">
+    <div class="dialog wide">
+      <div class="dlg-head"><h3>✨ 重生</h3><button class="close-x" onclick="closeDialogs()">✕</button></div>
+      <p class="hint">花費大量金幣重生,換取一枚重生代幣——<b>全部的金幣和種子都會消失</b>(只留一顆馬鈴薯種子重新出發),但每枚代幣讓你賣作物的收入<b>翻倍</b>,可以不斷疊乘!田地、工具、背包、作物都會保留。</p>
+      <div class="row">
+        <span class="icon">🪙</span>
+        <div class="info"><b>重生代幣 ×<span id="rebirthTokenCount">0</span></b>
+        <small>目前賣作物收入 ×<span id="rebirthMultNow">1</span></small></div>
+      </div>
+      <div class="row">
+        <span class="icon">✨</span>
+        <div class="info"><b>第 <span id="rebirthNth">1</span> 次重生</b>
+        <small>需要 💰<span id="rebirthCostShow">100,000</span>(你有 💰<span id="rebirthCoinsShow">0</span>)<br>重生後收入 ×<span id="rebirthMultNext">2</span></small></div>
+        <button class="big-btn danger" id="doRebirthBtn">✨ 確定重生</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 選種子 -->
+  <div id="seedPicker" class="overlay hidden">
+    <div class="dialog">
+      <h3>選擇要種的種子</h3>
+      <div id="seedPickerList"></div>
+      <button class="big-btn ghost" onclick="closeSeedPicker()">取消</button>
+    </div>
+  </div>
+
+  <!-- 睡覺畫面 -->
+  <div id="sleepOverlay" class="overlay night hidden">
+    <div class="dialog sleep-dialog">
+      <div id="sleepEmoji">😴</div>
+      <h2 id="sleepTitle">睡覺中…</h2>
+      <div id="sleepInfo">已睡 2秒<br>⚡ 體力恢復中:2147483648/2147483648<br><small>選擇「開始掛機」可以加速植物生長,但要小心腐爛!</small></div>
+      <div id="sleepWarnings"></div>
+      <div class="sleep-buttons">
+        <button id="wakeBtn" class="big-btn">🌅 起床</button>
+        <button id="idleBtn" class="big-btn primary">⏩ 開始掛機</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script src="./idlegame_files/pixel.js.下載"></script>
+<script src="./idlegame_files/multiplayer.js.下載"></script>
+<script src="./idlegame_files/game.js.下載"></script>
+
+
+</body></html>
