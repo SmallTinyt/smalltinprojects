@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>悠閒農場 - 系統狀態監測</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700;900&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-glow: #00f0ff;
+            --secondary-glow: #4299e1;
+            --bg-color: #050b14;
+            --panel-bg: rgba(15, 23, 42, 0.7);
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: #e2e8f0;
+            font-family: 'Noto Sans TC', sans-serif;
+            overflow: hidden;
+            background-image: 
+                linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .tech-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* 掃描線特效 */
+        .scanline {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100vh;
+            background: linear-gradient(
+                to bottom,
+                transparent,
+                rgba(0, 240, 255, 0.1) 50%,
+                transparent
+            );
+            background-size: 100% 8px;
+            animation: scan 6s linear infinite;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        @keyframes scan {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        /* 科技感面板框線 */
+        .tech-panel {
+            background: var(--panel-bg);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.05),
+                        inset 0 0 20px rgba(0, 240, 255, 0.05);
+            backdrop-filter: blur(10px);
+            position: relative;
+        }
+
+        /* 面板裝飾角 */
+        .tech-panel::before, .tech-panel::after,
+        .tech-panel-inner::before, .tech-panel-inner::after {
+            content: '';
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--primary-glow);
+            border-style: solid;
+            transition: all 0.3s ease;
+        }
+
+        .tech-panel::before { top: -2px; left: -2px; border-width: 2px 0 0 2px; }
+        .tech-panel::after { top: -2px; right: -2px; border-width: 2px 2px 0 0; }
+        .tech-panel-inner::before { bottom: -2px; left: -2px; border-width: 0 0 2px 2px; }
+        .tech-panel-inner::after { bottom: -2px; right: -2px; border-width: 0 2px 2px 0; }
+
+        /* 文字發光 */
+        .glow-text {
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.7),
+                         0 0 20px rgba(0, 240, 255, 0.5);
+        }
+        
+        .glow-text-red {
+            color: #ff3333;
+            text-shadow: 0 0 10px rgba(255, 51, 51, 0.7),
+                         0 0 20px rgba(255, 51, 51, 0.5);
+        }
+
+        /* 時間區塊容器 */
+        .time-box {
+            background: rgba(0, 0, 0, 0.4);
+            border-bottom: 2px solid var(--secondary-glow);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .time-box::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(180deg, rgba(0,240,255,0.1) 0%, transparent 100%);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .time-box:hover::before {
+            opacity: 1;
+        }
+        
+        /* 系統提示動畫 */
+        .blinking-cursor {
+            animation: blink 1s step-end infinite;
+        }
+        @keyframes blink {
+            50% { opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- 掃描線特效層 -->
+    <div class="scanline"></div>
+
+    <!-- 主體內容容器 -->
+    <div class="tech-panel w-full max-w-5xl p-8 md:p-12 rounded-sm z-10">
+        <div class="tech-panel-inner h-full w-full absolute top-0 left-0 pointer-events-none"></div>
+        
+        <!-- 頂部系統狀態列 -->
+        <div class="flex justify-between items-center mb-8 text-xs md:text-sm tech-font text-cyan-500 tracking-wider">
+            <div class="flex items-center gap-2">
+                <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_#ef4444]"></div>
+                <span>SYSTEM_STATUS: OFFLINE</span>
+            </div>
+            <div>TARGET_ID: IDLEFARM</div>
+            <div>INCIDENT_TIME: 2026.07.08 18:00</div>
+        </div>
+
+        <!-- 核心標題區 -->
+        <div class="text-center mb-12">
+            <div class="inline-block border border-cyan-800/50 bg-cyan-900/20 px-4 py-1 rounded-sm text-cyan-400 text-xs md:text-sm tracking-[0.2em] mb-4">
+                CRITICAL EVENT LOG
+            </div>
+            <h1 class="text-3xl md:text-5xl lg:text-6xl font-black tracking-widest text-slate-100 mb-2">
+                距離<span class="glow-text-red mx-2">悠閒農場</span>死亡
+            </h1>
+            <h2 class="text-2xl md:text-4xl font-bold tracking-[0.5em] text-cyan-100 glow-text mt-4">
+                已經過<span class="blinking-cursor">_</span>
+            </h2>
+        </div>
+
+        <!-- 計時器顯示區 -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 text-center">
+            
+            <!-- 天數 -->
+            <div class="time-box p-4 md:p-6 rounded-sm flex flex-col items-center justify-center group cursor-default">
+                <div id="days" class="tech-font text-5xl md:text-7xl font-bold text-cyan-300 group-hover:text-cyan-100 transition-colors drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]">000</div>
+                <div class="text-xs md:text-sm tracking-widest text-slate-400 mt-2 font-bold uppercase">Days</div>
+            </div>
+
+            <!-- 小時 -->
+            <div class="time-box p-4 md:p-6 rounded-sm flex flex-col items-center justify-center group cursor-default">
+                <div id="hours" class="tech-font text-5xl md:text-7xl font-bold text-cyan-300 group-hover:text-cyan-100 transition-colors drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]">00</div>
+                <div class="text-xs md:text-sm tracking-widest text-slate-400 mt-2 font-bold uppercase">Hours</div>
+            </div>
+
+            <!-- 分鐘 -->
+            <div class="time-box p-4 md:p-6 rounded-sm flex flex-col items-center justify-center group cursor-default">
+                <div id="minutes" class="tech-font text-5xl md:text-7xl font-bold text-cyan-300 group-hover:text-cyan-100 transition-colors drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]">00</div>
+                <div class="text-xs md:text-sm tracking-widest text-slate-400 mt-2 font-bold uppercase">Minutes</div>
+            </div>
+
+            <!-- 秒數 (包含毫秒) -->
+            <div class="time-box p-4 md:p-6 rounded-sm flex flex-col items-center justify-center group cursor-default relative">
+                <div class="flex items-baseline justify-center">
+                    <div id="seconds" class="tech-font text-5xl md:text-7xl font-bold text-cyan-300 group-hover:text-cyan-100 transition-colors drop-shadow-[0_0_15px_rgba(0,240,255,0.5)]">00</div>
+                    <div id="milliseconds" class="tech-font text-xl md:text-2xl text-cyan-600 ml-1 w-8 text-left">.00</div>
+                </div>
+                <div class="text-xs md:text-sm tracking-widest text-slate-400 mt-2 font-bold uppercase">Seconds</div>
+            </div>
+
+        </div>
+        
+        <!-- 底部裝飾條 -->
+        <div class="mt-12 flex items-center justify-between opacity-50">
+            <div class="h-[1px] bg-cyan-500 w-1/3"></div>
+            <div class="tech-font text-[10px] text-cyan-500 tracking-widest">DATA_STREAM_ACTIVE</div>
+            <div class="h-[1px] bg-cyan-500 w-1/3"></div>
+        </div>
+    </div>
+
+    <script>
+        // 設定目標時間：2026/07/08 18:00:00 (使用當地時間，由於位於台北，即為 UTC+8)
+        // JavaScript Date 中月份是從 0 開始的，所以 7 月是 6
+        const targetDate = new Date(2026, 6, 8, 18, 0, 0).getTime();
+
+        // 獲取 DOM 元素
+        const daysEl = document.getElementById('days');
+        const hoursEl = document.getElementById('hours');
+        const minutesEl = document.getElementById('minutes');
+        const secondsEl = document.getElementById('seconds');
+        const msEl = document.getElementById('milliseconds');
+
+        // 格式化數字 (補零)
+        function padZero(num, length = 2) {
+            return num.toString().padStart(length, '0');
+        }
+
+        // 更新計時器的核心函式
+        function updateTimer() {
+            const now = new Date().getTime();
+            let diff = now - targetDate;
+
+            // 如果當前時間還沒到 2026/07/08 18:00，顯示全 0 或是可以作其他處理
+            // (依據 Prompt 敘述，我們假設是在這時間之後，若尚未到達則顯示 0)
+            if (diff < 0) {
+                diff = 0;
+            }
+
+            // 計算時間單位
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+            
+            // 計算毫秒 (只取前兩位數展示，增加科技跳動感)
+            const ms = Math.floor((diff % 1000) / 10);
+
+            // 更新畫面
+            daysEl.textContent = padZero(days, 3); // 天數給3位數空間更具氣勢
+            hoursEl.textContent = padZero(hours);
+            minutesEl.textContent = padZero(minutes);
+            secondsEl.textContent = padZero(seconds);
+            msEl.textContent = "." + padZero(ms);
+        }
+
+        // 設定更新頻率 (每 30 毫秒更新一次，確保毫秒跳動的視覺流暢度)
+        setInterval(updateTimer, 30);
+        
+        // 初始執行一次避免畫面閃爍空值
+        updateTimer();
+    </script>
+</body>
+</html>
