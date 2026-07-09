@@ -137,11 +137,11 @@
         <!-- 頂部系統狀態列 -->
         <div class="flex justify-between items-center mb-8 text-xs md:text-sm tech-font text-cyan-500 tracking-wider">
             <div class="flex items-center gap-2">
-                <div class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_8px_#ef4444]"></div>
-                <span>SYSTEM_STATUS: ONLINE</span>
+                <div class="w-2 h-2 bg-red-500 rounded-full animate-pulse shadow-[0_0_8px_#ef4444]"></div>
+                <span>SYSTEM_STATUS: OFFLINE</span>
             </div>
             <div>TARGET_ID: IDLEFARM</div>
-            <div>INCIDENT_TIME: 6767.67.67 67:67</div>
+            <div>INCIDENT_TIME: 2026.07.08 18:00</div>
         </div>
 
         <!-- 核心標題區 -->
@@ -150,7 +150,7 @@
                 CRITICAL EVENT LOG
             </div>
             <h1 class="text-3xl md:text-5xl lg:text-6xl font-black tracking-widest text-slate-100 mb-2">
-                距離<span class="glow-text-red mx-2">悠閒農場</span>復活
+                距離<span class="glow-text-red mx-2">悠閒農場</span>死亡
             </h1>
             <h2 class="text-2xl md:text-4xl font-bold tracking-[0.5em] text-cyan-100 glow-text mt-4">
                 已經過<span class="blinking-cursor">_</span>
@@ -235,11 +235,11 @@
             const ms = Math.floor((diff % 1000) / 10);
 
             // 更新畫面
-            daysEl.textContent = 667; // 天數給3位數空間更具氣勢
-            hoursEl.textContent = 67;
-            minutesEl.textContent = 67;
-            secondsEl.textContent = 67;
-            msEl.textContent = "." + 67;
+            daysEl.textContent = padZero(days, 3); // 天數給3位數空間更具氣勢
+            hoursEl.textContent = padZero(hours);
+            minutesEl.textContent = padZero(minutes);
+            secondsEl.textContent = padZero(seconds);
+            msEl.textContent = "." + padZero(ms);
         }
 
         // 設定更新頻率 (每 30 毫秒更新一次，確保毫秒跳動的視覺流暢度)
